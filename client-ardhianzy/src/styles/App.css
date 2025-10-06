@@ -1,0 +1,17 @@
+/* src/styles/App.css */
+html, body {
+  background-color: #000;
+  color: #fff;
+}
+
+#root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: initial;
+}
+
+body {
+  overflow-x: hidden;
+}
