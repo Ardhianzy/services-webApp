@@ -1,0 +1,88 @@
+version: "3.8"
+
+services:
+  # Layanan Traefik sebagai Reverse Proxy dan manajer SSL
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "sx-letsencrypt:/letsencrypt"
+    networks:
+      - sx-net
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: sx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - sx-pgdata:/var/lib/postgresql/data
+    networks:
+      - sx-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Layanan Backend API
+  server-ardhianzy:
+    build:
+      context: ./webServices/server-ardhianzy
+      dockerfile: Dockerfile
+    container_name: sx-api-data
+    restart: unless-stopped
+    env_file:
+      - ./webServices/server-ardhianzy/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sx-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.server-ardhianzy.rule=Host(`${DOMAIN_BE}`)"
+      - "traefik.http.routers.server-ardhianzy.entrypoints=websecure"
+      - "traefik.http.routers.server-ardhianzy.tls.certresolver=myresolver"
+      - "traefik.http.services.server-ardhianzy.loadbalancer.server.port=5000"
+  webApp-frontend:
+    build:
+      context: ./webServices/webApp-frontend
+      dockerfile: Dockerfile
+    container_name: sx-frontend
+    restart: unless-stopped
+    networks:
+      - sx-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webApp-frontend.rule=Host(`${DOMAIN_FE}`) || Host(`${DOMAIN_ALT}`)"
+      - "traefik.http.routers.webApp-frontend.entrypoints=websecure"
+      - "traefik.http.routers.webApp-frontend.tls.certresolver=myresolver"
+      - "traefik.http.services.webApp-frontend.loadbalancer.server.port=3000"
+
+volumes:
+  sx-letsencrypt:
+  sx-pgdata:
+
+networks:
+  sx-net:
+    driver: bridge
