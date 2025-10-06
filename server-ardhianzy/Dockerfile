@@ -12,5 +12,5 @@ WORKDIR /home/node/app
 COPY --chown=node:node package*.json ./
 RUN npm install --omit=dev
 COPY --from=builder --chown=node:node /app/dist ./dist
-EXPOSE 3000
-CMD [ "node", "dist/index.js" ]
+EXPOSE 5000
+CMD [ "node", "dist/index.js" ] 
