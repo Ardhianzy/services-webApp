@@ -1,16 +1,31 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+COPY prisma ./prisma
+RUN npm ci
+RUN npx prisma generate
+
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# Tahap kedua: Membuat image produksi yang ringan
-FROM node:20-alpine
-USER node
+FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl
+ENV NODE_ENV=production
 WORKDIR /home/node/app
-COPY --chown=node:node package*.json ./
-RUN npm install --omit=dev
-COPY --from=builder --chown=node:node /app/dist ./dist
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+USER node
 EXPOSE 5000
-CMD [ "node", "dist/index.js" ] 
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
