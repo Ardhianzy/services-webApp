@@ -12,5 +12,5 @@ WORKDIR /app
 RUN npm i -g serve
 USER node
 COPY --from=build /app/dist ./dist
-EXPOSE 5713
-CMD ["serve", "-s", "dist", "-l", "5713"]
+EXPOSE 5173
+CMD ["serve", "-s", "dist", "-l", "5173"]
