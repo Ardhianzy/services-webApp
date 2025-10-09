@@ -1,16 +1,21 @@
+// src/routes/research.ts
 import { Router } from "express";
 import { ResearchHandler } from "../feature/research/handler/crud_res";
 import { authenticate } from "../middleware/authenticate";
-import upload from "../middleware/multer";
+import upload from "../middleware/multer"; // ← middleware gambar kamu (single("image"))
+import { uploadPdf } from "../middleware/multerPdf"; // ← middleware PDF (single("pdf"))
 
 const router = Router();
 const researchHandler = new ResearchHandler();
 
 // Create Research (Admin only)
+// - image: field name "image" (opsi kamu sebelumnya)
+// - pdf:   field name "pdf"   (opsional, max 10 MB)
 router.post(
   "/",
   authenticate,
-  upload.single("image"),
+  (req, res, next) => upload.single("image")(req, res, next),
+  (req, res, next) => uploadPdf.single("pdf")(req, res, next),
   researchHandler.createByAdmin
 );
 
@@ -21,10 +26,13 @@ router.get("/", researchHandler.getAll);
 router.get("/title/:researchTitle", researchHandler.getByResearchTitle);
 
 // Update Research by ID (Admin only)
+// - boleh kirim image baru dan/atau pdf baru
+// - untuk hapus PDF tanpa upload baru: kirim body `remove_pdf=true`
 router.put(
   "/:id",
   authenticate,
-  upload.single("image"),
+  (req, res, next) => upload.single("image")(req, res, next),
+  (req, res, next) => uploadPdf.single("pdf")(req, res, next),
   researchHandler.updateById
 );
 

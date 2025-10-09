@@ -15,7 +15,7 @@ router.use("/auth", authRoutes);
 router.use("/ToT", totRoutes);
 router.use("/shop", shopRoutes);
 // router.use("/glosarium", glosariumRoutes); katanya sudah tidak ada
-// router.use("/research", researchRoutes);//ini tuh nanti ada file pdf nya
+router.use("/research", researchRoutes); //ini tuh nanti ada file pdf nya
 router.use("/collected", collectedRoutes);
 router.use("/articel", articelRoutes);
 router.use("/tot-meta", totMetaRoutes);

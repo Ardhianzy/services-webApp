@@ -100,29 +100,38 @@ model Collected_meditations {
 }
 
 model Research {
-  id             String   @id @default(cuid())
-  admin_id       String
-  research_title String
-  slug           String   @unique
-  research_sum   String
-  image          String
-  researcher     String
-  research_date  DateTime
-  fiel           String
+  id               String   @id @default(cuid())
+  admin_id         String
+  research_title   String
+  slug             String   @unique
+  research_sum     String
+  image            String
+  researcher       String
+  research_date    DateTime
+  fiel             String // (biarkan sesuai skema kamu)
 
+  // ==== PDF (opsional) ====
+  pdf_file_id      String?  // ID file di ImageKit (untuk delete/replace)
+  pdf_url          String?  // URL public (atau signed URL jika pakai isPrivateFile)
+  pdf_filename     String?  // Nama file asli
+  pdf_mime         String?  // ex: application/pdf
+  pdf_size         Int?     // bytes (<= 10_485_760 sesuai validasi di server)
+  pdf_uploaded_at  DateTime?
+
+  // ==== SEO ====
   meta_title       String?
   meta_description String?
   keywords         String?
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  is_published Boolean @default(false)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  is_published     Boolean  @default(false)
 
   admin Admin @relation(fields: [admin_id], references: [id], name: "Admin_research")
 
   @@map("researches")
 }
+
 
 model Article {
   id       String   @id @default(cuid())

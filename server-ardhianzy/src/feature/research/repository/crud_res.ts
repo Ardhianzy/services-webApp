@@ -6,7 +6,6 @@ import {
   UtilityFactory,
 } from "../../../utils/slugify";
 
-// Interface untuk pagination
 interface PaginationParams {
   page?: number;
   limit?: number;
@@ -26,18 +25,35 @@ interface PaginatedResult<T> {
   };
 }
 
+export type PdfMeta = {
+  pdf_file_id: string;
+  pdf_url: string;
+  pdf_filename: string;
+  pdf_mime: string;
+  pdf_size: number;
+  pdf_uploaded_at: Date;
+};
+
 export interface CreateResearchData {
-  admin_id: string; // ← cuid string
+  admin_id: string;
   research_title: string;
   research_sum: string;
   image: string;
   researcher: string;
   research_date: Date;
+  fiel: string;
   meta_title?: string;
   meta_description?: string;
   keywords?: string;
   is_published?: boolean;
-  // jika schema kamu punya field lain (mis. "fiel"), tambahkan di sini juga
+
+  // PDF (opsional)
+  pdf_file_id?: string;
+  pdf_url?: string;
+  pdf_filename?: string;
+  pdf_mime?: string;
+  pdf_size?: number;
+  pdf_uploaded_at?: Date;
 }
 
 export interface UpdateResearchData {
@@ -47,18 +63,25 @@ export interface UpdateResearchData {
   image?: string;
   researcher?: string;
   research_date?: Date;
+  fiel?: string;
   meta_title?: string;
   meta_description?: string;
   keywords?: string;
   is_published?: boolean;
-  // tambahkan field ekstra jika ada di schema
+
+  // PDF (opsional)
+  pdf_file_id?: string | null;
+  pdf_url?: string | null;
+  pdf_filename?: string | null;
+  pdf_mime?: string | null;
+  pdf_size?: number | null;
+  pdf_uploaded_at?: Date | null;
 }
 
 export class ResearchRepository {
   private slugGenerator: SlugGenerator = UtilityFactory.getSlugGenerator();
   private seoGenerator: SEOMetaGenerator = UtilityFactory.getSEOGenerator();
 
-  // batasi kolom yang boleh dipakai untuk sorting supaya aman
   private readonly sortableFields = new Set<keyof Research | string>([
     "id",
     "research_title",
@@ -106,6 +129,11 @@ export class ResearchRepository {
 
   /**
    * Update Research by ID (Admin only)
+   * - Jika `research_title` berubah → regenerate slug (unique, exclude id)
+   * - Jika title/summary berubah & meta kosong → regenerate SEO meta
+   * - Untuk PDF:
+   *   - kirim seluruh kolom pdf_* untuk REPLACE PDF
+   *   - kirim pdf_* = null untuk CLEAR PDF (DB saja; file sudah dihapus di handler)
    */
   async updateById(
     id: string,
@@ -114,42 +142,35 @@ export class ResearchRepository {
     try {
       let updateData: UpdateResearchData = { ...dataResearch };
 
-      // regenerate slug bila title berubah
       if (dataResearch.research_title) {
         updateData.slug = await this.slugGenerator.generateUniqueSlug(
           dataResearch.research_title,
           "research",
-          id // ← exclude current record (string cuid)
+          id
         );
       }
 
-      // regenerate SEO meta bila title/summary berubah
       if (dataResearch.research_title || dataResearch.research_sum) {
-        const currentResearch = await prisma.research.findUnique({
-          where: { id },
-        });
-        if (currentResearch) {
-          const title =
-            dataResearch.research_title ?? currentResearch.research_title;
-          const summary =
-            dataResearch.research_sum ?? currentResearch.research_sum;
+        const current = await prisma.research.findUnique({ where: { id } });
+        if (current) {
+          const title = dataResearch.research_title ?? current.research_title;
+          const summary = dataResearch.research_sum ?? current.research_sum;
           const seoMeta = this.seoGenerator.generateSEOMeta(title, summary);
-
-          if (!dataResearch.meta_title) {
+          if (typeof dataResearch.meta_title === "undefined") {
             updateData.meta_title = seoMeta.metaTitle;
           }
-          if (!dataResearch.meta_description) {
+          if (typeof dataResearch.meta_description === "undefined") {
             updateData.meta_description = seoMeta.metaDescription;
           }
         }
       }
 
-      const updatedResearch = await prisma.research.update({
+      const updated = await prisma.research.update({
         where: { id },
         data: updateData,
       });
 
-      return updatedResearch;
+      return updated;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -167,21 +188,18 @@ export class ResearchRepository {
 
   /**
    * Delete Research by ID (Admin only)
+   * - Disarankan: handler menghapus file PDF di ImageKit jika `pdf_file_id` ada
+   *   sebelum memanggil repository.deleteById
    */
   async deleteById(id: string): Promise<Research> {
     try {
-      const deletedResearch = await prisma.research.delete({
-        where: { id },
-      });
-      return deletedResearch;
+      const deleted = await prisma.research.delete({ where: { id } });
+      return deleted;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2025") {
-          throw new Error("Research not found");
-        }
-        if (error.code === "P2003") {
+        if (error.code === "P2025") throw new Error("Research not found");
+        if (error.code === "P2003")
           throw new Error("Cannot delete Research: it has related records");
-        }
       }
       throw new Error(
         `Failed to delete Research: ${
@@ -191,9 +209,6 @@ export class ResearchRepository {
     }
   }
 
-  /**
-   * Get all Research records with pagination
-   */
   async getAll(
     paginationParams: PaginationParams = {}
   ): Promise<PaginatedResult<Research>> {
@@ -213,9 +228,7 @@ export class ResearchRepository {
         prisma.research.findMany({
           skip,
           take: limit,
-          orderBy: {
-            [sortBy]: sortOrder,
-          } as any,
+          orderBy: { [sortBy]: sortOrder } as any,
         }),
         prisma.research.count(),
       ]);
@@ -242,9 +255,6 @@ export class ResearchRepository {
     }
   }
 
-  /**
-   * Get Research by research title
-   */
   async getByResearchTitle(researchTitle: string): Promise<Research | null> {
     try {
       const research = await prisma.research.findFirst({

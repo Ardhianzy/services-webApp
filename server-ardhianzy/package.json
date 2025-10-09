@@ -6,7 +6,7 @@
     "build": "tsc",
     "start": "npm run build && pm2 start dist/index.js --name 'server-ardhianzy'",
     "prisma:generate": "prisma generate",
-    "prisma:deploy": "prisma migrate deploy"
+    "prisma:deploy": "prisma migrate deploy",
     "dev": "nodemon src/index.ts",
     "postinstall": "prisma generate"
   },
