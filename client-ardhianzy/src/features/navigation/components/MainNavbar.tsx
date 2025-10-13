@@ -1,6 +1,4 @@
 import { Link } from "react-router-dom";
-import AuthButtons from "@/features/auth/components/AuthButton";
-// NOTE: sesuaikan path UserProfile dengan punyamu kalau berbeda.
 import UserProfile from "@/features/user/components/UserProfile";
 
 type Props = {
@@ -38,7 +36,7 @@ export default function MainNavbar({ isLoggedIn = false, handleLogout }: Props) 
         {isLoggedIn ? (
           <UserProfile handleLogout={handleLogout} />
         ) : (
-          <AuthButtons />
+          null
         )}
       </div>
     </nav>

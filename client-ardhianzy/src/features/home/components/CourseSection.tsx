@@ -98,7 +98,7 @@ const CourseCard: FC<CourseItem> = ({ img, mainTitle, subTitle, date, excerpt })
         {isLong && !expanded && (
           <button
             type="button"
-            className="ml-[0.2rem] cursor-pointer border-0 bg-transparent p-0 text-[1.5rem] leading-none text-white transition-colors hover:text-[#00aaff]"
+            className="ml-[0.2rem] cursor-pointer border-0 !bg-transparent !p-0 !px-1 text-[1.5rem] leading-none text-white transition-colors hover:text-[#00aaff]"
             onClick={() => setExpanded(true)}
             aria-label="Show full title"
             title="Show full title"
@@ -128,7 +128,7 @@ const CourseCard: FC<CourseItem> = ({ img, mainTitle, subTitle, date, excerpt })
 
 const CourseSection: FC = () => {
   return (
-    <section id="course" className="relative z-0 my-12 bg-transparent px-0 py-0">
+    <section id="course" className="relative z-0 mb-50 mt-20 bg-transparent px-0 py-0">
       <div className="absolute inset-x-0 -top-12 -bottom-12 -z-10 bg-black" />
 
       <div className="course-container mx-auto max-w-[1600px] px-8 py-6">
@@ -141,7 +141,7 @@ const CourseSection: FC = () => {
           </h2>
 
           <a
-            href="#"
+            href=" https://www.youtube.com/@ardhianzy"
             className="course-more-button mt-4 inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors hover:bg-white/10 md:absolute md:right-8 md:top-1/2 md:mt-0 md:-translate-y-1/2"
             style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
           >
@@ -150,11 +150,11 @@ const CourseSection: FC = () => {
         </header>
 
         <p
-          className="mx-auto mb-8 max-w-[500px] px-4 text-center text-[1.1rem] text-white"
+          className="mx-auto mb-8 max-w-[532px] px-4 text-center text-[1.1rem] text-white"
           style={{ fontFamily: "Roboto, sans-serif" }}
         >
           Access more Philosophy101 videos. Join{" "}
-          <a href="#" className="text-[#00aaff] underline">
+          <a href=" https://www.youtube.com/@ardhianzy/membership" className="text-[#00aaff] underline">
             membership
           </a>{" "}
           today

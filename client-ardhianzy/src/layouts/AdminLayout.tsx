@@ -1,6 +1,8 @@
 import { type FC, useState } from "react";
 import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
 import AdminHeader from "@/features/admin/components/AdminHeader";
+import { useAuth } from "@/features/auth/store";
+import { ROUTES } from "@/app/routes";
 
 /** ===== SVG ICONS (dipertahankan seperti aslinya) ===== */
 const AnalyticsIcon: FC<{ isActive: boolean }> = ({ isActive }) => (
@@ -53,10 +55,14 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
   const isAnalyticsRoute = location.pathname.startsWith("/admin/analytics");
   const isArticleRoute = location.pathname.startsWith("/admin/articles");
   const isShopRoute = location.pathname.startsWith("/admin/shop");
+  const isToTRoute = location.pathname.startsWith("/admin/tot");
+  const isToTMetaRoute = location.pathname.startsWith("/admin/tot-meta");
 
   const [isAnalyticsOpen, setAnalyticsOpen] = useState<boolean>(isAnalyticsRoute);
   const [isArticleOpen, setArticleOpen] = useState<boolean>(isArticleRoute);
   const [isShopOpen, setShopOpen] = useState<boolean>(isShopRoute);
+  const [isToTOpen, setToTOpen] = useState<boolean>(isToTRoute);
+  const [isToTMetaOpen, setToTMetaOpen] = useState<boolean>(isToTMetaRoute);
 
   return (
     <aside
@@ -237,6 +243,118 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
               </div>
             )}
           </div>
+
+          {/* ToT */}
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => setToTOpen(!isToTOpen)}
+              className={[
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[20px] font-medium transition-colors duration-200",
+                isToTRoute ? "bg-[#F5F5F5] text-black" : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
+              ].join(" ")}
+            >
+              <span className="flex items-center gap-[15px]">
+                {/* pakai icon Article/Analytics reuse saja */}
+                <AnalyticsIcon isActive={isToTRoute} />
+                <span>ToT</span>
+              </span>
+              <ArrowIcon isOpen={isToTOpen} isActive={isToTRoute} />
+            </button>
+            {isToTOpen && (
+              <div className="flex flex-col pl-[25px] mt-[24px] mb-[10px]">
+                <NavLink
+                  to="/admin/tot/add"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  Add ToT
+                </NavLink>
+                <NavLink
+                  to="/admin/tot/list"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  List ToT
+                </NavLink>
+              </div>
+            )}
+          </div>
+
+          {/* ToT Meta */}
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => setToTMetaOpen(!isToTMetaOpen)}
+              className={[
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[20px] font-medium transition-colors duration-200",
+                isToTMetaRoute ? "bg-[#F5F5F5] text-black" : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
+              ].join(" ")}
+            >
+              <span className="flex items-center gap-[15px]">
+                <ArticleIcon isActive={isToTMetaRoute} />
+                <span>ToT Meta</span>
+              </span>
+              <ArrowIcon isOpen={isToTMetaOpen} isActive={isToTMetaRoute} />
+            </button>
+            {isToTMetaOpen && (
+              <div className="flex flex-col pl-[25px] mt-[24px] mb-[10px]">
+                <NavLink
+                  to="/admin/tot-meta/add"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  Add ToT Meta
+                </NavLink>
+                <NavLink
+                  to="/admin/tot-meta/list"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  List ToT Meta
+                </NavLink>
+              </div>
+            )}
+          </div>
+
+          {/* Content (Research / Shop / Collected) */}
+          <div className="flex flex-col">
+            <NavLink
+              to="/admin/content"
+              className={({ isActive }) =>
+                [
+                  "rounded-[16px] px-[20px] py-[15px] text-[20px] font-medium transition-colors duration-200",
+                  isActive ? "bg-[#F5F5F5] text-black" : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
+                ].join(" ")
+              }
+            >
+              Content
+            </NavLink>
+          </div>
         </nav>
       </div>
 
@@ -256,13 +374,13 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
 };
 
 /** ===== LAYOUT ===== */
-const AdminLayout: FC<{ setIsAdminLoggedIn: (v: boolean) => void }> = ({ setIsAdminLoggedIn }) => {
+const AdminLayout: FC = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    setIsAdminLoggedIn(false);
-    localStorage.removeItem("isAdminLoggedIn");
-    navigate("/admin/login");
+    logout();            // clear token in-memory + (opsional) server logout
+    navigate(ROUTES.ADMIN.LOGIN);
   };
 
   return (

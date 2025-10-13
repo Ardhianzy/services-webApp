@@ -1008,15 +1008,15 @@ export const articles: ArticleMeta[] = [
   {
     id: "a-rsc-001",
     slug: "field-notes-on-method",
-    title: "Field Notes on Method",
+    title: "LOREM IPSUM DOLOR SIT",
     section: "research",
     category: "Methods",
-    excerpt: "Catatan metodologis ringan untuk menjembatani praktik dan teori.",
+    excerpt: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     author: { name: "Research Unit" },
     publishedAt: "2025-08-15",
     readingTime: 8,
-    cover: "/assets/popCulture/research-method.jpg",
-    image: "/assets/popCulture/research-method.jpg",
+    cover: "/assets/research/Husk.jpg",
+    image: "/assets/research/Husk.jpg",
     tags: ["research", "method"]
   },
   {
@@ -1025,7 +1025,7 @@ export const articles: ArticleMeta[] = [
     title: "LOREM IPSUM DOLOR SIT",
     section: "research",
     category: "Notes",
-    excerpt: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam...",
+    excerpt: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     author: { name: "Author Name" },
     publishedAt: "2025-05-22",
     readingTime: 6,

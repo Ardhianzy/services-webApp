@@ -74,7 +74,7 @@ const AdminHeader: FC = () => {
             className="h-[28px] w-[28px] rounded-full bg-[#D9D9D9]"
           />
           <span className="text-white text-[16px] leading-[19px] font-normal">
-            Admin suaimin
+            Admin Gacor
           </span>
           <ArrowDownIcon />
         </div>

@@ -13,11 +13,9 @@ export const ROUTES = {
   GUIDE: "/guide/:guideId",
   PROFILE: "/profile",
   READ_HISTORY: "/read-history",
-  LOGIN: "/login",
-  SIGNUP: "/signup",
 
   ADMIN: {
-    LOGIN: "/admin/login",
+    LOGIN: "/admin-ardhianzy/login",
     ROOT: "/admin",
     DASHBOARD: "/admin/dashboard",
     ARTICLES_LIST: "/admin/articles/list",
@@ -25,6 +23,15 @@ export const ROUTES = {
     SHOP_LIST: "/admin/shop/list",
     SHOP_ADD: "/admin/shop/add",
     ANALYTICS: "/admin/analytics",
+
+    // ToT
+    TOT_LIST: "/admin/tot/list",
+    TOT_ADD: "/admin/tot/add",
+    // ToT Meta
+    TOT_META_LIST: "/admin/tot-meta/list",
+    TOT_META_ADD: "/admin/tot-meta/add",
+
+    CONTENT: "/admin/content",
   },
 
   LEGACY: {

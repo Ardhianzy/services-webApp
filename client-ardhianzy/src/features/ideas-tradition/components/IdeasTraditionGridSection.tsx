@@ -47,10 +47,10 @@ const FEATURED: IdeaItem = {
   link: "#",
 };
 
-const COLS_DESKTOP = "295px 114px 295px 400px";
-const ROW_HEIGHT = "320px";
-const GAP_REM = 1; // rem
-const HEADER_MAX_WIDTH_DESKTOP = `calc(295px + 114px + 295px + 400px + ${GAP_REM * 3}rem)`;
+const COLS_DESKTOP = "315px 134px 315px 420px";
+const ROW_HEIGHT = "340px";
+const GAP_REM = 1.5;
+const HEADER_MAX_WIDTH_DESKTOP = `calc(315px + 134px + 315px + 420px + ${GAP_REM * 3}rem)`;
 
 const WIDE_POS: Record<number, React.CSSProperties> = {
   0: { gridColumn: "1 / span 2", gridRow: "1" },
@@ -77,9 +77,9 @@ const IdeasTraditionGridSection: FC = () => {
   const featuredImgHeight = isNarrow ? "350px" : `calc(${ROW_HEIGHT} * 2 + ${GAP_REM}rem)`;
 
   return (
-    <section id="ideas" aria-labelledby="ideas-title" className="relative">
+    <section id="ideas" aria-labelledby="ideas-title" className="relative mt-50">
       <div
-        className="relative mx-auto flex max-w-[1400px] flex-col items-center px-8 py-6"
+        className="relative mx-auto flex max-w-[1560px] flex-col items-center px-8 py-6"
         style={{ zIndex: 1 }}
       >
         <div
@@ -100,7 +100,7 @@ const IdeasTraditionGridSection: FC = () => {
           </h2>
 
           <a
-            href="#"
+            href="/IdeasTradition"
             className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
             style={{
               fontFamily: "'Bebas Neue', sans-serif",

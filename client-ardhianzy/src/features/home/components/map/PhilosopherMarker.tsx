@@ -15,7 +15,6 @@ let stylesInjected = false;
 function ensureMarkerStyles() {
   if (stylesInjected || typeof document === "undefined") return;
   const css = `
-    /* ====== Marker kecil (diperkecil) ====== */
     .leaflet-marker-icon.philo-marker-wrap { z-index: 700 !important; }
     .philo-marker-wrap { pointer-events: auto; }
 

@@ -1,6 +1,6 @@
 // src/features/research/components/ResearchHighlightSection.tsx
 import { useMemo, useState, useEffect, type CSSProperties } from "react";
-import { articles as allArticles } from "@/data/articles";
+import { useHybridArticles } from "@/features/articles/hooks";
 
 export type ResearchHighlightArticle = {
   id: number | string;
@@ -22,9 +22,11 @@ export default function ResearchHighlightSection({
   headingBackgroundUrl = "/assets/Group 4981.svg",
   initialIndex = 2,
 }: Props) {
+  const { articles: hybrid } = useHybridArticles();
+
   const storeItems = useMemo<ResearchHighlightArticle[]>(
     () =>
-      allArticles
+      (hybrid as any[])
         .filter((a) => a.section === "research" && a.category === "Highlight")
         .map((a) => ({
           id: a.id,
@@ -32,7 +34,7 @@ export default function ResearchHighlightSection({
           description: a.excerpt,
           image: a.image ?? a.cover,
         })),
-    []
+    [hybrid]
   );
 
   const items = articles && articles.length > 0 ? articles : storeItems;
@@ -56,7 +58,7 @@ export default function ResearchHighlightSection({
   return (
     <>
       <section
-        className="relative flex h-[60vh] w-screen items-center justify-center bg-center bg-cover"
+        className="relative flex h-[60vh] w-screen items-center justify-center bg-cover bg-center"
         style={{
           backgroundImage: `url('${headingBackgroundUrl}')`,
           left: "50%",
@@ -72,10 +74,7 @@ export default function ResearchHighlightSection({
               "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)",
           }}
         />
-        <h1
-          className="relative z-[2] text-white uppercase text-center"
-          style={{ fontFamily: '"Bebas Neue", cursive', fontSize: "5rem" }}
-        >
+        <h1 className="relative z-[2] font-bebas uppercase text-white text-center !text-[5rem]">
           {headingTitle}
         </h1>
       </section>
@@ -105,7 +104,7 @@ export default function ResearchHighlightSection({
             type="button"
             aria-label="Previous article"
             onClick={goPrev}
-            className="absolute left-10 z-10 flex h-[60px] w-[60px] items-center justify-center rounded-full border-2 border-white/30 bg-white/10 text-white text-[1.5rem] transition-all hover:scale-110 hover:bg-white/20 max-[768px]:left-2 max-[768px]:h-[45px] max-[768px]:w-[45px] max-[768px]:text-[1.2rem]"
+            className="absolute left-10 z-10 flex h-[60px] w-[60px] items-center justify-center !rounded-full border-2 border-white/30 bg-white/10 text-white text-[1.5rem] transition-all !hover:scale-110 !hover:bg-white/20 max-[768px]:left-2 max-[768px]:h-[45px] max-[768px]:w-[45px] max-[768px]:text-[1.2rem]"
           >
             &#8249;
           </button>
@@ -121,11 +120,12 @@ export default function ResearchHighlightSection({
                   <article
                     key={article.id}
                     className={[
-                      "relative h-[417px] w-[1029px] shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
-                      "max-[1200px]:h-[350px] max-[1200px]:w-[90vw]",
-                      "max-[768px]:h-[300px] max-[768px]:w-[95vw]",
-                      isActive ? "opacity-100 scale-100" : "opacity-50 scale-95",
-                      "hover:scale-[1.02] hover:opacity-100 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
+                      "relative shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
+                      "!w-[1029px] !h-[417px]",
+                      "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
+                      "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
+                      isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
+                      "hover:!scale-[1.02] hover:!opacity-100 hover:!shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
                     ].join(" ")}
                   >
                     <img
@@ -142,27 +142,10 @@ export default function ResearchHighlightSection({
                           "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)",
                       }}
                     >
-                      <h3
-                        className="mb-[10px] uppercase"
-                        style={{
-                          fontFamily: '"Bebas Neue", cursive',
-                          fontSize: "3.5rem",
-                          lineHeight: 1,
-                          letterSpacing: "2px",
-                          maxWidth: 500,
-                        }}
-                      >
+                      <h3 className="font-bebas uppercase !text-[3.5rem] leading-[1] tracking-[2px] max-w-[500px] mb-[10px]">
                         {article.title}
                       </h3>
-                      <p
-                        className="text-left opacity-90"
-                        style={{
-                          fontFamily: "Arial, sans-serif",
-                          fontSize: "1rem",
-                          lineHeight: 1.6,
-                          maxWidth: 450,
-                        }}
-                      >
+                      <p className="font-roboto text-left !text-[1rem] leading-[1.6] opacity-90 max-w-[450px]">
                         {article.description}
                       </p>
                     </div>
@@ -176,7 +159,7 @@ export default function ResearchHighlightSection({
             type="button"
             aria-label="Next article"
             onClick={goNext}
-            className="absolute right-10 z-10 flex h-[60px] w-[60px] items-center justify-center rounded-full border-2 border-white/30 bg-white/10 text-white text-[1.5rem] transition-all hover:scale-110 hover:bg-white/20 max-[768px]:right-2 max-[768px]:h-[45px] max-[768px]:w-[45px] max-[768px]:text-[1.2rem]"
+            className="absolute right-10 z-10 flex h-[60px] w-[60px] items-center justify-center !rounded-full border-2 border-white/30 bg-white/10 text-white text-[1.5rem] transition-all !hover:scale-110 !hover:bg-white/20 max-[768px]:right-2 max-[768px]:h-[45px] max-[768px]:w-[45px] max-[768px]:text-[1.2rem]"
           >
             &#8250;
           </button>
@@ -185,14 +168,11 @@ export default function ResearchHighlightSection({
 
       <style>{`
         .rs-article-slider {
-          /* default (desktop) */
           --card-w: 1029px;
           --card-gap: 30px;
-
-          /* geser sehingga kartu aktif selalu center */
           transform: translateX(
             calc(50% - (var(--card-w) / 2) - (var(--current-index) * (var(--card-w) + var(--card-gap))))
-          );
+          ) !important;
         }
         @media (max-width: 1200px) {
           .rs-article-slider {

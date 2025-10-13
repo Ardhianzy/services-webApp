@@ -13,14 +13,14 @@ const DARK_GRADIENT =
 const PRETITLE_STYLE: React.CSSProperties = {
   fontFamily: "'Estonia', serif",
   fontWeight: 400,
-  fontSize: "clamp(1.5rem, 3.5vw, 3.5rem)",
+  fontSize: "3.5rem",
   color: "rgba(255,255,255,0.9)",
   letterSpacing: "2px",
 };
 
 const TITLE_STYLE: React.CSSProperties = {
   fontFamily: "'Bebas Neue', cursive",
-  fontSize: "clamp(2rem, 6vw, 5rem)",
+  fontSize: "5rem",
   lineHeight: 0.9,
   color: "#fff",
   letterSpacing: "3px",
@@ -30,7 +30,7 @@ const TITLE_STYLE: React.CSSProperties = {
 const META_STYLE: React.CSSProperties = {
   fontFamily: "'Roboto Condensed', sans-serif",
   fontWeight: 300,
-  fontSize: "clamp(1rem, 2.5vw, 1.5rem)",
+  fontSize: "1.5rem",
   color: "rgba(255,255,255,0.85)",
   letterSpacing: "1px",
 };
@@ -44,7 +44,7 @@ const HighlightSection: FC = () => {
         "relative w-full overflow-hidden",
         "flex items-center",
         "h-[600px] max-[1024px]:h-[500px] max-[768px]:h-[400px] max-[480px]:h-[350px]",
-        "bg-black bg-cover bg-center bg-blend-luminosity",
+        "bg-cover bg-center bg-blend-luminosity",
       ].join(" ")}
       style={{ backgroundImage: BG_IMAGE, backgroundColor: BG_BASE }}
     >
@@ -58,36 +58,64 @@ const HighlightSection: FC = () => {
           WebkitMaskImage: MASK_GRADIENT,
         }}
       />
-
-      <div
-        aria-hidden
-        className="absolute inset-y-0 left-0 z-[1] w-1/2"
-        style={{ background: DARK_GRADIENT }}
-      />
+      <div aria-hidden className="absolute inset-y-0 left-0 z-[1] w-1/2" style={{ background: DARK_GRADIENT }} />
 
       <div
         className={[
           "relative z-[2] text-white",
-          "ml-[50%] max-w-[60%]",
-          "pl-[50px]",
-          "max-[1440px]:pl-[200px]",
-          "max-[1024px]:pl-[150px]",
-          "max-[768px]:pl-[100px]",
-          "max-[480px]:pl-[60px]",
+          "!max-w-[60%] !pl-[50px]",
+          "max-[1440px]:!pl-[200px]",
+          "max-[1024px]:!pl-[150px]",
+          "max-[768px]:!pl-[100px]", 
+          "max-[480px]:!pl-[60px]",  
+          "!text-left",
+          "!translate-y-[14px]",
         ].join(" ")}
       >
         <div>
-          <div className="mb-[-10px]" style={PRETITLE_STYLE}>
+          <div className="mb-[-10px] hl-pretitle !text-left" style={PRETITLE_STYLE}>
             Reading Session
           </div>
 
-          <h2 id="highlight-title" className="my-[10px] mb-[20px] uppercase" style={TITLE_STYLE}>
+          <h2
+            id="highlight-title"
+            className="my-[10px] mb-[20px] hl-title !text-left"
+            style={TITLE_STYLE}
+          >
             BEYOND GOOD &amp; EVIL
           </h2>
 
-          <div style={META_STYLE}>Friday, May 16 at 8:00 PM</div>
+          <div className="hl-date !text-left" style={META_STYLE}>
+            Friday, May 16 at 8:00 PM
+          </div>
         </div>
       </div>
+
+      <style>{`
+        /* ≤1440px */
+        @media (max-width: 1440px) {
+          .hl-pretitle { font-size: 3rem; }
+          .hl-title { font-size: 4.5rem; }
+        }
+        /* ≤1024px */
+        @media (max-width: 1024px) {
+          .hl-pretitle { font-size: 2.5rem; }
+          .hl-title { font-size: 3.5rem; }
+          .hl-date { font-size: 1.3rem; }
+        }
+        /* ≤768px */
+        @media (max-width: 768px) {
+          .hl-pretitle { font-size: 2rem; }
+          .hl-title { font-size: 2.5rem; }
+          .hl-date { font-size: 1.1rem; }
+        }
+        /* ≤480px */
+        @media (max-width: 480px) {
+          .hl-pretitle { font-size: 1.5rem; }
+          .hl-title { font-size: 2rem; letter-spacing: 1px; }
+          .hl-date { font-size: 1rem; }
+        }
+      `}</style>
     </section>
   );
 };

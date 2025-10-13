@@ -71,7 +71,7 @@ const MonoCard: FC<MonoItem> = ({ img, title, excerpt, author }) => (
     </h3>
 
     <p
-      className="mx-auto mb-2 px-2 text-[0.9rem] leading-[1.4] text-white"
+      className="mx-auto mb-[14px] px-2 text-[0.9rem] leading-[1.4] text-white"
       style={{ opacity: 0.85 }}
     >
       {excerpt}
@@ -139,13 +139,13 @@ const FeaturedMonoCard: FC<FeaturedItem> = ({
 
 const MonologuesSection: FC = () => {
   return (
-    <section id="monologues" aria-labelledby="mono_heading" className="relative">
+    <section id="monologues" aria-labelledby="mono_heading" className="relative mb-50">
       <div
         aria-hidden
         className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 bg-black"
       />
 
-      <div className="relative z-[1] mx-auto max-w-[1400px] px-16 py-8 max-[768px]:px-4">
+      <div className="relative z-[1] mx-auto max-w-[1560px] px-16 py-8 max-[768px]:px-4">
         <div className="mb-10 flex items-center justify-between">
           <h2
             id="mono_heading"
@@ -156,7 +156,7 @@ const MonologuesSection: FC = () => {
           </h2>
 
           <a
-            href="#"
+            href="/monologues"
             className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
             style={{
               fontFamily: "'Bebas Neue', sans-serif",
@@ -168,8 +168,7 @@ const MonologuesSection: FC = () => {
           </a>
         </div>
 
-        <div className="grid grid-cols-4 justify-center gap-8 max-[1200px]:grid-cols-2 max-[768px]:grid-cols-1">
-          {/* 3 kartu biasa */}
+        <div className="grid grid-cols-4 justify-center h-[542px] gap-8 max-[1200px]:grid-cols-2 max-[768px]:grid-cols-1">
           {MONO_ITEMS.map((item, i) => (
             <MonoCard key={i} {...item} />
           ))}
