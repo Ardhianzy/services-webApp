@@ -34,6 +34,8 @@ services:
   client-ardhianzy:
     build:
       context: ./client-ardhianzy
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
       dockerfile: Dockerfile
     container_name: sx-frontend
     restart: unless-stopped
