@@ -1,8 +1,9 @@
 // src/features/shop/components/ShopListingSection.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ProductDetailPopup from "@/features/shop/components/ProductDetailPopup";
-import { products } from "@/data/products";
 import type { Product } from "@/types/shop";
+import type { ShopItem } from "@/features/shop/types";
+import { listShop } from "@/features/shop/api";
 
 type FilterState = {
   product: string;
@@ -79,7 +80,23 @@ function FilterSidebar({ products, selected, onChange }: SidebarProps) {
 }
 
 export default function ShopListingSection() {
-  const data = products;
+  const [data, setData] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const items = await listShop();
+        const mapped = items.map(mapShopToProduct);
+        setData(mapped);
+      } catch (e: any) {
+        setError(e?.message || "Failed to load shop items");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const [filters, setFilters] = useState<FilterState>({ product: "All", theme: "All" });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -91,7 +108,8 @@ export default function ShopListingSection() {
   });
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-hidden mt-5">
+      {error && <div className="text-red-400 px-8">{error}</div>}
       <div
         aria-hidden
         className="pointer-events-none absolute bottom-0 left-0 z-0"
@@ -114,10 +132,10 @@ export default function ShopListingSection() {
 
         <div className="w-full">
           <div
-            className="grid gap-y-10 gap-x-6"
+            className="grid gap-y-10 gap-x-6 my-8"
             style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}
           >
-            {filtered.map((p) => (
+            {(loading ? [] : filtered).map((p) => (
               <button
                 key={p.id}
                 type="button"
@@ -169,4 +187,24 @@ export default function ShopListingSection() {
       )}
     </div>
   );
+}
+
+function mapShopToProduct(item: ShopItem): Product {
+  return {
+    id: item.id ?? Math.random().toString(36).slice(2),
+    title: item.title,
+    category: item.category ?? "Merchandise",
+    theme: item.condition ?? item.category ?? "General",
+    price: formatIDR(item.price),
+    imageUrl: item.image || "/assets/product-images/placeholder.png",
+    galleryImages: item.image ? [item.image] : [],
+    description: item.description,
+    reviews: { rating: 5.0, count: 0 },
+  };
+}
+function formatIDR(n?: number) {
+  if (typeof n !== "number") return "—";
+  try {
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
+  } catch { return `Rp ${n}`; }
 }

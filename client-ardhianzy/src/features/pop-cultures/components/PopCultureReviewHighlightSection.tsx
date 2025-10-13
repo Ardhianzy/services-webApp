@@ -1,6 +1,205 @@
-// src/features/pop-culture/components/PopCultureReviewHighlightSection.tsx
-import { useMemo, useState, type CSSProperties } from "react";
-import { articles as dataArticles } from "@/data/articles";
+// // src/features/pop-cultures/components/PopCultureReviewHighlightSection.tsx
+// import { useMemo, useState, useEffect, type CSSProperties } from "react";
+// import { articles as dataArticles } from "@/data/articles";
+
+// type ArticleCard = {
+//   id: number | string;
+//   title: string;
+//   description: string;
+//   image: string;
+// };
+
+// type Props = {
+//   articles?: ArticleCard[];
+//   title?: string;
+//   heroImageUrl?: string;
+//   initialIndex?: number;
+// };
+
+// export default function PopCultureReviewHighlightSection({
+//   articles,
+//   title = "POP-CULTURE REVIEW",
+//   heroImageUrl = "/assets/popCulture/dadasdfe.png",
+//   initialIndex = 2,
+// }: Props) {
+//   const itemsFromStore: ArticleCard[] = useMemo(
+//     () =>
+//       dataArticles
+//         .filter((a) => a.section === "pop-cultures" && a.category === "Highlight")
+//         .map((a) => ({
+//           id: a.id,
+//           title: a.title,
+//           description: a.excerpt,
+//           image: a.image ?? a.cover,
+//         })),
+//     []
+//   );
+
+//   const items = (articles?.length ? articles : itemsFromStore) as ArticleCard[];
+//   if (!items.length) return null;
+
+//   const [currentIndex, setCurrentIndex] = useState(
+//     Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0))
+//   );
+//   useEffect(() => {
+//     setCurrentIndex((prev) => (items.length ? Math.min(prev, items.length - 1) : 0));
+//   }, [items.length]);
+
+//   const sliderVars: CSSProperties = { ["--current-index" as any]: currentIndex };
+
+//   const goPrev = () => setCurrentIndex((prev) => (prev === 0 ? items.length - 1 : prev - 1));
+//   const goNext = () =>
+//     setCurrentIndex((prev) => (prev === items.length - 1 ? 0 : prev + 1));
+
+//   return (
+//     <div className="pc-review-highlight-wrapper">
+//       <style>{`
+//         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+//         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap');
+
+//         .pc__bebas { font-family: 'Bebas Neue', cursive !important; }
+//         .pc__roboto { font-family: 'Roboto', sans-serif !important; }
+
+//         .pc__heroTitle { font-size: 5rem !important; }
+
+//         .pcr__nav{
+//           position:absolute !important; top:50% !important; transform:translateY(-50%) !important; z-index:10 !important;
+//           display:flex !important; align-items:center !important; justify-content:center !important;
+//           width:60px !important; height:60px !important; border-radius:9999px !important;
+//           border:2px solid rgba(255,255,255,0.3) !important; background:rgba(255,255,255,0.1) !important;
+//           color:#ffffff !important; font-size:1.5rem !important; line-height:1 !important;
+//           transition:transform .2s ease, background-color .2s ease !important;
+//         }
+//         .pcr__nav:hover{ transform:translateY(-50%) scale(1.10) !important; background:rgba(255,255,255,0.2) !important; }
+//         .pcr__nav--left{ left:40px !important; }
+//         .pcr__nav--right{ right:40px !important; }
+//         @media (max-width: 768px){
+//           .pcr__nav{ width:45px !important; height:45px !important; font-size:1.2rem !important; }
+//           .pcr__nav--left{ left:0.5rem !important; }
+//           .pcr__nav--right{ right:0.5rem !important; }
+//         }
+
+//         .pc-review-slider {
+//           --card-w: 1029px;
+//           --card-gap: 30px;
+//           transform: translateX(
+//             calc(50% - (var(--card-w) / 2) - (var(--current-index) * (var(--card-w) + var(--card-gap))))
+//           ) !important;
+//         }
+
+//         @media (max-width: 1200px) {
+//           .pc-review-slider { --card-w: 90vw; --card-gap: 20px; }
+//         }
+//         @media (max-width: 768px) {
+//           .pc-review-slider { --card-w: 95vw; --card-gap: 15px; }
+//         }
+//       `}</style>
+
+//       <section
+//         aria-label="Pop-culture highlight hero"
+//         className="relative w-screen h-[60vh] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-black bg-cover bg-center flex items-center justify-center"
+//         style={{ backgroundImage: `url('${heroImageUrl}')`, backgroundBlendMode: "luminosity" }}
+//       >
+//         <div
+//           aria-hidden
+//           className="absolute inset-0 z-[1]"
+//           style={{
+//             background:
+//               "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 20%, transparent 100%)",
+//           }}
+//         />
+//         <h1 className="pc__bebas pc__heroTitle relative z-[2] uppercase text-center text-white">
+//           {title}
+//         </h1>
+//       </section>
+
+//       <section className="relative w-full py-5 bg-black overflow-hidden mt-38">
+//         <div
+//           aria-hidden
+//           className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]"
+//           style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to right, #000 30%, transparent 100%)" }}
+//         />
+//         <div
+//           aria-hidden
+//           className="pointer-events-none absolute right-0 top-0 bottom-0 z-[3]"
+//           style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to left, #000 30%, transparent 100%)" }}
+//         />
+
+//         <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
+//           <button
+//             type="button"
+//             aria-label="Previous article"
+//             onClick={goPrev}
+//             className="pcr__nav pcr__nav--left"
+//           >
+//             &#8249;
+//           </button>
+
+//           <div className="relative h-[417px] w-full overflow-visible">
+//             <div
+//               className="pc-review-slider flex h-full items-center gap-[30px] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+//               style={sliderVars}
+//             >
+//               {items.map((article, idx) => {
+//                 const isActive = idx === currentIndex;
+//                 return (
+//                   <article
+//                     key={article.id}
+//                     className={[
+//                       "relative shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
+//                       "!w-[1029px] !h-[417px]",
+//                       "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
+//                       "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
+//                       isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
+//                       "hover:!scale-[1.02] hover:!opacity-100 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
+//                     ].join(" ")}
+//                     onClick={() => setCurrentIndex(idx)}
+//                   >
+//                     <img
+//                       src={article.image}
+//                       alt={article.title}
+//                       loading="lazy"
+//                       className="h-full w-full object-cover transition-[filter] duration-300 filter grayscale hover:grayscale-0"
+//                     />
+
+//                     <div
+//                       className="absolute inset-0 flex flex-col items-start justify-start p-[30px] pr-[40px] text-white"
+//                       style={{
+//                         background:
+//                           "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)",
+//                       }}
+//                     >
+//                       <h3 className="pc__bebas uppercase !text-[3.5rem] !font-normal !leading-[1] tracking-[2px] max-w-[500px] mb-[10px]">
+//                         {article.title}
+//                       </h3>
+//                       <p className="pc__roboto text-left !text-[1rem] leading-[1.6] opacity-90 max-w-[450px]">
+//                         {article.description}
+//                       </p>
+//                     </div>
+//                   </article>
+//                 );
+//               })}
+//             </div>
+//           </div>
+
+//           <button
+//             type="button"
+//             aria-label="Next article"
+//             onClick={goNext}
+//             className="pcr__nav pcr__nav--right"
+//           >
+//             &#8250;
+//           </button>
+//         </div>
+//       </section>
+//     </div>
+//   );
+// }
+
+
+// src/features/pop-cultures/components/PopCultureReviewHighlightSection.tsx
+import { useMemo, useState, useEffect, type CSSProperties } from "react";
+import { useHybridArticles } from "@/features/articles/hooks";
 
 type ArticleCard = {
   id: number | string;
@@ -13,19 +212,20 @@ type Props = {
   articles?: ArticleCard[];
   title?: string;
   heroImageUrl?: string;
+  initialIndex?: number;
 };
-
-const CARD_W = 1029;
-const CARD_H = 417;
 
 export default function PopCultureReviewHighlightSection({
   articles,
   title = "POP-CULTURE REVIEW",
-  heroImageUrl = "/assets/PopCulture/dadasdfe.png",
+  heroImageUrl = "/assets/popCulture/dadasdfe.png",
+  initialIndex = 2,
 }: Props) {
-  const itemsFromCenter: ArticleCard[] = useMemo(
+  const { articles: hybrid } = useHybridArticles();
+
+  const itemsFromStore: ArticleCard[] = useMemo(
     () =>
-      dataArticles
+      (hybrid as any[])
         .filter((a) => a.section === "pop-cultures" && a.category === "Highlight")
         .map((a) => ({
           id: a.id,
@@ -33,23 +233,69 @@ export default function PopCultureReviewHighlightSection({
           description: a.excerpt,
           image: a.image ?? a.cover,
         })),
-    []
+    [hybrid]
   );
 
-  const source: ArticleCard[] = (articles?.length ? articles : itemsFromCenter) as ArticleCard[];
-  if (!source.length) return null;
+  const items = (articles?.length ? articles : itemsFromStore) as ArticleCard[];
+  if (!items.length) return null;
 
-  const initialIndex = Math.min(2, Math.max(0, source.length - 1));
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const cssVar: CSSProperties = { ["--current-index" as any]: currentIndex };
+  const [currentIndex, setCurrentIndex] = useState(
+    Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0))
+  );
+  useEffect(() => {
+    setCurrentIndex((prev) => (items.length ? Math.min(prev, items.length - 1) : 0));
+  }, [items.length]);
 
-  const handlePrev = () =>
-    setCurrentIndex((prev) => (prev === 0 ? source.length - 1 : prev - 1));
-  const handleNext = () =>
-    setCurrentIndex((prev) => (prev === source.length - 1 ? 0 : prev + 1));
+  const sliderVars: CSSProperties = { ["--current-index" as any]: currentIndex };
+
+  const goPrev = () => setCurrentIndex((prev) => (prev === 0 ? items.length - 1 : prev - 1));
+  const goNext = () =>
+    setCurrentIndex((prev) => (prev === items.length - 1 ? 0 : prev + 1));
 
   return (
     <div className="pc-review-highlight-wrapper">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap');
+
+        .pc__bebas { font-family: 'Bebas Neue', cursive !important; }
+        .pc__roboto { font-family: 'Roboto', sans-serif !important; }
+
+        .pc__heroTitle { font-size: 5rem !important; }
+
+        .pcr__nav{
+          position:absolute !important; top:50% !important; transform:translateY(-50%) !important; z-index:10 !important;
+          display:flex !important; align-items:center !important; justify-content:center !important;
+          width:60px !important; height:60px !important; border-radius:9999px !important;
+          border:2px solid rgba(255,255,255,0.3) !important; background:rgba(255,255,255,0.1) !important;
+          color:#ffffff !important; font-size:1.5rem !important; line-height:1 !important;
+          transition:transform .2s ease, background-color .2s ease !important;
+        }
+        .pcr__nav:hover{ transform:translateY(-50%) scale(1.10) !important; background:rgba(255,255,255,0.2) !important; }
+        .pcr__nav--left{ left:40px !important; }
+        .pcr__nav--right{ right:40px !important; }
+        @media (max-width: 768px){
+          .pcr__nav{ width:45px !important; height:45px !important; font-size:1.2rem !important; }
+          .pcr__nav--left{ left:0.5rem !important; }
+          .pcr__nav--right{ right:0.5rem !important; }
+        }
+
+        .pc-review-slider {
+          --card-w: 1029px;
+          --card-gap: 30px;
+          transform: translateX(
+            calc(50% - (var(--card-w) / 2) - (var(--current-index) * (var(--card-w) + var(--card-gap))))
+          ) !important;
+        }
+
+        @media (max-width: 1200px) {
+          .pc-review-slider { --card-w: 90vw; --card-gap: 20px; }
+        }
+        @media (max-width: 768px) {
+          .pc-review-slider { --card-w: 95vw; --card-gap: 15px; }
+        }
+      `}</style>
+
       <section
         aria-label="Pop-culture highlight hero"
         className="relative w-screen h-[60vh] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-black bg-cover bg-center flex items-center justify-center"
@@ -60,96 +306,59 @@ export default function PopCultureReviewHighlightSection({
           className="absolute inset-0 z-[1]"
           style={{
             background:
-              "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)",
+              "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 20%, transparent 100%)",
           }}
         />
-        <h1
-          className="relative z-[2] uppercase text-center"
-          style={{ fontFamily: '"Bebas Neue", cursive', fontSize: "5rem", color: "#fff" }}
-        >
+        <h1 className="pc__bebas pc__heroTitle relative z-[2] uppercase text-center text-white">
           {title}
         </h1>
       </section>
 
-      <section className="relative w-full py-5 bg-black overflow-hidden">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 z-[3]"
-          style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to right, #000 30%, transparent 100%)" }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 z-[3]"
-          style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to left, #000 30%, transparent 100%)" }}
-        />
+      <section className="relative w-full py-5 bg-black overflow-hidden mt-38">
+        <div aria-hidden className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]" style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to right, #000 30%, transparent 100%)" }} />
+        <div aria-hidden className="pointer-events-none absolute right-0 top-0 bottom-0 z-[3]" style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to left, #000 30%, transparent 100%)" }} />
 
-        <div className="relative mx-auto flex items-center justify-center w-full">
-          <button
-            type="button"
-            aria-label="Previous article"
-            onClick={handlePrev}
-            className="absolute top-1/2 -translate-y-1/2 left-10 z-10 w-[50px] h-[50px] rounded-full border border-white/20 bg-black/40 text-white text-[2.2rem] leading-[0] pb-[4px] flex items-center justify-center transition hover:bg-black/70 hover:scale-105"
-          >
+        <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
+          <button type="button" aria-label="Previous article" onClick={goPrev} className="pcr__nav pcr__nav--left">
             &#8249;
           </button>
 
-          <div className="relative w-full h-[417px] overflow-visible">
-            <div
-              className="pc-review-slider relative flex h-full items-center gap-[30px] transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]"
-              style={cssVar}
-            >
-              {source.map((a, idx) => {
+          <div className="relative h-[417px] w-full overflow-visible">
+            <div className="pc-review-slider flex h-full items-center gap-[30px] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]" style={sliderVars as any}>
+              {items.map((article, idx) => {
                 const isActive = idx === currentIndex;
                 return (
                   <article
-                    key={a.id}
-                    className="pc-article-card relative overflow-hidden cursor-pointer bg-[#111] transition-all duration-300 will-change-transform"
+                    key={article.id}
+                    className={[
+                      "relative shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
+                      "!w-[1029px] !h-[417px]",
+                      "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
+                      "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
+                      isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
+                      "hover:!scale-[1.02] hover:!opacity-100 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
+                    ].join(" ")}
                     onClick={() => setCurrentIndex(idx)}
-                    style={{
-                      width: `${CARD_W}px`,
-                      height: `${CARD_H}px`,
-                      transform: isActive ? "scale(1)" : "scale(0.85)",
-                      opacity: isActive ? 1 : 0.5,
-                    }}
                   >
                     <img
-                      src={a.image}
-                      alt={a.title}
+                      src={article.image}
+                      alt={article.title}
                       loading="lazy"
-                      className="w-full h-full object-cover transition"
-                      style={{ filter: "grayscale(100%)" }}
+                      className="h-full w-full object-cover transition-[filter] duration-300 filter grayscale hover:grayscale-0"
                     />
+
                     <div
-                      className="absolute inset-0 text-white flex flex-col justify-start items-start"
+                      className="absolute inset-0 flex flex-col items-start justify-start p-[30px] pr-[40px] text-white"
                       style={{
                         background:
                           "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)",
-                        padding: "30px 40px",
                       }}
                     >
-                      <h3
-                        className="uppercase mb-[10px] tracking-[2px]"
-                        style={{
-                          fontFamily: '"Bebas Neue", cursive',
-                          fontWeight: 400,
-                          fontSize: "3.5rem",
-                          lineHeight: 1,
-                          maxWidth: 500,
-                        }}
-                      >
-                        {a.title}
+                      <h3 className="pc__bebas uppercase !text-[3.5rem] !font-normal !leading-[1] tracking-[2px] max-w-[500px] mb-[10px]">
+                        {article.title}
                       </h3>
-                      <p
-                        className="text-left opacity-90"
-                        style={{
-                          fontFamily: "Arial, sans-serif",
-                          fontWeight: 400,
-                          fontSize: "1rem",
-                          lineHeight: 1.6,
-                          maxWidth: 450,
-                        }}
-                      >
-                        {a.description}
+                      <p className="pc__roboto text-left !text-[1rem] leading-[1.6] opacity-90 max-w-[450px]">
+                        {article.description}
                       </p>
                     </div>
                   </article>
@@ -158,64 +367,11 @@ export default function PopCultureReviewHighlightSection({
             </div>
           </div>
 
-          <button
-            type="button"
-            aria-label="Next article"
-            onClick={handleNext}
-            className="absolute top-1/2 -translate-y-1/2 right-10 z-10 w-[50px] h-[50px] rounded-full border border-white/20 bg-black/40 text-white text-[2.2rem] leading-[0] pb-[4px] flex items-center justify-center transition hover:bg-black/70 hover:scale-105"
-          >
+          <button type="button" aria-label="Next article" onClick={goNext} className="pcr__nav pcr__nav--right">
             &#8250;
           </button>
         </div>
       </section>
-
-      <style>{`
-        /* Desktop: kartu 1029px + gap 30px */
-        .pc-review-highlight-wrapper .pc-review-slider {
-          transform: translateX(calc(50% - (${CARD_W}px / 2) - (var(--current-index) * (${CARD_W}px + 30px))));
-        }
-
-        /* Hover: scale + bayangan + warna gambar */
-        .pc-review-highlight-wrapper .pc-article-card:hover {
-          transform: scale(1.02) !important;
-          opacity: 1 !important;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        }
-        .pc-review-highlight-wrapper .pc-article-card:hover img {
-          filter: grayscale(0%);
-        }
-
-        /* <=1200px: 90vw + gap 20px; tinggi 350px */
-        @media (max-width: 1200px) {
-          .pc-review-highlight-wrapper .pc-review-slider {
-            gap: 20px;
-            transform: translateX(calc(50% - (90vw / 2) - (var(--current-index) * (90vw + 20px))));
-          }
-          .pc-review-highlight-wrapper .pc-article-card {
-            width: 90vw !important;
-            height: 350px !important;
-          }
-        }
-
-        /* <=768px: 95vw + gap 15px; tinggi 300px; font menyesuaikan */
-        @media (max-width: 768px) {
-          .pc-review-highlight-wrapper .pc-review-slider {
-            gap: 15px;
-            transform: translateX(calc(50% - (95vw / 2) - (var(--current-index) * (95vw + 15px))));
-          }
-          .pc-review-highlight-wrapper .pc-article-card {
-            width: 95vw !important;
-            height: 300px !important;
-          }
-          .pc-review-highlight-wrapper .pc-article-card h3 {
-            font-size: 2.5rem !important;
-            margin-bottom: 8px !important;
-          }
-          .pc-review-highlight-wrapper .pc-article-card p {
-            font-size: 0.9rem !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

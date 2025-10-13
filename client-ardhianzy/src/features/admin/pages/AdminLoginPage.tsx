@@ -1,33 +1,28 @@
-// src/features/admin/pages/AdminLoginPage.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/features/auth/store";
+import { ROUTES } from "@/app/routes";
 
-type Props = {
-  setIsAdminLoggedIn: (v: boolean) => void;
-};
-
-const AdminLoginPage: React.FC<Props> = ({ setIsAdminLoggedIn }) => {
-  const [adminEmail, setAdminEmail] = useState("");
+const AdminLoginPage: React.FC = () => {
+  const [adminUsername, setAdminUsername] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [authError, setAuthError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
-
-    if (!adminEmail || !adminPassword) {
-      setAuthError("Email dan password harus diisi.");
+    if (!adminUsername || !adminPassword) {
+      setAuthError("Username dan password harus diisi.");
       return;
     }
-
-    if (adminEmail === "admin@example.com" && adminPassword === "password123") {
-      setIsAdminLoggedIn(true);
-      localStorage.setItem("isAdminLoggedIn", "true");
-      navigate("/admin/dashboard");
-    } else {
-      setAuthError("Email atau password admin salah.");
+    try {
+      await login({ username: adminUsername, password: adminPassword });
+      navigate(ROUTES.ADMIN.DASHBOARD);
+    } catch (err: any) {
+      setAuthError(err?.message || "Username atau password admin salah.");
     }
   };
 
@@ -86,19 +81,19 @@ const AdminLoginPage: React.FC<Props> = ({ setIsAdminLoggedIn }) => {
 
           <div className="admin-form-group">
             <input
-              type="email"
+              type="text"
               id="admin-email"
               className="admin-form-input w-full bg-transparent border border-[#F5F5F5] rounded-[30px]
                          text-[#F5F5F5] text-[16px] py-[12px] px-[15px] outline-none
                          placeholder:text-transparent"
-              value={adminEmail}
-              onChange={(e) => setAdminEmail(e.target.value)}
+              value={adminUsername}
+              onChange={(e) => setAdminUsername(e.target.value)}
               required
               placeholder=" "
-              autoComplete="email"
+              autoComplete="username"
             />
             <label htmlFor="admin-email" className="admin-form-label">
-              Admin Email
+              Admin Username
             </label>
           </div>
 

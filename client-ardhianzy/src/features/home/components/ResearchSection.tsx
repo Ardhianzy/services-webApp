@@ -1,5 +1,10 @@
 // src/features/home/components/ResearchSection.tsx
-type ResearchItem = {
+import { useEffect, useState } from "react";
+import { listResearch } from "@/features/research/api";
+import { API_BASE } from "@/config/endpoints";
+
+type ResearchRemote = any;
+type ResearchCard = {
   img: string;
   title: string;
   date: string;
@@ -7,14 +12,14 @@ type ResearchItem = {
   link: string;
 };
 
-const researchData: ResearchItem[] = [
+const FALLBACK: ResearchCard[] = [
   {
     img: "/assets/research/Desain tanpa judul.png",
     title: "LOREM IPSUM DOLOR SIT",
     date: "22 May, 2025",
     excerpt:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna",
-    link: "#",
+    link: "/research",
   },
   {
     img: "/assets/research/Research (3).png",
@@ -22,7 +27,7 @@ const researchData: ResearchItem[] = [
     date: "22 May, 2025",
     excerpt:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna",
-    link: "#",
+    link: "/research",
   },
   {
     img: "/assets/research/Research (1).png",
@@ -30,7 +35,7 @@ const researchData: ResearchItem[] = [
     date: "22 May, 2025",
     excerpt:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna",
-    link: "#",
+    link: "/research",
   },
   {
     img: "/assets/research/Research (2).png",
@@ -38,38 +43,79 @@ const researchData: ResearchItem[] = [
     date: "22 May, 2025",
     excerpt:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna",
-    link: "#",
+    link: "/research",
   },
 ];
 
+function toAbs(url?: string) {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+function pickFirst<T = string>(obj: any, keys: string[], fallback?: T): T {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v != null && v !== "") return v as T;
+  }
+  return fallback as T;
+}
+
+function plainExcerpt(htmlOrText?: string, max = 140) {
+  if (!htmlOrText) return "";
+  const text = String(htmlOrText).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+function mapToCard(x: ResearchRemote): ResearchCard {
+  const title = pickFirst<string>(x, ["title", "research_title", "name"], "Untitled");
+  const dateRaw = pickFirst<string>(x, ["research_date", "publishedAt", "date"], "");
+  const date =
+    dateRaw && !/^\d{1,2}\s\w+,\s\d{4}$/.test(dateRaw)
+      ? new Date(dateRaw).toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" })
+      : dateRaw || "";
+  const img = toAbs(pickFirst<string>(x, ["image", "img", "thumbnail", "cover"], "")) ?? "/assets/research/Research (1).png";
+  const excerpt = plainExcerpt(pickFirst<string>(x, ["content", "research_sum", "excerpt", "summary"], ""));
+  return { img, title, date, excerpt, link: "/research" };
+}
+
 export default function ResearchSection() {
+  const [items, setItems] = useState<ResearchCard[]>(FALLBACK);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await listResearch();
+        const normalized = (Array.isArray(data) ? data : []).slice(0, 4).map(mapToCard);
+        if (mounted && normalized.length) setItems(normalized);
+      } catch {
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
-    <section id="research" aria-labelledby="research_heading">
-      <div className="mx-auto max-w-[1400px] px-16 py-8 text-white max-[1200px]:px-8">
+    <section id="research" aria-labelledby="research_heading" className="mb-50">
+      <div className="mx-auto max-w-[1560px] px-16 py-8 text-white max-[1200px]:px-8">
         <div className="mb-10 flex items-center justify-between max-[768px]:flex-col max-[768px]:items-start">
-          <h2
-            id="research_heading"
-            className="m-0 text-[3rem]"
-            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-          >
+          <h2 id="research_heading" className="m-0 text-[3rem]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
             Check Our Research
           </h2>
 
           <a
-            href="#"
+            href="/research"
             className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
-            style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: "1rem",
-              textDecoration: "none",
-            }}
+            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
           >
             MORE RESEARCH <span className="ml-[0.3rem]">→</span>
           </a>
         </div>
 
         <div className="grid grid-cols-4 gap-8 max-[1200px]:grid-cols-2 max-[768px]:grid-cols-1">
-          {researchData.map((item, i) => (
+          {items.map((item, i) => (
             <article
               key={`${i}-${item.title}`}
               className={[
@@ -89,29 +135,17 @@ export default function ResearchSection() {
                 />
               </div>
 
-              <h3
-                className="mb-2 text-[2rem]"
-                style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-              >
+              <h3 className="mb-2 text-[2rem]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
                 {item.title}
               </h3>
 
-              <p
-                className="mb-4 text-[0.9rem] opacity-80"
-                style={{ fontFamily: "'Roboto Condensed', sans-serif" }}
-              >
+              <p className="mb-4 text-[0.9rem] opacity-80" style={{ fontFamily: "'Roboto Condensed', sans-serif" }}>
                 {item.date}
               </p>
 
-              <p className="mb-4 text-[0.9rem] leading-[1.5] opacity-85">
-                {item.excerpt}
-              </p>
+              <p className="mb-4 text-[0.9rem] leading-[1.5] opacity-85">{item.excerpt}</p>
 
-              <a
-                href={item.link}
-                className="inline-flex items-center underline"
-                aria-label={`Read research: ${item.title}`}
-              >
+              <a href={item.link} className="mt-7 mb-[9px] inline-flex items-center underline" aria-label={`Read research: ${item.title}`}>
                 Read research <span className="ml-[0.3rem]">→</span>
               </a>
             </article>

@@ -1,14 +1,14 @@
-// src/App.tsx
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import "./styles/App.css";
 
 import { Navbar } from "@/components/common/Navbar";
+import SectionNavLinks from "@/features/layout/components/SectionNavLinks";
 import { Footer } from "@/components/common/Footer";
+import AppHeader from "@/features/layout/components/AppHeader";
 
-// HOME (landing sections)
-import TimelineOfThoughtSection from "@/features/home/components/TimelineOfThoughtSection";
+import TimelineOfThoughtHybrid from "@/features/home/components/TimelineOfThoughtHybrid";
 import HighlightSection from "@/features/home/components/HighlightSection";
 import MagazineSection from "@/features/home/components/MagazineSection";
 import ResearchSection from "@/features/home/components/ResearchSection";
@@ -21,7 +21,6 @@ import ShopsSection from "@/features/home/components/ShopsSection";
 import LatestVideosSection from "@/features/home/components/LatestVideosSection";
 import CommunitySection from "@/features/home/components/CommunitySection";
 
-// PUBLIC PAGES
 import MagazinePage from "@/features/magazine/pages/MagazinePage";
 import ShopPage from "@/features/shop/pages/ShopPage";
 import ResearchPage from "@/features/research/pages/ResearchPage";
@@ -31,36 +30,52 @@ import PopCultureReviewPage from "@/features/pop-cultures/pages/PopCultureReview
 import ReadingGuidePage from "@/features/reading-guides/pages/ReadingGuidePage";
 import ReadPage from "@/features/articles/pages/ReadPage";
 import GuidePage from "@/features/reading-guides/pages/GuidePage";
-import LoginPage from "@/features/auth/pages/LoginPage";
-import SignUpPage from "@/features/auth/pages/SignUpPage";
-import ProfilePage from "@/features/user/pages/ProfilePage";
-import ReadHistoryPage from "@/features/user/pages/ReadHistoryPage";
+// import LoginPage from "@/features/auth/pages/LoginPage";
+// import SignUpPage from "@/features/auth/pages/SignUpPage";
+// import ProfilePage from "@/features/user/pages/ProfilePage";
+// import ReadHistoryPage from "@/features/user/pages/ReadHistoryPage";
 
-// ADMIN
-import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
+// import ProtectedRoute from "@/routes/ProtectedRoute";
+import AdminRoute from "@/routes/AdminRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminLoginPage from "@/features/admin/pages/AdminLoginPage";
 import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
 import AdminArticlePage from "@/features/admin/pages/AdminArticlePage";
 import AdminAddArticlePage from "@/features/admin/pages/AdminAddArticlePage";
+import AdminEditArticlePage from "@/features/admin/pages/AdminEditArticlePage";
 import AdminAddItemPage from "@/features/admin/pages/AdminAddItemPage";
 import AdminListItemPage from "@/features/admin/pages/AdminListItemPage";
 import AdminAnalyticsPage from "@/features/admin/pages/AdminAnalyticsPage";
+import AdminToTListPage from "@/features/admin/pages/AdminToTListPage";
+import AdminToTAddPage from "@/features/admin/pages/AdminToTAddPage";
+import AdminToTMetaListPage from "@/features/admin/pages/AdminToTMetaListPage";
+import AdminToTMetaAddPage from "@/features/admin/pages/AdminToTMetaAddPage";
+import AdminResearchShopCollectedPage from "@/features/admin/pages/AdminResearchShopCollectedPage";
 
 import { ROUTES } from "@/app/routes";
+// import { useAuth } from "@/features/auth/store";
 
-const philosophers = [
-  { id: 1, name: "F. Nietzsche", years: "1844–1900", lat: 51.3397, lng: 12.3731 },
-  { id: 2, name: "K. Marx", years: "1818–1883", lat: 49.0069, lng: 8.4037 },
-];
+// const philosophers = [
+//   { id: 1, name: "F. Nietzsche", years: "1844–1900", lat: 51.3397, lng: 12.3731 },
+//   { id: 2, name: "K. Marx", years: "1818–1883", lat: 49.0069, lng: 8.4037 },
+// ];
 
 function HomePage() {
   return (
     <>
-      <TimelineOfThoughtSection
-        philosophers={philosophers}
-        onMarkerClick={(p) => console.log("clicked:", p)}
-      />
+      <Navbar />
+      <section id="section1" className="section section1">
+        <div className="main-content-container">
+          <div className="map-wrapper">
+            <TimelineOfThoughtHybrid
+              // philosophers={philosophers}
+              // onMarkerClick={(p) => console.log("clicked:", p)}
+            />
+          </div>
+        </div>
+      </section>
+
+      <SectionNavLinks />
       <HighlightSection />
       <MagazineSection />
       <ResearchSection />
@@ -72,38 +87,25 @@ function HomePage() {
       <ShopsSection />
       <LatestVideosSection />
       <CommunitySection />
+      <Footer />
     </>
   );
 }
 
 function AppRoutes() {
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    setIsAdminLoggedIn(localStorage.getItem("isAdminLoggedIn") === "true");
-  }, []);
-
-  const handleLogout = () => setIsLoggedIn(false);
+  // const { user, logout } = useAuth();
+  // const isLoggedIn = !!user;
+  // const handleLogout = () => logout();
 
   return (
     <Routes>
-      <Route
-        path={ROUTES.HOME}
-        element={
-          <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
-            <HomePage />
-            <Footer />
-          </>
-        }
-      />
+      <Route path={ROUTES.HOME} element={<HomePage />} />
 
       <Route
         path={ROUTES.MAGAZINE}
         element={
           <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            <AppHeader />
             <MagazinePage />
             <Footer />
           </>
@@ -113,7 +115,7 @@ function AppRoutes() {
         path={ROUTES.SHOP}
         element={
           <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            <AppHeader />
             <ShopPage />
             <Footer />
           </>
@@ -123,7 +125,7 @@ function AppRoutes() {
         path={ROUTES.RESEARCH}
         element={
           <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            <AppHeader />
             <ResearchPage />
             <Footer />
           </>
@@ -133,7 +135,7 @@ function AppRoutes() {
         path={ROUTES.MONOLOGUES}
         element={
           <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            <AppHeader />
             <MonologuesPage />
             <Footer />
           </>
@@ -143,7 +145,7 @@ function AppRoutes() {
         path={ROUTES.IDEAS_TRADITION}
         element={
           <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            <AppHeader />
             <IdeasTraditionPage />
             <Footer />
           </>
@@ -153,7 +155,7 @@ function AppRoutes() {
         path={ROUTES.POP_CULTURE_REVIEW}
         element={
           <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            <AppHeader />
             <PopCultureReviewPage />
             <Footer />
           </>
@@ -163,7 +165,7 @@ function AppRoutes() {
         path={ROUTES.READING_GUIDE}
         element={
           <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            <AppHeader />
             <ReadingGuidePage />
             <Footer />
           </>
@@ -173,7 +175,7 @@ function AppRoutes() {
         path={ROUTES.READ}
         element={
           <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            <AppHeader />
             <ReadPage />
             <Footer />
           </>
@@ -183,72 +185,75 @@ function AppRoutes() {
         path={ROUTES.GUIDE}
         element={
           <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            <AppHeader />
             <GuidePage />
             <Footer />
           </>
         }
       />
-      <Route
+
+      {/* <Route
         path={ROUTES.PROFILE}
         element={
-          <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
-            <ProfilePage />
-            <Footer />
-          </>
+          <ProtectedRoute>
+            <>
+              <AppHeader />
+              <ProfilePage />
+              <Footer />
+            </>
+          </ProtectedRoute>
         }
-      />
-      <Route
+      /> */}
+
+      {/* <Route
         path={ROUTES.READ_HISTORY}
         element={
-          <>
-            <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
-            <ReadHistoryPage />
-            <Footer />
-          </>
+          <ProtectedRoute>
+            <>
+              <AppHeader />
+              <ReadHistoryPage />
+              <Footer />
+            </>
+          </ProtectedRoute>
         }
-      />
+      /> */}
 
-      <Route path={ROUTES.LOGIN} element={<LoginPage setIsLoggedIn={setIsLoggedIn} />} />
-      <Route path={ROUTES.SIGNUP} element={<SignUpPage />} />
+      {/* <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+      <Route path={ROUTES.SIGNUP} element={<SignUpPage />} /> */}
 
-      {/* Redirect dari rute lama (huruf besar) */}
       <Route path={ROUTES.LEGACY.IDEAS_TRADITION} element={<Navigate to={ROUTES.IDEAS_TRADITION} replace />} />
       <Route path={ROUTES.LEGACY.POP_CULTURE_REVIEW} element={<Navigate to={ROUTES.POP_CULTURE_REVIEW} replace />} />
       <Route path={ROUTES.LEGACY.READING_GUIDE} element={<Navigate to={ROUTES.READING_GUIDE} replace />} />
 
-      {/* Admin Area (nested) */}
-      <Route path={ROUTES.ADMIN.LOGIN} element={<AdminLoginPage setIsAdminLoggedIn={setIsAdminLoggedIn} />} />
-      <Route
-        path={`${ROUTES.ADMIN.ROOT}/*`}
-        element={
-          <ProtectedRoute isAdminLoggedIn={isAdminLoggedIn}>
-            <AdminLayout setIsAdminLoggedIn={setIsAdminLoggedIn} />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to={ROUTES.ADMIN.DASHBOARD} replace />} />
-        <Route path="dashboard" element={<AdminDashboardPage />} />
-        <Route path="articles/list" element={<AdminArticlePage />} />
-        <Route path="articles/add" element={<AdminAddArticlePage />} />
-        <Route path="shop/list" element={<AdminListItemPage />} />
-        <Route path="shop/add" element={<AdminAddItemPage />} />
-        <Route path="analytics" element={<AdminAnalyticsPage />} />
+
+      <Route path={`${ROUTES.ADMIN.ROOT}/*`} element={<AdminRoute />}>
+        <Route element={<AdminLayout />}>
+          <Route index element={<Navigate to={ROUTES.ADMIN.DASHBOARD} replace />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="articles/list" element={<AdminArticlePage />} />
+          <Route path="articles/add" element={<AdminAddArticlePage />} />
+          <Route path="articles/edit/:id" element={<AdminEditArticlePage />} />
+          <Route path="shop/list" element={<AdminListItemPage />} />
+          <Route path="shop/add" element={<AdminAddItemPage />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
+          <Route path="tot/list" element={<AdminToTListPage />} />
+          <Route path="tot/add" element={<AdminToTAddPage />} />
+          <Route path="tot-meta/list" element={<AdminToTMetaListPage />} />
+          <Route path="tot-meta/add" element={<AdminToTMetaAddPage />} />
+          <Route path="content" element={<AdminResearchShopCollectedPage />} />
+        </Route>
       </Route>
 
+      <Route path={ROUTES.ADMIN.LOGIN} element={<AdminLoginPage />} />
       <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
     </Routes>
   );
 }
 
 export default function App() {
-  // Jadikan tema gelap default (paritas dengan App.jsx lama yang full hitam)
   useEffect(() => {
     document.documentElement.classList.add("dark");
-    // kalau kamu pasang langsung di index.html <html class="dark">, efek ini boleh dihapus
   }, []);
-
   return (
     <BrowserRouter>
       <AppRoutes />

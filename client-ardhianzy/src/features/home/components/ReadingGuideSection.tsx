@@ -38,12 +38,11 @@ const ReadingGuideSection: FC = () => {
 
   return (
     <section
-      id="philosophers-guide"
+      id="reading-guide"
       aria-labelledby="philosophers_heading"
-      className="bg-black py-20 text-white"
+      className="bg-black text-white"
     >
-      <div className="mx-auto max-w-[1280px] px-8">
-        {/* Header */}
+      <div className="mx-auto max-w-[1560px] px-8">
         <div className="mb-16 flex items-center justify-between max-[640px]:flex-col max-[640px]:gap-6">
           <h2
             id="philosophers_heading"
@@ -54,7 +53,7 @@ const ReadingGuideSection: FC = () => {
           </h2>
 
           <a
-            href="#"
+            href="/ReadingGuide"
             className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] transition-colors hover:bg-white hover:text-black focus:outline-none focus:ring-2 focus:ring-white/60"
             style={{
               fontFamily: "'Bebas Neue', sans-serif",
@@ -74,7 +73,7 @@ const ReadingGuideSection: FC = () => {
                 " "
               )}
             >
-              <div className="mb-6 h-[220px] w-[157px] overflow-hidden">
+              <div className="mb-6 h-[250px] w-[187px] overflow-hidden">
                 <img
                   loading="lazy"
                   decoding="async"
@@ -96,7 +95,7 @@ const ReadingGuideSection: FC = () => {
                 className="m-0 max-w-[226px] text-[12px] font-light leading-[1.5] text-white/90"
                 style={{ fontFamily: "Roboto, sans-serif" }}
               >
-                {p.description}
+                {(p as any).description || (p as any).descript || (p as any).desc || ""}
               </p>
             </article>
           ))}

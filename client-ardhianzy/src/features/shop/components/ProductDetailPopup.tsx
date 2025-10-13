@@ -85,9 +85,9 @@ export default function ProductDetailPopup({
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-white/40 bg-black/30 text-xl leading-none transition hover:scale-110 hover:bg-black/50"
+          className="absolute top-4 right-8 inline-flex !h-9 !w-9 !items-center !justify-center !rounded-full border !border-white/40 hover:!border-transparent !bg-transparent text-xl leading-none transition hover:!bg-white/10"
         >
-          ×
+          <span className="block translate-x-[-0.5px] !text-white">×</span>
         </button>
 
         <div className="flex flex-1 flex-col items-center">
@@ -101,7 +101,7 @@ export default function ProductDetailPopup({
             <button
               type="button"
               onClick={handlePrev}
-              className="px-2 transition-transform hover:scale-110"
+              className="!px-2 !py-[2px] hover:!border-white transition-transform hover:scale-105 !bg-transparent !rounded-full"
               aria-label="Previous image"
               title="Previous (←)"
             >
@@ -132,7 +132,7 @@ export default function ProductDetailPopup({
             <button
               type="button"
               onClick={handleNext}
-              className="px-2 transition-transform hover:scale-110"
+              className="!px-2 !py-[2px] hover:!border-white transition-transform hover:scale-105 !bg-transparent !rounded-full"
               aria-label="Next image"
               title="Next (→)"
             >
@@ -185,7 +185,7 @@ export default function ProductDetailPopup({
 
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-[6px] rounded-[30px] border border-[#F5F5F5] px-[25px] py-[14px] text-[#F5F5F5] transition-colors hover:bg-[#F5F5F5] hover:text-black"
+              className="inline-flex items-center justify-center gap-[6px] !rounded-[30px] border !border-[#F5F5F5] px-[25px] py-[14px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black"
               style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", lineHeight: "22px" }}
             >
               BUY NOW <span>&rarr;</span>

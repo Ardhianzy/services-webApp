@@ -38,7 +38,12 @@ export const authors: AuthorRef[] = [
   { id: "auth-016", name: "Bayles & Orland" },
   { id: "auth-017", name: "Peter C. Brown et al." },
   { id: "auth-018", name: "Neil Postman" },
-  { id: "auth-019", name: "Friedrich Nietzsche" },
+   {
+    id: "auth-019",
+    name: "Friedrich Nietzsche",
+    image: "/assets/readingGuide/friedrich.jpg",
+    bio: "Friedrich Nietzsche (1844–1900) adalah seorang filsuf Jerman, kritikus budaya, penyair, dan komponis yang memberikan pengaruh besar pada filsafat modern."
+  },
 ];
 
 /* ---------------------------

@@ -81,6 +81,34 @@ export const products: Product[] = [
       "/assets/product-images/book-react-side.png",
     ],
   },
+  {
+    id: 6,
+    title: "LEARN REACT",
+    category: "Book",
+    theme: "Programming",
+    price: "Rp 250.000",
+    description: "Buku fundamental untuk mempelajari React dari dasar hingga mahir.",
+    reviews: { rating: 4.9, count: 230 },
+    imageUrl: "/assets/product-images/book-react.png",
+    galleryImages: [
+      "/assets/product-images/book-react.png",
+      "/assets/product-images/book-react-side.png",
+    ],
+  },
+  {
+    id: 7,
+    title: "LEARN REACT",
+    category: "Book",
+    theme: "Programming",
+    price: "Rp 250.000",
+    description: "Buku fundamental untuk mempelajari React dari dasar hingga mahir.",
+    reviews: { rating: 4.9, count: 230 },
+    imageUrl: "/assets/product-images/book-react.png",
+    galleryImages: [
+      "/assets/product-images/book-react.png",
+      "/assets/product-images/book-react-side.png",
+    ],
+  },
 ];
 
 export default products;

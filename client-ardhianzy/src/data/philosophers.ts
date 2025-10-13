@@ -6,19 +6,32 @@ export type Philosopher = PhilosopherCore & {
 };
 
 export const philosophers: Philosopher[] = [
-  {
-    id: "nietzsche",
-    name: "Friedrich Nietzsche",
-    image: "/assets/readingGuide/friedrich.jpg",
-    birthDate: "15 OCT 1844",
-    deathDate: "25 AUG 1900",
-    birthPlace: "Röcken, Lützen, Jerman",
-    deathPlace: "Weimar, Jerman",
-    desc:
-      "Friedrich Nietzsche (1844–1900) adalah filsuf Jerman yang mengguncang fondasi moral religius Eropa dengan kritiknya terhadap moralitas dan klaim 'Tuhan telah mati'. Gagasannya berpengaruh pada eksistensialisme, psikoanalisis, hingga kritik budaya modern.",
-    bookIds: ["b-025", "b-026", "b-028"],
-  },
+  // {
+  //   id: "nietzsche",
+  //   name: "Friedrich Nietzsche",
+  //   image: "/assets/readingGuide/friedrich.jpg",
+  //   birthDate: "15 OCT 1844",
+  //   deathDate: "25 AUG 1900",
+  //   birthPlace: "Röcken, Lützen, Jerman",
+  //   deathPlace: "Weimar, Jerman",
+  //   desc:
+  //     "Friedrich Nietzsche (1844–1900) adalah filsuf Jerman yang mengguncang fondasi moral religius Eropa dengan kritiknya terhadap moralitas dan klaim 'Tuhan telah mati'. Gagasannya berpengaruh pada eksistensialisme, psikoanalisis, hingga kritik budaya modern.",
+  //   bookIds: ["b-025", "b-026", "b-028"],
+  // },
 
+  // {
+  //   id: "nietzsche",
+  //   name: "Friedrich Nietzsche",
+  //   image: "/assets/philosophers/Friedrich Nietzsche.jpg",
+  //   birthDate: "15 OCT 1844",
+  //   deathDate: "25 AUG 1900",
+  //   birthPlace: "Röcken, Lützen, Jerman",
+  //   deathPlace: "Weimar, Jerman",
+  //   descript:
+  //     "Friedrich Nietzsche (1844–1900) adalah filsuf Jerman yang mengguncang fondasi moral religius Eropa dengan kritiknya terhadap moralitas dan klaim 'Tuhan telah mati'. Gagasannya berpengaruh pada eksistensialisme, psikoanalisis, hingga kritik budaya modern.",
+  //   description: `Friedrich Nietzsche adalah filsuf Jerman yang mengguncang fondasi moral religius Eropa dengan seruannya bahwa “Tuhan telah mati.” Berangkat dari latar filologi klasik, ia merumuskan konsep nihilisme—krisis makna setelah runtuhnya nilai tradisional—dan menawarkan gagasan Übermensch, sosok yang menciptakan nilai baru melalui “kehendak untuk berkuasa.” Lewat karya-karya seperti Thus Spoke Zarathustra dan Beyond Good and Evil, Nietzsche mendorong penilaian ulang moralitas, menolak kepasrahan, dan menantang kita untuk mengafirmasi kehidupan sepenuhnya, bahkan jika harus mengulanginya tanpa akhir. Warisannya membekas kuat dalam eksistensialisme, psikoanalisis, dan kritik budaya modern.`,
+  //   bookIds: ["b-025", "b-026", "b-028"],
+  // },
   {
     id: "nietzsche",
     name: "Friedrich Nietzsche",
@@ -27,9 +40,7 @@ export const philosophers: Philosopher[] = [
     deathDate: "25 AUG 1900",
     birthPlace: "Röcken, Lützen, Jerman",
     deathPlace: "Weimar, Jerman",
-    descript:
-      "Friedrich Nietzsche (1844–1900) adalah filsuf Jerman yang mengguncang fondasi moral religius Eropa dengan kritiknya terhadap moralitas dan klaim 'Tuhan telah mati'. Gagasannya berpengaruh pada eksistensialisme, psikoanalisis, hingga kritik budaya modern.",
-    description: `Friedrich Nietzsche adalah filsuf Jerman yang mengguncang fondasi moral religius Eropa dengan seruannya bahwa “Tuhan telah mati.” Berangkat dari latar filologi klasik, ia merumuskan konsep nihilisme—krisis makna setelah runtuhnya nilai tradisional—dan menawarkan gagasan Übermensch, sosok yang menciptakan nilai baru melalui “kehendak untuk berkuasa.” Lewat karya-karya seperti Thus Spoke Zarathustra dan Beyond Good and Evil, Nietzsche mendorong penilaian ulang moralitas, menolak kepasrahan, dan menantang kita untuk mengafirmasi kehidupan sepenuhnya, bahkan jika harus mengulanginya tanpa akhir. Warisannya membekas kuat dalam eksistensialisme, psikoanalisis, dan kritik budaya modern.`,
+    description: `Friedrich Nietzsche adalah filsuf Jerman yang mengguncang fondasi moral religius Eropa dengan seruannya bahwa “Tuhan telah mati.” Berangkat dari latar filologi klasik, ia merumuskan konsep nihilisme—krisis makna setelah runtuhnya nilai tradisional—dan menawarkan gagasan Übermensch melalui “kehendak untuk berkuasa.” Lewat karya seperti Thus Spoke Zarathustra dan Beyond Good and Evil, Nietzsche mendorong penilaian ulang moralitas dan menantang kita untuk mengafirmasi kehidupan sepenuhnya.`,
     bookIds: ["b-025", "b-026", "b-028"],
   },
   {

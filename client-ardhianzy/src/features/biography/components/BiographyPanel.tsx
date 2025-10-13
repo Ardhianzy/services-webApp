@@ -1,5 +1,6 @@
 // src/features/philosophers/components/BiographyPanel.tsx
 import { books as centerBooks } from "@/data/books";
+import { useToTMetaByName } from "@/features/tot/hooks"; // NEW: ambil ToT Meta by name
 
 type BookCard = { cover: string; title?: string };
 
@@ -90,6 +91,9 @@ function PhilosophyDiagram() {
 export default function BiographyPanel({ philosopher, onClose }: BiographyPanelProps) {
   if (!philosopher) return null;
 
+  // NEW: tarik ToT Meta berdasarkan nama
+  const { meta, loading: metaLoading } = useToTMetaByName(philosopher.name);
+
   const booksFromIds: BookCard[] =
     (philosopher.bookIds ?? [])
       .map((id) => centerBooks.find((b) => b.id === id))
@@ -136,6 +140,38 @@ export default function BiographyPanel({ philosopher, onClose }: BiographyPanelP
               {philosopher.name?.toUpperCase()}
             </h1>
             <PhilosophyDiagram />
+
+            {/* NEW: ringkasan ToT Meta */}
+            {metaLoading ? (
+              <p className="m-0 mt-2 text-sm text-white/70">Loading philosophical notes…</p>
+            ) : meta ? (
+              <div className="grid grid-cols-2 gap-4 w-full max-w-[720px] mt-3 text-left">
+                {meta.metaPhysics && (
+                  <div>
+                    <h4 className="m-0 font-bold text-[14px]">Metafisika</h4>
+                    <p className="m-0 text-[13px] text-white/85 leading-[1.5]">{meta.metaPhysics}</p>
+                  </div>
+                )}
+                {meta.epistemology && (
+                  <div>
+                    <h4 className="m-0 font-bold text-[14px]">Epistemologi</h4>
+                    <p className="m-0 text-[13px] text-white/85 leading-[1.5]">{meta.epistemology}</p>
+                  </div>
+                )}
+                {meta.axiology && (
+                  <div>
+                    <h4 className="m-0 font-bold text-[14px]">Aksiologi</h4>
+                    <p className="m-0 text-[13px] text-white/85 leading-[1.5]">{meta.axiology}</p>
+                  </div>
+                )}
+                {meta.conclusion && (
+                  <div className="col-span-2">
+                    <h4 className="m-0 font-bold text-[14px]">Kesimpulan</h4>
+                    <p className="m-0 text-[13px] text-white/85 leading-[1.5]">{meta.conclusion}</p>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
 

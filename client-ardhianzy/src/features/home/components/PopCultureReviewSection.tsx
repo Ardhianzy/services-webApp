@@ -182,7 +182,7 @@ const PopCultureReviewSection: FC = () => {
   }, [vw]);
 
   return (
-    <section id="pop-culture" aria-labelledby="pop_heading" className="relative">
+    <section id="pop-culture" aria-labelledby="pop_heading" className="relative mt-50">
       <div
         aria-hidden
         className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 bg-black"
@@ -199,7 +199,7 @@ const PopCultureReviewSection: FC = () => {
           </h2>
 
           <a
-            href="#"
+            href="/PopCultureReview"
             className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
             style={{
               fontFamily: "'Bebas Neue', sans-serif",
@@ -216,7 +216,7 @@ const PopCultureReviewSection: FC = () => {
           style={{
             gridTemplateColumns,
             gridAutoRows: "320px",
-            gap: "1rem",
+            gap: "2.5rem",
             width: isNarrow ? "100%" : "fit-content",
             margin: "0 auto",
           }}

@@ -30,7 +30,9 @@ function ZoomButtons() {
     [-90, 180],
   ];
   return (
-    <div className="absolute left-5 top-1/2 z-[1000] -translate-y-1/2 flex flex-col overflow-hidden rounded-[10px] border border-white bg-black shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
+    <div
+      className="absolute left-5 top-1/2 z-[1000] -translate-y-1/2 flex flex-col overflow-hidden rounded-[10px] text-[18px] border border-white bg-black shadow-[0_4px_10px_rgba(0,0,0,0.3)]"
+    >
       {["+", "−", "⟳"].map((label) => (
         <button
           key={label}
@@ -39,7 +41,7 @@ function ZoomButtons() {
             else if (label === "−") map.zoomOut();
             else map.fitBounds(bounds);
           }}
-          className="flex h-10 w-10 items-center justify-center border-b border-white last:border-b-0 text-white transition-colors hover:bg-white/15"
+          className="flex h-10 w-10 items-center justify-center !border-b !border-b-white last:!border-b-0 text-white transition-colors !bg-black hover:bg-white/15 font-sans leading-none text-[18px]" 
           title={label === "⟳" ? "Reset" : label === "+" ? "Zoom In" : "Zoom Out"}
         >
           {label}
@@ -50,20 +52,20 @@ function ZoomButtons() {
 }
 
 const mapSourceCandidates: Record<number, string[]> = {
-  600:  ["/data/world_600.geo.json",  "/data/geo/world/world_600.geo.json",  "/data/world/world_600.geo.json"],
-  700:  ["/data/world_700.geo.json",  "/data/geo/world/world_700.geo.json",  "/data/world/world_700.geo.json"],
-  800:  ["/data/world_800.geo.json",  "/data/geo/world/world_800.geo.json",  "/data/world/world_800.geo.json"],
-  900:  ["/data/world_900.geo.json",  "/data/geo/world/world_900.geo.json",  "/data/world/world_900.geo.json"],
-  1000: ["/data/world_1000.geo.json", "/data/geo/world/world_1000.geo.json", "/data/world/world_1000.geo.json"],
-  1100: ["/data/world_1100.geo.json", "/data/geo/world/world_1100.geo.json", "/data/world/world_1100.geo.json"],
-  1200: ["/data/world_1200.geo.json", "/data/geo/world/world_1200.geo.json", "/data/world/world_1200.geo.json"],
-  1300: ["/data/world_1300.geo.json", "/data/geo/world/world_1300.geo.json", "/data/world/world_1300.geo.json"],
-  1400: ["/data/world_1400.geo.json", "/data/geo/world/world_1400.geo.json", "/data/world/world_1400.geo.json"],
-  1500: ["/data/world_1500.geo.json", "/data/geo/world/world_1500.geo.json", "/data/world/world_1500.geo.json"],
-  1600: ["/data/world_1600.geo.json", "/data/geo/world/world_1600.geo.json", "/data/world/world_1600.geo.json"],
-  1700: ["/data/world_1700.geo.json", "/data/geo/world/world_1700.geo.json", "/data/world/world_1700.geo.json"],
-  1800: ["/data/world_1800.geo.json", "/data/world_1880.geo.json", "/data/countries.geo.json", "/data/geo/world/world_1880.geo.json", "/data/geo/world/countries.geo.json"],
-  1900: ["/data/countries.geo.json", "/data/geo/world/countries.geo.json"],
+  600:  ["/data/geoworld/world_600.geo.json"],
+  700:  ["/data/geoworld/world_700.geo.json"],
+  800:  ["/data/geoworld/world_800.geo.json"],
+  900:  ["/data/geoworld/world_900.geo.json"],
+  1000: ["/data/geoworld/world_1000.geo.json"],
+  1100: ["/data/geoworld/world_1100.geo.json"],
+  1200: ["/data/geoworld/world_1200.geo.json"],
+  1300: ["/data/geoworld/world_1300.geo.json"],
+  1400: ["/data/geoworld/world_1400.geo.json"],
+  1500: ["/data/geoworld/world_1500.geo.json"],
+  1600: ["/data/geoworld/world_1600.geo.json"],
+  1700: ["/data/geoworld/world_1700.geo.json"],
+  1800: ["/data/geoworld/countries.geo.json"],
+  1900: ["/data/geoworld/countries.geo.json"],
 };
 
 const START_YEAR = 600;
@@ -72,13 +74,20 @@ const PIXELS_PER_YEAR = 2;
 
 function parseYears(raw: string | undefined | null): [number, number] {
   if (!raw) return [NaN, NaN];
-  const norm = String(raw).replace(/[–—]/g, "-").trim();
-  const parts = norm
-    .split("-")
-    .map((s) => Number(s.trim()))
-    .filter((n) => !Number.isNaN(n));
-  if (parts.length === 1) return [parts[0], parts[0]];
-  if (parts.length >= 2) return [parts[0], parts[1]];
+  const norm = String(raw).trim().replace(/[–—]/g, "-").toUpperCase();
+  const hasBC = norm.includes("BC");
+  const parts = norm.replace(/\s*BC/g, "").split("-").map((s) => s.trim()).filter(Boolean);
+  const toNum = (s: string) => {
+    const n = Number(s);
+    if (Number.isNaN(n)) return NaN;
+    return hasBC ? -Math.abs(n) : n;
+  };
+  if (parts.length === 1) {
+    const a = toNum(parts[0]); return [a, a];
+  }
+  if (parts.length >= 2) {
+    const a = toNum(parts[0]); const b = toNum(parts[1]); return [a, b];
+  }
   return [NaN, NaN];
 }
 
@@ -107,8 +116,11 @@ export default function TimelineOfThoughtSection({
 
   useEffect(() => {
     const century = Math.floor(year / 100) * 100;
-    const candidates = mapSourceCandidates[century];
-    if (!candidates || candidates.length === 0) return;
+    const rawCandidates = mapSourceCandidates[century];
+    if (!rawCandidates || rawCandidates.length === 0) return;
+
+    const base = (import.meta as any)?.env?.BASE_URL ?? "/";
+    const candidates = rawCandidates.map((p) => `${base}${p.replace(/^\/+/, "")}`);
 
     let cancelled = false;
     (async () => {
@@ -255,7 +267,7 @@ export default function TimelineOfThoughtSection({
           )}
 
           <div
-            className="pointer-events-none absolute left-1/2 bottom-[170px] z-[1002] -translate-x-1/2 rounded-[10px] border-2 border-[#555] bg-black px-5 py-[6px] text-center text-[36px] leading-[43px] shadow-[0_4px_10px_rgba(0,0,0,0.25)]"
+            className="pointer-events-none absolute left-1/2 bottom-[170px] z-[1002] -translate-x-1/2 rounded-[10px] border-2 border-[#555] bg-black px-5 py-[5px] text-center text-[36px] leading-[43px] shadow-[0_4px_10px_rgba(0,0,0,0.25)]"
             style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
             {year}
@@ -263,8 +275,8 @@ export default function TimelineOfThoughtSection({
         </div>
 
         <div className="absolute bottom-0 left-0 z-[1001] flex h-[150px] w-full items-center border-t border-white/10 bg-[rgba(40,40,40,0.3)] backdrop-blur-[10px]">
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-[100px] bg-gradient-to-r from-[#1a1a1a] to-transparent" />
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-[100px] bg-gradient-to-l from-[#1a1a1a] to-transparent" />
+          <div className="tol-fade-left pointer-events-none absolute left-0 top-0 h-full w-[100px] z-[1002]" /> 
+          <div className="tol-fade-right pointer-events-none absolute right-0 top-0 h-full w-[100px] z-[1002]" />
 
           <div ref={wrapperRef} className="tol-scroll w-full overflow-x-auto overflow-y-hidden">
             <div
@@ -280,7 +292,7 @@ export default function TimelineOfThoughtSection({
                 >
                   <div className="h-5 w-[2px] bg-[#D9D9D9]" />
                   <div
-                    className="absolute bottom-0 whitespace-nowrap text-[22px] text-white"
+                    className="absolute whitespace-nowrap text-[22px] text-white bottom-[-24px]" 
                     style={{ fontFamily: "'Bebas Neue', sans-serif" }}
                   >
                     {m}
@@ -295,7 +307,7 @@ export default function TimelineOfThoughtSection({
                 step={1}
                 value={year}
                 onChange={handleYear}
-                className="tol-slider absolute left-0 top-0 h-full w-full cursor-pointer appearance-none bg-transparent outline-none"
+                className="tol-slider absolute left-0 top-0 h-full w-full cursor-pointer appearance-none bg-transparent outline-none z-20"
               />
             </div>
           </div>
@@ -303,6 +315,7 @@ export default function TimelineOfThoughtSection({
       </div>
 
       <style>{`
+        /* Track garis di tengah + ticks, cocok dengan CSS lama */
         .tol-track {
           background-image: linear-gradient(#888, #888);
           background-repeat: no-repeat;
@@ -325,6 +338,7 @@ export default function TimelineOfThoughtSection({
         .tol-scroll::-webkit-scrollbar { display: none; }
         .tol-scroll { scrollbar-width: none; -ms-overflow-style: none; }
 
+        /* Thumb slider persis: 40px, border 10px hitam, shadow */
         .tol-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
@@ -338,6 +352,14 @@ export default function TimelineOfThoughtSection({
           background: #FFFFFF; border: 10px solid #000000;
           box-shadow: 0px 4px 4px rgba(0,0,0,0.25);
           cursor: pointer;
+        }
+
+        /* CHANGED: gradient fade kiri/kanan sesuai legacy: 30% solid #1a1a1a → transparan */
+        .tol-fade-left {
+          background: linear-gradient(to right, #1a1a1a 30%, transparent 100%);
+        }
+        .tol-fade-right {
+          background: linear-gradient(to left, #1a1a1a 30%, transparent 100%);
         }
 
         @media (max-width: 768px) {

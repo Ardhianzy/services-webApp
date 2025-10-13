@@ -71,7 +71,7 @@ const getPanSize = (container: HTMLElement | null) => {
   return first.offsetWidth + gap;
 };
 
-const LatestVideosSection: FC<LatestVideosSectionProps> = ({ onSeeAll }) => {
+const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
@@ -166,11 +166,11 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = ({ onSeeAll }) => {
   const carouselId = "latest-videos-carousel";
 
   return (
-    <section id="latest-videos" className="m-0 bg-black py-16">
+    <section id="latest-videos" className="mx-0 mb-0 mt-50 bg-black pb-16">
       <style>{`.no-scrollbar::-webkit-scrollbar{display:none}`}</style>
 
-      <div className="mx-auto max-w-[1400px] px-8 py-6 max-[768px]:px-4">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="mx-auto max-w-[1560px] px-8 py-6 max-[768px]:px-4">
+        <div className="mb-16 flex items-center justify-between">
           <h2
             className="m-0 text-[3rem] text-white"
             style={{ fontFamily: "'Bebas Neue', sans-serif" }}
@@ -178,15 +178,14 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = ({ onSeeAll }) => {
             Check Our Latest Videos
           </h2>
 
-          <button
-            type="button"
-            onClick={() => onSeeAll?.()}
+          <a
+            href="https://www.youtube.com/@ardhianzy"
             className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
-            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem" }}
-            aria-label="See all videos"
+            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
+            aria-label="See all videos on YouTube"
           >
-            SEE ALL →
-          </button>
+            SEE ALL <span className="ml-[0.3rem]">→</span>
+          </a>
         </div>
 
         <div className="relative" role="region" aria-label="Latest videos carousel">

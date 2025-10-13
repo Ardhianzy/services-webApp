@@ -1,7 +1,7 @@
 // src/features/home/components/CommunitySection.tsx
 import { type FC } from "react";
 
-const BACKGROUND_URL = "/assets/Community/Intro.png";
+const BACKGROUND_URL = "/assets/community/Intro.png";
 const CARD_SHADOW = "0 4px 12px rgba(0,0,0,0.5)";
 
 const CommunitySection: FC = () => {
@@ -9,17 +9,17 @@ const CommunitySection: FC = () => {
     <section
       id="community"
       aria-labelledby="community-title"
-      className="bg-black bg-no-repeat bg-center bg-[length:75%] py-16 px-8"
+      className="mb-22 bg-black bg-no-repeat bg-center bg-[length:75%] py-24 px-8"
       style={{ backgroundImage: `url('${BACKGROUND_URL}')` }}
     >
-      <div className="max-w-[1400px] mx-auto px-8 flex justify-start">
+      <div className="max-w-[1480px] mx-auto px-8 flex justify-start">
         <div
           className="bg-[#1a1a1a] text-white rounded-[30px] p-8 max-w-[400px]"
           style={{ boxShadow: CARD_SHADOW }}
         >
           <h2
             id="community-title"
-            className="mb-6 text-[2.4rem]"
+            className="mb-6 text-[2.4rem] text-center"
             style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
             CHECK OUR COMMUNITY
@@ -43,11 +43,11 @@ const CommunitySection: FC = () => {
             </li>
           </ul>
 
-          <button
-            type="button"
+          <a
+            href="https://discord.gg/Q79ScExgG4"
             aria-label="Join our Discord"
-            className="inline-flex items-center px-6 py-[0.7rem] border border-white rounded-[50px] text-white transition-colors hover:bg-white/10"
-            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem" }}
+            className="inline-flex mx-auto items-center px-6 py-[0.7rem] border !border-white !rounded-4xl text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
+            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
           >
             JOIN OUR DISCORD
             <img
@@ -56,7 +56,7 @@ const CommunitySection: FC = () => {
               aria-hidden="true"
               className="w-5 h-5 ml-2"
             />
-          </button>
+          </a>
         </div>
       </div>
     </section>

@@ -2,6 +2,8 @@
 export type Author = {
   id: string | number;
   name: string;
+  image?: string;
+  bio?: string;
 };
 
 export type Book = {
