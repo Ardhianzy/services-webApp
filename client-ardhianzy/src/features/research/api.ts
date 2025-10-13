@@ -4,6 +4,9 @@ import type { ResearchItem } from "./types";
 
 async function httpGet<T>(url: string): Promise<T> {
   const res = await fetch(url, { headers: { ...authHeader() } as HeadersInit });
+  if (res.status === 404) {
+    return [] as unknown as T;
+  }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json() as Promise<T>;
 }
