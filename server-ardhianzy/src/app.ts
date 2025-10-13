@@ -1,27 +1,48 @@
-// src/app.ts
-
 import express, { Application, Request, Response, NextFunction } from "express";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import prisma from "./config/db";
-import mainRoutes from "./routes"; // <-- ini tinggal import satu
+import mainRoutes from "./routes";
 
 const app: Application = express();
 
-// Middleware
-app.use(cors());
+const allowedOrigins: string[] = [
+  "https://www.ardhianzy.com/",
+  "https://ardhianzy.com/",
+  "http://localhost:5173",
+];
+
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use("/api", mainRoutes); // semua route masuk sini
+app.use("/api", mainRoutes);
 
-// Error handling middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err);
-  res.status(500).json({ message: "Internal Server Error" });
-});
+import type { ErrorRequestHandler } from "express";
 
-// Test database connection
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  if (err.message === "Not allowed by CORS") {
+    res.status(403).json({ message: "Akses ditolak oleh kebijakan CORS." });
+  } else {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+app.use(errorHandler);
+
 app.get("/test-db", async (_req: Request, res: Response) => {
   try {
     const result = await prisma.$queryRaw`SELECT 1`;
@@ -35,7 +56,6 @@ app.get("/test-db", async (_req: Request, res: Response) => {
   }
 });
 
-// Root route
 app.get("/", (_req: Request, res: Response) => {
   res.send("LISTEN AND SERVE YOUR BROWSER");
 });
