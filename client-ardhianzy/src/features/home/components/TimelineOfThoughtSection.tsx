@@ -183,9 +183,9 @@ export default function TimelineOfThoughtSection({
     });
   }, [philosophers, year]);
 
-  const mapBounds: [[number, number], [number, number]] = [
-    [90, -180],
-    [-90, 180],
+  const WORLD_BOUNDS: [[number, number], [number, number]] = [
+    [-85, -180],
+    [ 85,  180],
   ];
   const countryStyle = { fillColor: "#333", fillOpacity: 0.5, color: "#888", weight: 1 } as const;
   const onEachCountry: Parameters<typeof GeoJSON>[0]["onEachFeature"] = (feature, layer) => {
@@ -240,10 +240,10 @@ export default function TimelineOfThoughtSection({
               style={{ width: "100%", height: "100%" }}
               attributionControl={false}
               zoomControl={false}
-              maxBounds={mapBounds}
+              maxBounds={WORLD_BOUNDS}
               maxBoundsViscosity={1.0}
             >
-              <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" noWrap />
+              <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" noWrap bounds={WORLD_BOUNDS} />
 
               {mapData?.features && (
                 <GeoJSON

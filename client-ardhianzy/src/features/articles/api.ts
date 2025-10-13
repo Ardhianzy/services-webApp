@@ -41,7 +41,9 @@ export async function listArticles(): Promise<any[]> {
   const articles: any[] =
     aRes.status === "fulfilled" ? (await aRes.value.json().catch(() => [])) ?? [] : [];
   const research: any[] =
-    rRes.status === "fulfilled" ? (await rRes.value.json().catch(() => [])) ?? [] : [];
+    rRes.status === "fulfilled" && rRes.value.ok
+      ? (await rRes.value.json().catch(() => [])) ?? []
+      : [];
 
   const researchTagged = research.map((it) => ({ section: "research", ...it }));
 
