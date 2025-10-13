@@ -53,8 +53,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     (async () => {
       try {
-        rehydrateToken();   // ambil token dari session/local kalau ada
-        await refreshProfile();
+        rehydrateToken();
+        const token = getAuthToken();
+        if (token) {
+          try {
+            await refreshProfile();
+          } catch (e: any) {
+            // Kalau token invalid/expired (401), biarkan user tetap dianggap logged out.
+            if (e?.status !== 401) throw e;
+          }
+        }
       } catch {
         /* no-op */
       } finally {
