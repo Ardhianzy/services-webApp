@@ -7,25 +7,63 @@ declare global {
   namespace Express {
     interface Request {
       user?: {
-        admin_Id: string; // dari middleware auth
+        admin_Id: string; // dari middleware auth (perhatikan kapitalisasi konsisten dengan middleware)
         username: string;
       };
-      file?: Express.Multer.File; // jika pakai .single()
-      filed?: {
-        [fieldname: string]: Express.Multer.File[];
-      };
+      file?: Express.Multer.File; // jika route pakai .single()
+      files?:
+        | Express.Multer.File[]
+        | { [fieldname: string]: Express.Multer.File[] }
+        | undefined;
+      fileImage?: Express.Multer.File | undefined; // opsional jika kamu isi manual di middleware
     }
   }
 }
 
+/** Ambil file "image" dari req (mendukung .fields, custom, dsb.) */
 function getImageFromReq(req: Request): Express.Multer.File | undefined {
-  // support: fields({ image }), single("image"), atau custom attach ke req.fileImage
-  return (req.filed as any)?.image?.[0] || (req as any).fileImage || undefined;
+  const anyReq = req as any;
+  // Jika pakai .fields()
+  const filesObj = (req.files as { [k: string]: Express.Multer.File[] }) || {};
+  if (filesObj.image?.[0]) return filesObj.image[0];
+
+  // Kalau ada custom attach
+  if (anyReq.fileImage) return anyReq.fileImage;
+
+  // Jika route lain pakai .single("image")
+  if ((req as any).file && (req as any).file.fieldname === "image") {
+    return (req as any).file as Express.Multer.File;
+  }
+  return undefined;
 }
 
+/** Ambil file "pdf" dari req (mendukung .fields atau .single("pdf")) */
 function getPdfFromReq(req: Request): Express.Multer.File | undefined {
-  // support: fields({ pdf }), uploadPdf.single("pdf")
-  return (req.filed as any)?.pdf?.[0] || req.file || undefined;
+  const filesObj = (req.files as { [k: string]: Express.Multer.File[] }) || {};
+  if (filesObj.pdf?.[0]) return filesObj.pdf[0];
+
+  // fallback: .single("pdf")
+  if ((req as any).file && (req as any).file.fieldname === "pdf") {
+    return (req as any).file as Express.Multer.File;
+  }
+  return undefined;
+}
+
+/** Parse boolean dari multipart form-data */
+function parseBool(v: unknown): boolean | undefined {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") {
+    if (v.toLowerCase() === "true") return true;
+    if (v.toLowerCase() === "false") return false;
+  }
+  return undefined;
+}
+
+/** Parse date ISO; balikan Date atau undefined */
+function parseDate(v: unknown): Date | undefined {
+  if (!v) return undefined;
+  const d = new Date(String(v));
+  return isNaN(d.getTime()) ? undefined : d;
 }
 
 export class ResearchHandler {
@@ -46,8 +84,8 @@ export class ResearchHandler {
         return;
       }
 
-      const imageFile = getImageFromReq(req);
-      const pdfFile = getPdfFromReq(req);
+      const imageFile = getImageFromReq(req); // file cover (opsional)
+      const pdfFile = getPdfFromReq(req); // file PDF (opsional)
 
       const created = await this.researchService.createByAdmin(
         {
@@ -55,13 +93,14 @@ export class ResearchHandler {
           research_title: req.body.research_title,
           research_sum: req.body.research_sum,
           researcher: req.body.researcher,
-          research_date: new Date(req.body.research_date),
-          fiel: req.body.fiel, // ← WAJIB sesuai schema
+          research_date: parseDate(req.body.research_date) as Date, // CREATE: wajib sesuai schema
+          fiel: req.body.fiel, // wajib sesuai schema (typo "fiel" di prisma)
           meta_title: req.body.meta_title,
           meta_description: req.body.meta_description,
           keywords: req.body.keywords,
-          is_published:
-            req.body.is_published === "true" || req.body.is_published === true,
+          is_published: parseBool(req.body.is_published) ?? false,
+          // NOTE: jika image kamu kirim sebagai URL (teks), ambil dari req.body.image di service
+          // jika image file, service ambil dari imageFile (unggah ke ImageKit dan set URL cover).
         },
         imageFile,
         pdfFile
@@ -90,8 +129,8 @@ export class ResearchHandler {
         return;
       }
 
-      const imageFile = getImageFromReq(req);
-      const pdfFile = getPdfFromReq(req);
+      const imageFile = getImageFromReq(req); // opsional
+      const pdfFile = getPdfFromReq(req); // opsional
 
       const updated = await this.researchService.updateById(
         id,
@@ -99,21 +138,14 @@ export class ResearchHandler {
           research_title: req.body.research_title,
           research_sum: req.body.research_sum,
           researcher: req.body.researcher,
-          research_date: req.body.research_date
-            ? new Date(req.body.research_date)
-            : undefined,
+          research_date: parseDate(req.body.research_date),
           fiel: req.body.fiel,
           meta_title: req.body.meta_title,
           meta_description: req.body.meta_description,
           keywords: req.body.keywords,
-          is_published:
-            typeof req.body.is_published === "undefined"
-              ? undefined
-              : req.body.is_published === "true" ||
-                req.body.is_published === true,
-          // hapus PDF tanpa upload baru
-          remove_pdf:
-            req.body.remove_pdf === "true" || req.body.remove_pdf === true,
+          is_published: parseBool(req.body.is_published),
+          remove_pdf: parseBool(req.body.remove_pdf) === true, // hapus PDF tanpa upload baru
+          // NOTE: image URL teks masih bisa dikirim via req.body.image jika bukan file.
         },
         imageFile,
         pdfFile
