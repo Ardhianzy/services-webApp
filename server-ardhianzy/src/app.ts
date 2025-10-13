@@ -6,8 +6,8 @@ import mainRoutes from "./routes";
 const app: Application = express();
 
 const allowedOrigins: string[] = [
-  "https://www.ardhianzy.com/",
-  "https://ardhianzy.com/",
+  "https://www.ardhianzy.com",
+  "https://ardhianzy.com",
   "http://localhost:5173",
 ];
 
