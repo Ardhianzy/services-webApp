@@ -7,6 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  EXPERT
+}
+
+enum ArticleCategory {
+  IDEAS_AND_TRADITIONS
+  POP_CULTURE
+}
+
 model Admin {
   id         String   @id @default(cuid())
   image      String
@@ -18,12 +29,12 @@ model Admin {
   updated_at DateTime @updatedAt
 
   // Relations
-  ToT                   ToT[]                   @relation(name: "AdminToT")
-  Collected_meditations Collected_meditations[] @relation(name: "Admin_coc")
-  Research              Research[]              @relation(name: "Admin_research")
-  Article               Article[]               @relation(name: "admin_article")
-  Shop                  Shop[]                  @relation(name: "Admin_shop")
-  Glosarium             Glosarium[]             @relation(name: "Admin_glosarium")
+  ToT        ToT[]        @relation(name: "AdminToT")
+  Monologues Monologues[] @relation(name: "Admin_mono")
+  Research   Research[]   @relation(name: "Admin_research")
+  Article    Article[]    @relation(name: "admin_article")
+  Shop       Shop[]       @relation(name: "Admin_shop")
+  Megazine   Megazine[]   @relation(name: "Admin_Megazine")
 }
 
 model ToT {
@@ -66,22 +77,24 @@ model ToT_meta {
 }
 
 model Reading_guidline {
-  id        String @id @default(cuid())
+  id        String          @id @default(cuid())
   ToT_id    String
   title     String
+  image     String?
   author    String
   publisher String
   year      String
   detailed  String
-  category  String
-  tot       ToT    @relation(fields: [ToT_id], references: [id], name: "ToT_guide")
+  category  DifficultyLevel
+  tot       ToT             @relation(fields: [ToT_id], references: [id], name: "ToT_guide")
 
   @@map("reading_guidline")
 }
 
-model Collected_meditations {
+model Monologues {
   id       String  @id @default(cuid())
   admin_id String
+  title    String
   image    String?
   dialog   String
   judul    String
@@ -89,60 +102,63 @@ model Collected_meditations {
   slug             String? @unique
   meta_title       String?
   meta_description String?
-  is_published     Boolean @default(false)
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  is_published    Boolean   @default(false)
+  pdf_file_id     String?
+  pdf_url         String?
+  pdf_filename    String?
+  pdf_mime        String?
+  pdf_size        Int?
+  pdf_uploaded_at DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
 
-  admin Admin @relation(fields: [admin_id], references: [id], name: "Admin_coc")
+  admin Admin @relation(fields: [admin_id], references: [id], name: "Admin_mono")
 
-  @@map("collected_meditations")
+  @@map("Monologues")
 }
 
 model Research {
-  id               String   @id @default(cuid())
-  admin_id         String
-  research_title   String
-  slug             String   @unique
-  research_sum     String
-  image            String
-  researcher       String
-  research_date    DateTime
-  fiel             String // (biarkan sesuai skema kamu)
+  id             String   @id @default(cuid())
+  admin_id       String
+  research_title String
+  slug           String   @unique
+  research_sum   String
+  image          String
+  researcher     String
+  research_date  DateTime
+  fiel           String
 
-  // ==== PDF (opsional) ====
-  pdf_file_id      String?  // ID file di ImageKit (untuk delete/replace)
-  pdf_url          String?  // URL public (atau signed URL jika pakai isPrivateFile)
-  pdf_filename     String?  // Nama file asli
-  pdf_mime         String?  // ex: application/pdf
-  pdf_size         Int?     // bytes (<= 10_485_760 sesuai validasi di server)
-  pdf_uploaded_at  DateTime?
+  pdf_file_id     String?
+  pdf_url         String?
+  pdf_filename    String?
+  pdf_mime        String?
+  pdf_size        Int?
+  pdf_uploaded_at DateTime?
 
-  // ==== SEO ====
   meta_title       String?
   meta_description String?
   keywords         String?
 
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-  is_published     Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  is_published Boolean  @default(false)
 
   admin Admin @relation(fields: [admin_id], references: [id], name: "Admin_research")
 
   @@map("researches")
 }
 
-
 model Article {
-  id       String   @id @default(cuid())
-  admin_id String
-  title    String
-  slug     String   @unique
-  image    String
-  content  String
-  author   String
-  date     DateTime
-
+  id               String          @id @default(cuid())
+  admin_id         String
+  title            String
+  slug             String          @unique
+  image            String
+  content          String
+  author           String
+  date             DateTime
+  category         ArticleCategory
   meta_title       String?
   meta_description String?
   keywords         String?
@@ -185,27 +201,29 @@ model Shop {
   @@map("shops")
 }
 
-model Glosarium {
-  id         String @id @default(cuid())
-  admin_id   String
-  term       String
-  definition String
-
+model Megazine {
+  id               String  @id @default(cuid())
+  admin_id         String
+  title            String
+  description      String
+  megazine_isi     String
+  image            String
   slug             String  @unique
   meta_title       String?
   meta_description String?
   keywords         String?
 
-  etymology     String?
-  examples      String?
-  related_terms String?
-
-  is_published Boolean @default(false)
+  pdf_file_id     String?
+  pdf_url         String?
+  pdf_filename    String?
+  pdf_mime        String?
+  pdf_size        Int?
+  pdf_uploaded_at DateTime?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  admin Admin @relation(fields: [admin_id], references: [id], name: "Admin_glosarium")
+  admin Admin @relation(fields: [admin_id], references: [id], name: "Admin_Megazine")
 
-  @@map("glosarium")
+  @@map("megazine")
 }
