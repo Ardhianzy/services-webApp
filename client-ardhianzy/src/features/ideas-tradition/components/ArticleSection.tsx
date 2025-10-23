@@ -1,372 +1,247 @@
-// import { type FC, useMemo, useState } from "react";
-// import { articles as dataArticles } from "@/data/articles";
-
-// type ArticleCardVM = {
-//   id: string | number;
-//   title: string;
-//   dateLabel: string;
-//   imageUrl: string;
-// };
-
-// function formatDateISOToDisplay(iso: string): string {
-//   const d = new Date(iso);
-//   if (isNaN(d.getTime())) return "";
-//   const dd = String(d.getDate()).padStart(2, "0");
-//   const mon = d.toLocaleString("en-US", { month: "short" });
-//   const yyyy = d.getFullYear();
-//   return `${dd} ${mon}, ${yyyy}`;
-// }
-
-// const ArticleCardItem: FC<ArticleCardVM> = ({ title, dateLabel, imageUrl }) => {
-//   return (
-//     <article className="group cursor-pointer text-center">
-//       <div
-//         className={[
-//           "w-full !h-[470px] !mb-[10px]",
-//           "!bg-black bg-cover bg-center !bg-blend-luminosity",
-//           "transition-transform duration-[400ms] ease-in-out group-hover:!scale-[1.03]",
-//           "transition-[filter] group-hover:saturate-[1.2]",
-//           "max-[768px]:!h-[400px]",
-//         ].join(" ")}
-//         style={{ backgroundImage: `url(${imageUrl})` }}
-//         aria-label={title}
-//       />
-//       <div className="flex flex-col items-center">
-//         <p className="it__date !mt-4"> {dateLabel} </p>
-//         <h3 className="it__title !mt-8 !mb-11"> {title} </h3>
-//       </div>
-//     </article>
-//   );
-// };
-
-// const ArticleSection: FC = () => {
-//   const [isExpanded, setIsExpanded] = useState(false);
-//   const [overlayVisible, setOverlayVisible] = useState(true);
-//   const [curtainOpen, setCurtainOpen] = useState(false);
-
-//   const itArticles: ArticleCardVM[] = useMemo(
-//     () =>
-//       dataArticles
-//         .filter((a) => a.section === "ideas-tradition")
-//         .map((a) => ({
-//           id: a.id,
-//           title: a.title,
-//           dateLabel: formatDateISOToDisplay(a.publishedAt),
-//           imageUrl: a.image ?? a.cover,
-//         })),
-//     []
-//   );
-
-//   const first = itArticles.slice(0, 9);
-//   const extra = itArticles.slice(9);
-
-//   const handleLoadMore = () => {
-//     setIsExpanded(true);
-//     requestAnimationFrame(() => {
-//       setCurtainOpen(true);
-//       setOverlayVisible(false);
-//     });
-//   };
-
-//   return (
-//     <section className="w-full !bg-black !py-[60px] text-white">
-//       <style>{`
-//         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-//         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap');
-
-//         .it__date{
-//           font-family:'Roboto',sans-serif!important;
-//           font-weight:300!important;
-//           font-size:15px!important;
-//           line-height:18px!important;
-//           color:#B3B3B3!important;
-//         }
-//         .it__title{
-//           color:#FFFFFF!important;
-//           font-family:'Bebas Neue',cursive!important;
-//           font-weight:400!important;
-//           font-size:48px!important;
-//           line-height:1.1!important;
-//           text-shadow:0px 4px 50px rgba(0,0,0,0.25)!important;
-//         }
-//         @media (max-width:768px){
-//           .it__title{ font-size:38px!important; }
-//         }
-
-//         .it__loadwrap{
-//           position:absolute!important;left:0!important;bottom:0!important;width:100%!important;height:200px!important;
-//           display:flex!important;justify-content:center!important;align-items:center!important;
-//           background:linear-gradient(0deg,#000 16.35%,rgba(0,0,0,0) 100%)!important; z-index:5!important; pointer-events:none!important;
-//         }
-//         .it__loadwrap--visible{ opacity:1!important; visibility:visible!important; transition:opacity .35s ease, visibility 0s linear 0s!important; }
-//         .it__loadwrap--fadeout{ opacity:0!important; visibility:hidden!important; transition:opacity .35s ease, visibility 0s linear .35s!important; }
-
-//         .it__loadbtn{
-//           pointer-events:auto!important; cursor:pointer!important; background:none!important; border:none!important;
-//           outline:none!important; box-shadow:none!important; -webkit-tap-highlight-color:transparent!important; appearance:none!important;
-//           font-family:'Bebas Neue',cursive!important; font-weight:400!important; font-size:42px!important; line-height:48px!important;
-//           letter-spacing:.05em!important; color:#fff!important; transition:opacity .3s ease!important;
-//         }
-//         .it__loadbtn:hover{ opacity:.8!important; }
-
-//         .fx-curtainDown{ position:relative!important; overflow:hidden!important; }
-//         .fx-curtainDown::before{
-//           content:''!important; position:absolute!important; inset:0!important; z-index:2!important; background:#000!important;
-//           transform-origin:bottom!important; transform:scaleY(1)!important; transition:transform .6s cubic-bezier(.25,.8,.3,1)!important;
-//           pointer-events:none!important;
-//         }
-//         .fx-curtainDown.is-open::before{ transform:scaleY(0)!important; }
-//       `}</style>
-
-//       <div className="mx-auto max-w-[1275px] px-[20px]">
-//         <div className="relative">
-//           <div
-//             className={[
-//               "grid grid-cols-3 !gap-y-[80px] !gap-x-[40px]",
-//               "max-[992px]:grid-cols-2",
-//               "max-[768px]:grid-cols-1 max-[768px]:!gap-y-[60px] max-[768px]:!gap-x-0",
-//             ].join(" ")}
-//           >
-//             {first.map((a) => (
-//               <ArticleCardItem
-//                 key={a.id}
-//                 id={a.id}
-//                 title={a.title}
-//                 dateLabel={a.dateLabel}
-//                 imageUrl={a.imageUrl}
-//               />
-//             ))}
-//           </div>
-
-//           {isExpanded && extra.length > 0 && (
-//             <div className={["fx-curtainDown", curtainOpen ? "is-open" : ""].join(" ")}>
-//               <div
-//                 className={[
-//                   "grid grid-cols-3 !gap-y-[80px] !gap-x-[40px] !mt-[80px]",
-//                   "max-[992px]:grid-cols-2",
-//                   "max-[768px]:grid-cols-1 max-[768px]:!gap-y-[60px] max-[768px]:!gap-x-0",
-//                 ].join(" ")}
-//               >
-//                 {extra.map((a) => (
-//                   <ArticleCardItem
-//                     key={a.id}
-//                     id={a.id}
-//                     title={a.title}
-//                     dateLabel={a.dateLabel}
-//                     imageUrl={a.imageUrl}
-//                   />
-//                 ))}
-//               </div>
-//             </div>
-//           )}
-
-//           {!isExpanded && itArticles.length > 0 && (
-//             <div
-//               className={[
-//                 "it__loadwrap",
-//                 overlayVisible ? "it__loadwrap--visible" : "it__loadwrap--fadeout",
-//               ].join(" ")}
-//               aria-hidden={!overlayVisible}
-//             >
-//               <button type="button" onClick={handleLoadMore} className="it__loadbtn">
-//                 LOAD MORE...
-//               </button>
-//             </div>
-//           )}
-//         </div>
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default ArticleSection;
-// export { ArticleSection as IdeasTraditionArticlesSection };
-
-
 // src/features/ideas-tradition/components/ArticleSection.tsx
-import { type FC, useMemo, useState } from "react";
-import { useHybridArticles } from "@/features/articles/hooks";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { contentApi } from "@/lib/content/api";
+import type { ArticleDTO } from "@/lib/content/types";
+import { ROUTES } from "@/app/routes";
 
-type ArticleCardVM = {
-  id: string | number;
-  title: string;
-  dateLabel: string;
-  imageUrl: string;
-};
-
-function formatDateISOToDisplay(iso?: string): string {
-  if (!iso) return "";
+function formatPrettyDate(iso?: string | null) {
+  if (!iso) return "—";
   const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mon = d.toLocaleString("en-US", { month: "short" });
-  const yyyy = d.getFullYear();
-  return `${dd} ${mon}, ${yyyy}`;
+  if (isNaN(d.getTime())) return "—";
+  const month = d.toLocaleString("en-US", { month: "long" });
+  return `${month} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-const ArticleCardItem: FC<ArticleCardVM> = ({ title, dateLabel, imageUrl }) => {
+function ContinueReadInline() {
   return (
-    <article className="group cursor-pointer text-center">
-      <div
-        className={[
-          "w-full !h-[470px] !mb-[10px]",
-          "!bg-black bg-cover bg-center !bg-blend-luminosity",
-          "transition-transform duration-[400ms] ease-in-out group-hover:!scale-[1.03]",
-          "transition-[filter] group-hover:saturate-[1.2]",
-          "max-[768px]:!h-[400px]",
-        ].join(" ")}
-        style={{ backgroundImage: `url(${imageUrl})` }}
-        aria-label={title}
-      />
-      <div className="flex flex-col items-center">
-        <p className="it__date !mt-4"> {dateLabel} </p>
-        <h3 className="it__title !mt-8 !mb-11"> {title} </h3>
-      </div>
-    </article>
+    <span
+      className="
+        ml-2 inline-flex items-center underline underline-offset-4
+        decoration-white/60 hover:decoration-white
+      "
+    >
+      Continue Read&nbsp;→
+    </span>
   );
+}
+
+function truncateByPhraseOrWords(text: string, phrase: string | null, maxWords: number) {
+  const safe = (text ?? "").trim();
+  if (!safe) return "";
+  if (phrase) {
+    const idx = safe.toLowerCase().indexOf(phrase.toLowerCase());
+    if (idx !== -1) return safe.slice(0, idx + phrase.length).trim().replace(/\s+$/, "");
+  }
+  const words = safe.split(/\s+/);
+  if (words.length <= maxWords) return safe;
+  return words.slice(0, maxWords).join(" ").replace(/[,\.;:!?\-—]+$/, "");
+}
+
+function stripHtml(html?: string | null) {
+  if (!html) return "";
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function normalizeMetaText(input?: string | null): string {
+  if (!input) return "";
+  let s = String(input).trim();
+  s = s.replace(/\\u003C/gi, "<").replace(/\\u003E/gi, ">").replace(/\\u0026/gi, "&").replace(/\\"/g, '"');
+  s = s.replace(/^\s*"content"\s*:\s*/i, "");
+  s = /<[^>]+>/.test(s) ? stripHtml(s) : s;
+  return s.replace(/\s+/g, " ").trim();
+}
+
+type ArticleCard = {
+  id: string | number;
+  title: string;
+  date: string;
+  image: string;
+  slug?: string;
+  desc: string;
 };
 
-const ArticleSection: FC = () => {
-  const { articles: hybrid } = useHybridArticles();
+type Props = {
+  articles?: ArticleCard[];
+};
 
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [overlayVisible, setOverlayVisible] = useState(true);
-  const [curtainOpen, setCurtainOpen] = useState(false);
+export default function ArticleSection({ articles }: Props) {
+  const [remote, setRemote] = useState<ArticleCard[]>([]);
 
-  const itArticles: ArticleCardVM[] = useMemo(
-    () =>
-      (hybrid as any[])
-        .filter((a) => a.section === "ideas-tradition")
-        .map((a) => ({
-          id: a.id,
-          title: a.title,
-          dateLabel: formatDateISOToDisplay(a.publishedAt),
-          imageUrl: a.image ?? a.cover,
-        })),
-    [hybrid]
+  useEffect(() => {
+    let alive = true;
+    if (articles?.length) { setRemote(articles); return; }
+    (async () => {
+      try {
+        const list = await contentApi.articles.list();
+        if (!alive) return;
+        const mapped: ArticleCard[] = (list ?? [])
+          .filter((a: ArticleDTO) => {
+            const c = (a.category ?? "").toUpperCase();
+            return c === "IDEAS_AND_TRADITIONS" || c === "IDEAS_AND_TRADITION";
+          })
+          .map((a: ArticleDTO) => {
+            const desc =
+              normalizeMetaText(a.meta_description) ||
+              (a.excerpt ?? "").trim() ||
+              stripHtml(a.content);
+            return {
+              id: a.id,
+              title: a.title ?? "Untitled",
+              date: formatPrettyDate(a.date || a.created_at || ""),
+              image: a.image ?? "",
+              slug: a.slug,
+              desc,
+            };
+          });
+        setRemote(mapped);
+      } catch { if (!alive) return; setRemote([]); }
+    })();
+    return () => { alive = false; };
+  }, [articles]);
+
+  const source: ArticleCard[] = useMemo(
+    () => (articles?.length ? articles : remote),
+    [articles, remote]
   );
 
-  const first = itArticles.slice(0, 9);
-  const extra = itArticles.slice(9);
+  if (!source.length) return null;
 
-  const handleLoadMore = () => {
-    setIsExpanded(true);
-    requestAnimationFrame(() => {
-      setCurtainOpen(true);
-      setOverlayVisible(false);
-    });
-  };
+  const first = source.slice(0, 9);
+  const extra = source.slice(9);
 
   return (
-    <section className="w-full !bg-black !py-[60px] text-white">
+    <section className="w-full bg-black text-white py-[60px]">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap');
 
-        .it__date{
-          font-family:'Roboto',sans-serif!important;
-          font-weight:300!important;
-          font-size:15px!important;
-          line-height:18px!important;
-          color:#B3B3B3!important;
-        }
-        .it__title{
-          color:#FFFFFF!important;
-          font-family:'Bebas Neue',cursive!important;
-          font-weight:400!important;
-          font-size:48px!important;
-          line-height:1.1!important;
-          text-shadow:0px 4px 50px rgba(0,0,0,0.25)!important;
-        }
-        @media (max-width:768px){
-          .it__title{ font-size:38px!important; }
-        }
+        .it__bebas { font-family: 'Bebas Neue', cursive !important; }
+        .it__roboto { font-family: 'Roboto', sans-serif !important; }
 
-        .it__loadwrap{
-          position:absolute!important;left:0!important;bottom:0!important;width:100%!important;height:200px!important;
-          display:flex!important;justify-content:center!important;align-items:center!important;
-          background:linear-gradient(0deg,#000 16.35%,rgba(0,0,0,0) 100%)!important; z-index:5!important; pointer-events:none!important;
+        .fx-curtainDown { position: relative !important; overflow: hidden !important; }
+        .fx-curtainDown::before{
+          content:'' !important; position:absolute !important; inset:0 !important; z-index:2 !important;
+          background:#000 !important; transform-origin:bottom !important; transform:scaleY(1) !important;
+          transition:transform .6s cubic-bezier(.25,.8,.3,1) !important; pointer-events:none !important;
         }
-        .it__loadwrap--visible{ opacity:1!important; visibility:visible!important; transition:opacity .35s ease, visibility 0s linear 0s!important; }
-        .it__loadwrap--fadeout{ opacity:0!important; visibility:hidden!important; transition:opacity .35s ease, visibility 0s linear .35s!important; }
+        .fx-curtainDown.is-open::before{ transform:scaleY(0) !important; }
+
+        .it__loadwrap--visible{ opacity:1 !important; visibility:visible !important; transition:opacity .35s ease, visibility 0s linear 0s !important; }
+        .it__loadwrap--hidden{  opacity:0 !important; visibility:hidden !important; transition:opacity .35s ease, visibility 0s linear .35s !important; }
 
         .it__loadbtn{
-          pointer-events:auto!important; cursor:pointer!important; background:none!important; border:none!important;
-          outline:none!important; box-shadow:none!important; -webkit-tap-highlight-color:transparent!important; appearance:none!important;
-          font-family:'Bebas Neue',cursive!important; font-weight:400!important; font-size:42px!important; line-height:48px!important;
-          letter-spacing:.05em!important; color:#fff!important; transition:opacity .3s ease!important;
+          pointer-events:auto !important; cursor:pointer !important; background:none !important; border:none !important;
+          outline:none !important; box-shadow:none !important; -webkit-tap-highlight-color:transparent !important; appearance:none !important;
+          font-family:'Bebas Neue',cursive !important; font-weight:400 !important; font-size:42px !important; line-height:48px !important;
+          letter-spacing:.05em !important; color:#FFFFFF !important; transition:opacity .3s ease !important;
         }
-        .it__loadbtn:hover{ opacity:.8!important; }
+        .it__loadbtn:hover{ opacity:.8 !important; }
 
-        .fx-curtainDown{ position:relative!important; overflow:hidden!important; }
-        .fx-curtainDown::before{
-          content:''!important; position:absolute!important; inset:0!important; z-index:2!important; background:#000!important;
-          transform-origin:bottom!important; transform:scaleY(1)!important; transition:transform .6s cubic-bezier(.25,.8,.3,1)!important;
-          pointer-events:none!important;
+        .it-grid { grid-template-columns: repeat(3, 1fr); gap: 80px 40px; }
+
+        .it-card .it-img { transition: transform .4s ease, filter .4s ease; border-radius: 8px; }
+        .it-card:hover .it-img { filter: saturate(1.2); }
+
+        @media (max-width: 992px) { .it-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        @media (max-width: 768px) {
+          .it-grid { grid-template-columns: 1fr; gap: 60px 0; }
+          .it-img { height: 400px; }
+          .it-title { font-size: 38px !important; }
         }
-        .fx-curtainDown.is-open::before{ transform:scaleY(0)!important; }
       `}</style>
 
-      <div className="mx-auto max-w-[1275px] px-[20px]">
-        <div className="relative">
-          <div
-            className={[
-              "grid grid-cols-3 !gap-y-[80px] !gap-x-[40px]",
-              "max-[992px]:grid-cols-2",
-              "max-[768px]:grid-cols-1 max-[768px]:!gap-y-[60px] max-[768px]:!gap-x-0",
-            ].join(" ")}
-          >
-            {first.map((a) => (
-              <ArticleCardItem
-                key={a.id}
-                id={a.id}
-                title={a.title}
-                dateLabel={a.dateLabel}
-                imageUrl={a.imageUrl}
-              />
-            ))}
+      <div className="mx-auto max-w-[1275px] px-5">
+        <div className="relative border-t border-white">
+
+          <div className="it-grid grid">
+            {first.map((article) => {
+              const preview = truncateByPhraseOrWords(article.desc ?? "", "menolak", 45);
+              const showEllipsis = (article.desc ?? "").trim().length > preview.trim().length;
+
+              const href = article.slug
+                ? ROUTES.IDEAS_TRADITION_DETAIL.replace(":slug", article.slug)
+                : ROUTES.IDEAS_TRADITION;
+
+              return (
+                <Link key={article.id} to={href} className="block" style={{ textDecoration: "none" }}>
+                  <article className="it-card text-center cursor-pointer mt-5">
+                    <div
+                      className="it-img w-full h-[470px] bg-cover bg-center bg-black mb-[10px]"
+                      style={{ backgroundImage: `url(${article.image})`, backgroundBlendMode: "luminosity" }}
+                      aria-label={article.title}
+                    />
+                    <div className="flex flex-col items-center">
+                      <p
+                        className="it__roboto text-[#B3B3B3] mb-[-23px] mt-4"
+                        style={{ fontWeight: 300, fontSize: "17px", lineHeight: "18px" }}
+                      >
+                        {article.date}
+                      </p>
+                      <h3
+                        className="it__bebas it-title mt-10"
+                        style={{ fontWeight: 400, fontSize: "40px", lineHeight: 1.1, textShadow: "0px 4px 50px rgba(0,0,0,0.25)" }}
+                      >
+                        {article.title}
+                      </h3>
+
+                      <p className="it__roboto text-white/90 max-w-[90%] mx-auto"
+                         style={{ fontSize: "16px", lineHeight: 1.5, marginTop: "10px" }}>
+                        {preview}
+                        {showEllipsis ? "..." : ""} <ContinueReadInline />
+                      </p>
+                    </div>
+                  </article>
+                </Link>
+              );
+            })}
           </div>
 
-          {isExpanded && extra.length > 0 && (
-            <div className={["fx-curtainDown", curtainOpen ? "is-open" : ""].join(" ")}>
-              <div
-                className={[
-                  "grid grid-cols-3 !gap-y-[80px] !gap-x-[40px] !mt-[80px]",
-                  "max-[992px]:grid-cols-2",
-                  "max-[768px]:grid-cols-1 max-[768px]:!gap-y-[60px] max-[768px]:!gap-x-0",
-                ].join(" ")}
-              >
-                {extra.map((a) => (
-                  <ArticleCardItem
-                    key={a.id}
-                    id={a.id}
-                    title={a.title}
-                    dateLabel={a.dateLabel}
-                    imageUrl={a.imageUrl}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="it-grid grid mt-[80px]">
+            {extra.map((article) => {
+              const preview = truncateByPhraseOrWords(article.desc ?? "", null, 45);
+              const showEllipsis = (article.desc ?? "").trim().length > preview.trim().length;
 
-          {!isExpanded && itArticles.length > 0 && (
-            <div
-              className={[
-                "it__loadwrap",
-                overlayVisible ? "it__loadwrap--visible" : "it__loadwrap--fadeout",
-              ].join(" ")}
-              aria-hidden={!overlayVisible}
-            >
-              <button type="button" onClick={handleLoadMore} className="it__loadbtn">
-                LOAD MORE...
-              </button>
-            </div>
-          )}
+              const href = article.slug
+                ? ROUTES.IDEAS_TRADITION_DETAIL.replace(":slug", article.slug)
+                : ROUTES.IDEAS_TRADITION;
+
+              return (
+                <Link key={article.id} to={href} className="block" style={{ textDecoration: "none" }}>
+                  <article className="it-card text-center cursor-pointer">
+                    <div
+                      className="it-img w-full h-[470px] bg-cover bg-center bg-black mb-[10px]"
+                      style={{ backgroundImage: `url(${article.image})`, backgroundBlendMode: "luminosity" }}
+                      aria-label={article.title}
+                    />
+                    <div className="flex flex-col items-center">
+                      <p
+                        className="it__roboto text-[#B3B3B3] mb-[-23px] mt-4"
+                        style={{ fontWeight: 300, fontSize: "15px", lineHeight: "18px" }}
+                      >
+                        {article.date}
+                      </p>
+                      <h3
+                        className="it__bebas it-title mt-10"
+                        style={{ fontWeight: 400, fontSize: "48px", lineHeight: 1.1, textShadow: "0px 4px 50px rgba(0,0,0,0.25)" }}
+                      >
+                        {article.title}
+                      </h3>
+
+                      <p className="it__roboto text-white/90 max-w-[90%] mx-auto"
+                         style={{ fontSize: "18px", lineHeight: 1.5, marginTop: "10px" }}>
+                        {preview}
+                        {showEllipsis ? "..." : ""} <ContinueReadInline />
+                      </p>
+                    </div>
+                  </article>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
   );
-};
-
-export default ArticleSection;
-export { ArticleSection as IdeasTraditionArticlesSection };
+}

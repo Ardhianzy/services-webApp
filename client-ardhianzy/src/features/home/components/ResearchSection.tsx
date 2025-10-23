@@ -1,157 +1,239 @@
 // src/features/home/components/ResearchSection.tsx
-import { useEffect, useState } from "react";
-import { listResearch } from "@/features/research/api";
-import { API_BASE } from "@/config/endpoints";
+import { type FC, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { contentApi } from "@/lib/content/api";
+import type { ResearchDTO, ResearchCardVM } from "@/lib/content/types";
+import { ROUTES } from "@/app/routes";
 
-type ResearchRemote = any;
-type ResearchCard = {
-  img: string;
-  title: string;
-  date: string;
-  excerpt: string;
-  link: string;
-};
-
-const FALLBACK: ResearchCard[] = [
-  {
-    img: "/assets/research/Desain tanpa judul.png",
-    title: "LOREM IPSUM DOLOR SIT",
-    date: "22 May, 2025",
-    excerpt:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna",
-    link: "/research",
-  },
-  {
-    img: "/assets/research/Research (3).png",
-    title: "LOREM IPSUM DOLOR SIT",
-    date: "22 May, 2025",
-    excerpt:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna",
-    link: "/research",
-  },
-  {
-    img: "/assets/research/Research (1).png",
-    title: "LOREM IPSUM DOLOR SIT",
-    date: "22 May, 2025",
-    excerpt:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna",
-    link: "/research",
-  },
-  {
-    img: "/assets/research/Research (2).png",
-    title: "LOREM IPSUM DOLOR SIT",
-    date: "22 May, 2025",
-    excerpt:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna",
-    link: "/research",
-  },
-];
-
-function toAbs(url?: string) {
-  if (!url) return undefined;
-  if (/^https?:\/\//i.test(url)) return url;
-  return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
+function ContinueReadInline() {
+  return (
+    <span
+      className="
+        ml-2 inline-flex items-center underline underline-offset-4
+        decoration-white/60 group-hover:decoration-white
+      "
+    >
+      Continue Read&nbsp;→
+    </span>
+  );
 }
 
-function pickFirst<T = string>(obj: any, keys: string[], fallback?: T): T {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (v != null && v !== "") return v as T;
+function toCardVM(dto: ResearchDTO): ResearchCardVM {
+  const href = `/research/${dto.slug}`;
+  return {
+    id: dto.id,
+    title: dto.research_title,
+    description: dto.research_sum,
+    imageUrl: dto.image,
+    researcher: dto.researcher,
+    dateISO: dto.research_date,
+    slug: dto.slug,
+    href,
+  };
+}
+
+function formatDate(iso?: string) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+function truncateByPhraseOrWords(text: string, phrase: string, maxWords: number) {
+  const safe = (text ?? "").trim();
+  if (!safe) return "";
+  const idx = safe.toLowerCase().indexOf(phrase.toLowerCase());
+  if (idx !== -1) {
+    return safe.slice(0, idx + phrase.length).trim().replace(/\s+$/, "");
   }
-  return fallback as T;
+  const words = safe.split(/\s+/);
+  if (words.length <= maxWords) return safe;
+  const cut = words.slice(0, maxWords).join(" ");
+  return cut.replace(/[,\.;:!?\-—]+$/, "");
 }
 
-function plainExcerpt(htmlOrText?: string, max = 140) {
-  if (!htmlOrText) return "";
-  const text = String(htmlOrText).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  return text.length > max ? `${text.slice(0, max)}…` : text;
-}
+const BIG_MIN_H = 450;
 
-function mapToCard(x: ResearchRemote): ResearchCard {
-  const title = pickFirst<string>(x, ["title", "research_title", "name"], "Untitled");
-  const dateRaw = pickFirst<string>(x, ["research_date", "publishedAt", "date"], "");
-  const date =
-    dateRaw && !/^\d{1,2}\s\w+,\s\d{4}$/.test(dateRaw)
-      ? new Date(dateRaw).toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" })
-      : dateRaw || "";
-  const img = toAbs(pickFirst<string>(x, ["image", "img", "thumbnail", "cover"], "")) ?? "/assets/research/Research (1).png";
-  const excerpt = plainExcerpt(pickFirst<string>(x, ["content", "research_sum", "excerpt", "summary"], ""));
-  return { img, title, date, excerpt, link: "/research" };
-}
-
-export default function ResearchSection() {
-  const [items, setItems] = useState<ResearchCard[]>(FALLBACK);
+const ResearchSection: FC = () => {
+  const [big, setBig] = useState<ResearchCardVM | null>(null);
+  const [loading, setLoading] = useState(true);
+  const originalDesc = big?.description ?? "";
+  
+  const descPreview = loading
+  ? "Please wait while fetching the research..."
+  : truncateByPhraseOrWords(
+    big?.description ?? "",
+    "berpartisipasi,serta rekan",
+    50
+  );
+  
+  const showEllipsis = !loading && originalDesc.trim().length > (descPreview ?? "").trim().length;
+  const RIGHT_CARD = {
+    href: ROUTES.RESEARCH_COMING_SOON,
+    image: "/assets/research/Research_Soon.png",
+    title: "NEXT: SOON",
+    description: "Research in Progress",
+  };
 
   useEffect(() => {
-    let mounted = true;
+    let alive = true;
     (async () => {
       try {
-        const data = await listResearch();
-        const normalized = (Array.isArray(data) ? data : []).slice(0, 4).map(mapToCard);
-        if (mounted && normalized.length) setItems(normalized);
-      } catch {
+        setLoading(true);
+        const list = await contentApi.research.list();
+        const first = list?.[0];
+        if (alive && first) setBig(toCardVM(first));
+      } finally {
+        if (alive) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { alive = false; };
   }, []);
 
-  return (
-    <section id="research" aria-labelledby="research_heading" className="mb-50">
-      <div className="mx-auto max-w-[1560px] px-16 py-8 text-white max-[1200px]:px-8">
-        <div className="mb-10 flex items-center justify-between max-[768px]:flex-col max-[768px]:items-start">
-          <h2 id="research_heading" className="m-0 text-[3rem]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-            Check Our Research
-          </h2>
+  const dateHuman = big?.dateISO ? formatDate(big.dateISO) : "";
 
-          <a
-            href="/research"
-            className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
-            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
+  return (
+    <section id="research" className="relative w-full overflow-hidden bg-black py-[120px]">
+      <div className="relative z-[2] mx-auto w-full max-w-[1560px] px-[80px] max-[1200px]:px-[40px]">
+        <div className="mb-[2.5rem] flex items-center justify-between">
+          <div className="flex items-center">
+            <h2
+              className="m-0 text-[3rem] text-white"
+              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+            >
+              Ardhianzy Research
+            </h2>
+            <img
+              src="/assets/icon/Research_Logo.png"
+              alt="Ardhianzy Research"
+              className="ml-4 hidden sm:inline-block h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
+              draggable={false}
+            />
+          </div>
+
+        <a
+            href={ROUTES.RESEARCH}
+            aria-label="Open research collection"
+            className="inline-flex items-center rounded-[50px] border border-white px-[1.5rem] py-[0.7rem] text-[1rem] text-white no-underline transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
+            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
             MORE RESEARCH <span className="ml-[0.3rem]">→</span>
           </a>
         </div>
 
-        <div className="grid grid-cols-4 gap-8 max-[1200px]:grid-cols-2 max-[768px]:grid-cols-1">
-          {items.map((item, i) => (
-            <article
-              key={`${i}-${item.title}`}
-              className={[
-                "relative text-left pl-8",
-                i > 0 ? "border-l border-[#444]" : "",
-                "max-[768px]:border-none max-[768px]:pl-0",
-              ].join(" ")}
+        <div
+          className={[
+            "relative z-[2] grid items-start",
+            "grid-cols-[2.4fr_1fr]",
+            "gap-[1.5rem]",
+            "max-[1200px]:gap-[1rem]",
+            "max-[992px]:grid-cols-1",
+          ].join(" ")}
+        >
+          <Link
+            to={big ? `/research/${big.slug}` : ROUTES.RESEARCH}
+            className={[
+              "group relative overflow-hidden rounded-[16px] bg-transparent",
+              "flex max-[768px]:pl-0",
+              "border-l-2 border-[#444444]",
+              "transition duration-300 ease-out",
+              "hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow",
+              "focus:outline-none0",
+              "max-[992px]:col-span-full max-[992px]:mb-[1.25rem]",
+              "max-[768px]:flex-col",
+              "max-[768px]:rounded-none max-[768px]:rounded-b-[24px]",
+            ].join(" ")}
+          >
+            <div
+              aria-hidden
+              className="absolute right-0 top-0 z-0 h-full w-[180%]"
+              style={{
+                background:
+                  "linear-gradient(180deg, #000 0%, #0d0d0d 25%, #151515 60%, #1a1a1a 100%)",
+                borderRadius: "inherit",
+                pointerEvents: "none",
+              }}
+            />
+
+            <div
+              className="z-[1] mr-[2rem] w-[48%] h-[614px] max-[768px]:mr-0 max-[768px]:w-full"
+              style={{ minHeight: BIG_MIN_H }}
             >
-              <div className="mb-4 h-[175px] w-[249px] overflow-hidden rounded-[20px]">
+              {loading ? (
+                <div className="h-full w-full animate-pulse rounded-xl bg-white/10" />
+              ) : (
                 <img
                   loading="lazy"
-                  decoding="async"
-                  src={item.img}
-                  alt={item.title}
-                  className="h-full w-full object-cover"
-                  style={{ objectPosition: "50% 10%" }}
+                  src={big?.imageUrl}
+                  alt={big?.title}
+                  className="h-full w-full border-r-1 border-[#444444] object-cover transition duration-300 group-hover:saturate-[1.1]"
+                  style={{ mixBlendMode: "luminosity", filter: "grayscale(100%)" }}
                 />
-              </div>
+              )}
+            </div>
 
-              <h3 className="mb-2 text-[2rem]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-                {item.title}
+            <div className="z-[1] w-1/2 pt-[80px] pb-[40px] pr-[40px] pl-0 text-white text-left max-[768px]:w-full max-[768px]:px-[24px] max-[768px]:py-[32px]">
+              <h3
+                className="mb-[18px] text-white"
+                style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: "clamp(2.1rem, 3.2vw, 2.8rem)",
+                  lineHeight: 1.1,
+                }}
+              >
+                {loading ? "Loading..." : (big?.title ?? "Coming soon")}
               </h3>
 
-              <p className="mb-4 text-[0.9rem] opacity-80" style={{ fontFamily: "'Roboto Condensed', sans-serif" }}>
-                {item.date}
+              <p className="mb-[2rem] font-semibold text[1.1rem] text-[#aaa]">
+                {big?.researcher}
+                {dateHuman ? ` • ${dateHuman}` : ""}
               </p>
 
-              <p className="mb-4 text-[0.9rem] leading-[1.5] opacity-85">{item.excerpt}</p>
+              <p className="mt-10 text-[1rem] leading-[2] text-white/80 line-clamp-10">
+                {descPreview}
+                {showEllipsis ? "..." : ""}
+                <ContinueReadInline />
+              </p>
+            </div>
+          </Link>
 
-              <a href={item.link} className="mt-7 mb-[9px] inline-flex items-center underline" aria-label={`Read research: ${item.title}`}>
-                Read research <span className="ml-[0.3rem]">→</span>
-              </a>
-            </article>
-          ))}
+          <Link
+            to={RIGHT_CARD.href}
+            className="
+              group relative overflow-hidden rounded-[16px]
+              shadow-[0_12px_40px_rgba(255,255,255,0.10)]
+              hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow
+              block
+              border-l-2 border-r-1 border-[#444444]
+            "
+            aria-label={RIGHT_CARD.title}
+          >
+            <div className="relative w-full h-[clamp(240px,37vw,487px)] bg-black flex items-center justify-center">
+              {/* <img
+                src={RIGHT_CARD.image}
+                alt={RIGHT_CARD.title}
+                className="max-h-full max-w-full object-contain"
+              /> */}
+              <div className="pointer-events-none absolute inset-0" />
+            </div>
+
+            <div className="px-4 py-5 text-left ml-4">
+              <h3
+                className="mt-[9px] text-white"
+                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
+              >
+                {RIGHT_CARD.title}
+              </h3>
+              <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                {RIGHT_CARD.description}
+                <ContinueReadInline />
+              </p>
+            </div>
+          </Link>
         </div>
       </div>
     </section>
   );
-}
+};
+
+export default ResearchSection;

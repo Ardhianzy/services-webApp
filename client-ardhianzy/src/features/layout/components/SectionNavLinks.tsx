@@ -1,6 +1,6 @@
 // src/features/layout/components/SectionNavLinks.tsx
 import { useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 type NavItem =
   | { kind: "route"; to: string; label: string }
@@ -13,13 +13,29 @@ const NAV_ITEMS: NavItem[] = [
   { kind: "route", to: "/monologues", label: "MONOLOGUES" },
   { kind: "route", to: "/ReadingGuide", label: "READING GUIDE" },
   { kind: "route", to: "/IdeasTradition", label: "IDEAS & TRADITION" },
-  { kind: "route", to: "/PopCultureReview", label: "POP-CULTURE REVIEW" },
+  { kind: "route", to: "/PopCultureReview", label: "POPSHOPIA" },
   { kind: "route", to: "/shop", label: "SHOPS" },
   { kind: "hash",  href: "#community", label: "COMMUNITY" },
 ];
 
+const HOME_SECTION_MAP: Record<string, string> = {
+  "/magazine": "magazine",
+  "/research": "research",
+  "/monologues": "monologues",
+  "/ReadingGuide": "reading-guide",
+  "/reading-guide": "reading-guide",
+  "/IdeasTradition": "ideas",
+  "/ideas-tradition": "ideas",
+  "/PopCultureReview": "popshopia",
+  "/pop-culture-review": "popshopia",
+  "/shop": "shops",
+};
+
 export default function SectionNavLinks() {
   const navRef = useRef<HTMLElement>(null);
+  const { pathname, hash } = useLocation();
+  const isHome = pathname === "/";
+
   const [isStuck, setIsStuck] = useState(false);
 
   useEffect(() => {
@@ -50,7 +66,7 @@ export default function SectionNavLinks() {
     return mainH + secH;
   };
 
-  const scrollToIdCentered = (id: string) => {
+  const scrollToIdCentered = (id: string, behavior: ScrollBehavior = "smooth") => {
     const el = document.getElementById(id);
     if (!el) return;
 
@@ -65,7 +81,7 @@ export default function SectionNavLinks() {
 
     window.scrollTo({
       top: Math.max(0, Math.min(targetY, document.body.scrollHeight)),
-      behavior: "smooth",
+      behavior,
     });
   };
 
@@ -74,22 +90,47 @@ export default function SectionNavLinks() {
     if (!href.startsWith("#")) return;
     const id = href.slice(1);
     e.preventDefault();
+    sessionStorage.setItem("lastHomeSection", id);
     history.pushState(null, "", href);
     scrollToIdCentered(id);
   };
 
+  const onHomeRouteClick = (e: React.MouseEvent, routePath: string) => {
+    if (!isHome) return;
+    const targetId = HOME_SECTION_MAP[routePath];
+    if (!targetId) return;
+    e.preventDefault();
+    sessionStorage.setItem("lastHomeSection", targetId);
+    history.pushState(null, "", `#${targetId}`);
+    scrollToIdCentered(targetId);
+  };
+
   useEffect(() => {
-    if (location.hash) {
-      const id = location.hash.replace("#", "");
-      setTimeout(() => scrollToIdCentered(id), 0);
-    }
+    if (!isHome) return;
+    const idFromHash = (hash || "").replace(/^#/, "");
+    const last = sessionStorage.getItem("lastHomeSection") || "";
+    const targetId = idFromHash || last;
+    if (!targetId) return;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollToIdCentered(targetId, "auto");
+      });
+    });
+  }, [isHome, hash]);
+
+  useEffect(() => {
+    if (!isHome) return;
     const onHashChange = () => {
       const id = location.hash.replace("#", "");
-      scrollToIdCentered(id);
+      if (id) {
+        sessionStorage.setItem("lastHomeSection", id);
+        scrollToIdCentered(id);
+      }
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
+  }, [isHome]);
 
   const itemSpacing =
     "mx-[15px] max-[1200px]:mx-[10px] max-[960px]:mx-[8px] whitespace-nowrap";
@@ -124,7 +165,26 @@ export default function SectionNavLinks() {
       <ul className="flex list-none m-0 p-0 justify-center max-w-[1439px] w-full">
         {NAV_ITEMS.map((item) => (
           <li key={item.label} className={itemSpacing}>
-            {item.kind === "route" ? (
+            {isHome && item.kind === "route" ? (
+              HOME_SECTION_MAP[item.to] ? (
+                <a
+                  href={`#${HOME_SECTION_MAP[item.to]}`}
+                  className="secnav-link"
+                  onClick={(e) => onHomeRouteClick(e, item.to)}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <NavLink
+                  to={item.to}
+                  className={({ isActive }) =>
+                    ["secnav-link", isActive ? "active" : ""].join(" ")
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              )
+            ) : item.kind === "route" ? (
               <NavLink
                 to={item.to}
                 className={({ isActive }) =>

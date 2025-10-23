@@ -31,8 +31,7 @@ export default function ProductDetailPopup({
   const rating = product.reviews?.rating ?? 5.0;
   const reviewCount = product.reviews?.count ?? 100;
   const description =
-    product.description ??
-    "No description available for this product at the moment.";
+    product.description ?? "No description available for this product at the moment.";
 
   const handlePrev = useCallback(
     () => setCurrentIndex((p) => (p - 1 + galleryImages.length) % galleryImages.length),
@@ -66,6 +65,11 @@ export default function ProductDetailPopup({
     : { backgroundColor: "#000" };
 
   const activeAlt = `${product.title} — view ${currentIndex + 1}`;
+
+  const buyUrl = (product as any)?.buyUrl as string | undefined;
+  const onBuyNow = () => {
+    if (buyUrl) window.open(buyUrl, "_blank", "noopener");
+  };
 
   return (
     <div
@@ -185,7 +189,8 @@ export default function ProductDetailPopup({
 
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-[6px] !rounded-[30px] border !border-[#F5F5F5] px-[25px] py-[14px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black"
+              onClick={onBuyNow}
+              className="inline-flex items-center justify-center gap-[6px] !rounded-[30px] border !border-[#F5F5F5] px-[25px] py-[14px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black cursor-pointer"
               style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", lineHeight: "22px" }}
             >
               BUY NOW <span>&rarr;</span>

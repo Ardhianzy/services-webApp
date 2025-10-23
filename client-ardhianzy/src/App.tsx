@@ -1,22 +1,35 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import "./styles/App.css";
 
 import { Navbar } from "@/components/common/Navbar";
-import SectionNavLinks from "@/features/layout/components/SectionNavLinks";
 import { Footer } from "@/components/common/Footer";
+import SectionNavLinks from "@/features/layout/components/SectionNavLinks";
 import AppHeader from "@/features/layout/components/AppHeader";
 
-import TimelineOfThoughtHybrid from "@/features/home/components/TimelineOfThoughtHybrid";
-import HighlightSection from "@/features/home/components/HighlightSection";
+import TimelineOfThoughtSection from "@/features/home/components/TimelineOfThoughtSection";
+// import HighlightSection from "@/features/home/components/HighlightSection";
 import MagazineSection from "@/features/home/components/MagazineSection";
+import MagazineDetailPage from "@/features/magazine/pages/MagazineDetailPage";
+import MagazineComingSoonPage from "@/features/magazine/pages/MagazineComingSoonPage";
 import ResearchSection from "@/features/home/components/ResearchSection";
+import ResearchDetailPage from "@/features/research/pages/ResearchDetailPage";
+import ResearchComingSoonPage from "@/features/research/pages/ResearchComingSoonPage";
 import CourseSection from "@/features/home/components/CourseSection";
 import MonologuesSection from "@/features/home/components/MonologuesSection";
+import MonologuesComingSoonPage from "@/features/monologues/pages/MonologuesComingSoonPage";
+import MonologuesDetailPage from "@/features/monologues/pages/MonologuesDetailPage";
 import ReadingGuideSection from "@/features/home/components/ReadingGuideSection";
-import IdeasTraditionGridSection from "@/features/ideas-tradition/components/IdeasTraditionGridSection";
+import ReadingGuideDetailPage from "@/features/reading-guides/pages/ReadingGuideDetailPage";
+import ReadingGuideComingSoonPage from "@/features/reading-guides/pages/ReadingGuideComingSoonPage";
+import IdeasTraditionGridSection from "@/features/home/components/IdeasTraditionGridSection";
+import IdeaArticleDetailPage from "@/features/ideas-tradition/pages/IdeaArticleDetailPage";
+import IdeasTraditionComingSoonPage from "@/features/ideas-tradition/pages/IdeasTraditionComingSoonPage";
 import PopCultureReviewSection from "@/features/home/components/PopCultureReviewSection";
+import PopCultureReviewDetailPage from "@/features/pop-cultures/pages/PopCultureReviewDetailPage";
+import PopCultureReviewComingSoonPage from "@/features/pop-cultures/pages/PopCultureReviewComingSoonPage";
 import ShopsSection from "@/features/home/components/ShopsSection";
 import LatestVideosSection from "@/features/home/components/LatestVideosSection";
 import CommunitySection from "@/features/home/components/CommunitySection";
@@ -29,7 +42,6 @@ import IdeasTraditionPage from "@/features/ideas-tradition/pages/IdeasTraditionP
 import PopCultureReviewPage from "@/features/pop-cultures/pages/PopCultureReviewPage";
 import ReadingGuidePage from "@/features/reading-guides/pages/ReadingGuidePage";
 import ReadPage from "@/features/articles/pages/ReadPage";
-import GuidePage from "@/features/reading-guides/pages/GuidePage";
 // import LoginPage from "@/features/auth/pages/LoginPage";
 // import SignUpPage from "@/features/auth/pages/SignUpPage";
 // import ProfilePage from "@/features/user/pages/ProfilePage";
@@ -50,15 +62,20 @@ import AdminToTListPage from "@/features/admin/pages/AdminToTListPage";
 import AdminToTAddPage from "@/features/admin/pages/AdminToTAddPage";
 import AdminToTMetaListPage from "@/features/admin/pages/AdminToTMetaListPage";
 import AdminToTMetaAddPage from "@/features/admin/pages/AdminToTMetaAddPage";
-import AdminResearchShopCollectedPage from "@/features/admin/pages/AdminResearchShopCollectedPage";
+// import AdminResearchShopCollectedPage from "@/features/admin/pages/AdminResearchShopCollectedPage";
 
 import { ROUTES } from "@/app/routes";
-// import { useAuth } from "@/features/auth/store";
 
-// const philosophers = [
-//   { id: 1, name: "F. Nietzsche", years: "1844–1900", lat: 51.3397, lng: 12.3731 },
-//   { id: 2, name: "K. Marx", years: "1818–1883", lat: 49.0069, lng: 8.4037 },
-// ];
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    const el = document.scrollingElement || document.documentElement;
+    if (typeof window.scrollTo === "function") window.scrollTo(0, 0);
+    if (el) el.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  }, [pathname, search]);
+  return null;
+}
 
 function HomePage() {
   return (
@@ -67,27 +84,26 @@ function HomePage() {
       <section id="section1" className="section section1">
         <div className="main-content-container">
           <div className="map-wrapper">
-            <TimelineOfThoughtHybrid
-              // philosophers={philosophers}
-              // onMarkerClick={(p) => console.log("clicked:", p)}
-            />
+            <TimelineOfThoughtSection />
           </div>
         </div>
       </section>
 
-      <SectionNavLinks />
-      <HighlightSection />
-      <MagazineSection />
-      <ResearchSection />
-      <CourseSection />
-      <MonologuesSection />
-      <ReadingGuideSection />
-      <IdeasTraditionGridSection />
-      <PopCultureReviewSection />
-      <ShopsSection />
-      <LatestVideosSection />
-      <CommunitySection />
-      <Footer />
+      <div id="below-map">
+        <SectionNavLinks />
+        {/* <HighlightSection /> */}
+        <MagazineSection />
+        <ResearchSection />
+        <CourseSection />
+        <MonologuesSection />
+        <ReadingGuideSection />
+        <IdeasTraditionGridSection />
+        <PopCultureReviewSection />
+        <ShopsSection />
+        <LatestVideosSection />
+        <CommunitySection />
+        <Footer />
+      </div>
     </>
   );
 }
@@ -112,6 +128,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path={ROUTES.MAGAZINE_DETAIL}
+        element={<MagazineDetailPage />}
+      />
+      <Route 
+        path={ROUTES.MAGAZINE_COMING_SOON} 
+        element={<MagazineComingSoonPage />} 
+      />
+      <Route
         path={ROUTES.SHOP}
         element={
           <>
@@ -131,6 +155,8 @@ function AppRoutes() {
           </>
         }
       />
+      <Route path={ROUTES.RESEARCH_DETAIL} element={<ResearchDetailPage />} />
+      <Route path={ROUTES.RESEARCH_COMING_SOON} element={<ResearchComingSoonPage />} />
       <Route
         path={ROUTES.MONOLOGUES}
         element={
@@ -141,6 +167,8 @@ function AppRoutes() {
           </>
         }
       />
+      <Route path={ROUTES.MONOLOGUES_DETAIL} element={<MonologuesDetailPage />} />
+      <Route path={ROUTES.MONOLOGUES_COMING_SOON} element={<MonologuesComingSoonPage />} />
       <Route
         path={ROUTES.IDEAS_TRADITION}
         element={
@@ -152,6 +180,17 @@ function AppRoutes() {
         }
       />
       <Route
+        path={ROUTES.IDEAS_TRADITION_DETAIL}
+        element={
+          <>
+            <AppHeader />
+            <IdeaArticleDetailPage />
+            <Footer />
+          </>
+        }
+      />
+      <Route path={ROUTES.IDEAS_TRADITION_COMING_SOON} element={<IdeasTraditionComingSoonPage />} />
+      <Route
         path={ROUTES.POP_CULTURE_REVIEW}
         element={
           <>
@@ -160,6 +199,20 @@ function AppRoutes() {
             <Footer />
           </>
         }
+      />
+      <Route
+        path={ROUTES.POP_CULTURE_REVIEW_DETAIL}
+        element={
+          <>
+            <AppHeader />
+            <PopCultureReviewDetailPage />
+            <Footer />
+          </>
+        }
+      />
+      <Route
+        path={ROUTES.POP_CULTURE_REVIEW_COMING_SOON}
+        element={<PopCultureReviewComingSoonPage />}
       />
       <Route
         path={ROUTES.READING_GUIDE}
@@ -172,21 +225,25 @@ function AppRoutes() {
         }
       />
       <Route
-        path={ROUTES.READ}
+        path={ROUTES.READING_GUIDE_DETAIL}
         element={
           <>
             <AppHeader />
-            <ReadPage />
+            <ReadingGuideDetailPage />
             <Footer />
           </>
         }
       />
       <Route
-        path={ROUTES.GUIDE}
+        path={ROUTES.READING_GUIDE_COMING_SOON}
+        element={<ReadingGuideComingSoonPage />}
+      />
+      <Route
+        path={ROUTES.READ}
         element={
           <>
             <AppHeader />
-            <GuidePage />
+            <ReadPage />
             <Footer />
           </>
         }
@@ -240,7 +297,7 @@ function AppRoutes() {
           <Route path="tot/add" element={<AdminToTAddPage />} />
           <Route path="tot-meta/list" element={<AdminToTMetaListPage />} />
           <Route path="tot-meta/add" element={<AdminToTMetaAddPage />} />
-          <Route path="content" element={<AdminResearchShopCollectedPage />} />
+          {/* <Route path="content" element={<AdminResearchShopCollectedPage />} /> */}
         </Route>
       </Route>
 
@@ -256,6 +313,7 @@ export default function App() {
   }, []);
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AppRoutes />
     </BrowserRouter>
   );

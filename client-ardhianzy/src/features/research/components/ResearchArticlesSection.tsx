@@ -1,6 +1,9 @@
 // src/features/research/components/ResearchArticlesSection.tsx
-import { useState, useMemo } from "react";
-import { useHybridArticles } from "@/features/articles/hooks";
+import { useEffect, useMemo, useState } from "react";
+import { contentApi } from "@/lib/content/api";
+import type { ResearchDTO } from "@/lib/content/types";
+import { Link } from "react-router-dom";
+import { ROUTES } from "@/app/routes";
 
 export type ResearchArticle = {
   id: number | string;
@@ -8,6 +11,7 @@ export type ResearchArticle = {
   title: string;
   desc: string;
   image: string;
+  slug?: string;
 };
 
 type Props = {
@@ -22,67 +26,71 @@ function formatPrettyDate(iso?: string) {
   return `${month} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-export default function ResearchArticlesSection({ articles }: Props) {
-  const { articles: hybrid } = useHybridArticles();
-
-  const articlesFromStore: ResearchArticle[] = useMemo(
-    () =>
-      (hybrid as any[])
-        .filter((a) => a.section === "research" && a.category !== "Highlight")
-        .map((a) => ({
-          id: a.id,
-          date: formatPrettyDate(a.publishedAt),
-          title: a.title,
-          desc: a.excerpt,
-          image: a.image ?? a.cover,
-        })),
-    [hybrid]
+function ContinueReadInline() {
+  return (
+    <span
+      className="
+        ml-2 inline-flex items-center underline underline-offset-4
+        decoration-white/60 hover:decoration-white
+      "
+    >
+      Continue Read&nbsp;→
+    </span>
   );
+}
 
-  const articlesToRender =
-    articles && articles.length > 0 ? articles : articlesFromStore;
+function truncateByPhraseOrWords(text: string, phrase: string, maxWords: number) {
+  const safe = (text ?? "").trim();
+  if (!safe) return "";
+  const idx = safe.toLowerCase().indexOf(phrase.toLowerCase());
+  if (idx !== -1) return safe.slice(0, idx + phrase.length).trim().replace(/\s+$/, "");
+  const words = safe.split(/\s+/);
+  if (words.length <= maxWords) return safe;
+  return words.slice(0, maxWords).join(" ").replace(/[,\.;:!?\-—]+$/, "");
+}
 
-  const INITIAL_COUNT = 4;
-  const first = articlesToRender.slice(0, INITIAL_COUNT);
-  const extra = articlesToRender.slice(INITIAL_COUNT);
+export default function ResearchArticlesSection({ articles }: Props) {
+  const [remote, setRemote] = useState<ResearchArticle[]>([]);
 
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [curtainOpen, setCurtainOpen] = useState(false);
-  const [overlayVisible, setOverlayVisible] = useState(extra.length > 0);
+  useEffect(() => {
+    let alive = true;
+    if (articles && articles.length) {
+      setRemote(articles);
+      return;
+    }
+    (async () => {
+      const list = await contentApi.research.list();
+      if (!alive) return;
+        const mapped: ResearchArticle[] = (list ?? []).map((r: ResearchDTO) => ({
+          id: r.id,
+          date: formatPrettyDate(r.research_date || r.pdf_uploaded_at || r.created_at || ""),
+          title: r.research_title,
+          desc: r.research_sum,
+          image: r.image ?? "",
+          slug: r.slug,
+        }));
+        setRemote(mapped);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [articles]);
 
-  const handleLoadMore = () => {
-    setIsExpanded(true);
-    requestAnimationFrame(() => {
-      setCurtainOpen(true);
-      setOverlayVisible(false);
-    });
-  };
+  const items = useMemo(() => (articles && articles.length ? articles : remote), [articles, remote]);
 
   return (
     <section className="w-full bg-black text-white py-20">
       <style>{`
-        .rs__loadwrap {
-          position: absolute !important;
-          left: 0 !important;
-          bottom: 0 !important;
-          width: 100% !important;
-          height: 150px !important;
-          display: flex !important;
-          justify-content: center !important;
-          align-items: flex-end !important;
-          background: linear-gradient(0deg, #000000 16.35%, rgba(0,0,0,0) 100%) !important;
-          z-index: 5 !important;
-          pointer-events: none !important;
-          padding-bottom: 2rem !important;
-          opacity: 1 !important;
-          visibility: visible !important;
-          transition: opacity .35s ease, visibility 0s linear 0s !important;
-        }
-        .rs__loadwrap--hidden {
-          opacity: 0 !important;
-          visibility: hidden !important;
-          transition: opacity .35s ease, visibility 0s linear .35s !important;
-        }
+        .rs__loadwrap { /* commented out (kept for reference)
+          position: absolute !important; left:0 !important; bottom:0 !important;
+          width:100% !important; height:150px !important; display:flex !important;
+          justify-content:center !important; align-items:flex-end !important;
+          background:linear-gradient(0deg,#000 16.35%,rgba(0,0,0,0) 100%) !important;
+          z-index:5 !important; pointer-events:none !important; padding-bottom:2rem !important;
+          opacity:1 !important; visibility:visible !important; transition:opacity .35s ease, visibility 0s linear 0s !important;
+        } */
+        .rs__loadwrap--hidden { opacity:0 !important; visibility:hidden !important; transition:opacity .35s ease, visibility 0s linear .35s !important; }
+
         .rs__loadbtn {
           font-family: 'Bebas Neue', cursive !important;
           font-size: 42px !important;
@@ -102,19 +110,11 @@ export default function ResearchArticlesSection({ articles }: Props) {
 
         .fx-curtainDown { position: relative !important; overflow: hidden !important; }
         .fx-curtainDown::before {
-          content: '' !important;
-          position: absolute !important;
-          inset: 0 !important;
-          z-index: 2 !important;
-          background: #000 !important;
-          transform-origin: bottom !important;
-          transform: scaleY(1) !important;
-          transition: transform .6s cubic-bezier(.25,.8,.3,1) !important;
-          pointer-events: none !important;
+          content: '' !important; position: absolute !important; inset: 0 !important; z-index: 2 !important;
+          background: #000 !important; transform-origin: bottom !important; transform: scaleY(1) !important;
+          transition: transform .6s cubic-bezier(.25,.8,.3,1) !important; pointer-events: none !important;
         }
-        .fx-curtainDown.is-open::before {
-          transform: scaleY(0) !important;
-        }
+        .fx-curtainDown.is-open::before { transform: scaleY(0) !important; }
       `}</style>
 
       <div className="max-w-[1331px] mx-auto px-5">
@@ -124,83 +124,55 @@ export default function ResearchArticlesSection({ articles }: Props) {
 
         <div className="relative">
           <div className="flex flex-col !gap-[60px]">
-            {first.map((article) => (
-              <article
-                key={article.id}
-                className="flex items-center !gap-[30px] max-[1200px]:flex-col max-[1200px]:items-start"
-              >
-                <div className="shrink-0">
-                  <img
-                    src={article.image}
-                    alt={article.title}
-                    className="block object-cover !w-[599px] !h-[365px] filter grayscale max-[1200px]:!w-full max-[1200px]:!h-auto"
-                  />
-                </div>
+            {items.map((article) => {
+              const preview = truncateByPhraseOrWords(
+                article.desc ?? "",
+                "sekaligus",
+                55
+              );
+              const showEllipsis = (article.desc ?? "").trim().length > preview.trim().length;
 
-                <div className="flex flex-col items-start !max-w-[552px] max-[1200px]:max-w-full max-[1200px]:pt-5">
-                  <p className="font-roboto italic !font-extralight !text-[26px] text-white !leading-[1] !mb-[24px]">
-                    {article.date}
-                  </p>
-
-                  <h3 className="font-bebas !font-normal !text-[64px] text-white !leading-[1] text-shadow-article !mb-[14px]">
-                    {article.title}
-                  </h3>
-
-                  <p className="font-roboto !text-[24px] !leading-[1.5] text-justify text-white">
-                    {article.desc}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          {isExpanded && (
-            <div className={["fx-curtainDown", curtainOpen ? "is-open" : ""].join(" ")}>
-              <div className="flex flex-col !gap-[60px] mt-[60px]">
-                {extra.map((article) => (
-                  <article
-                    key={article.id}
-                    className="flex items-center !gap-[30px] max-[1200px]:flex-col max-[1200px]:items-start"
-                  >
+              return (
+                <Link
+                  key={article.id}
+                  to={article.slug ? `/research/${article.slug}` : ROUTES.RESEARCH} 
+                  className="block"
+                  style={{ textDecoration: "none" }}
+                >
+                  <article className="flex items-center !gap-[30px] max-[1200px]:flex-col max-[1200px]:items-start">
                     <div className="shrink-0">
                       <img
                         src={article.image}
                         alt={article.title}
-                        className="block object-cover !w-[599px] !h-[365px] filter grayscale max-[1200px]:!w-full max-[1200px]:!h-auto"
+                        className="block rounded-[16px] border-l-2 border-[#444444] object-cover !w-[599px] !h-[365px] filter grayscale max-[1200px]:!w-full max-[1200px]:!h-auto"
                       />
                     </div>
 
                     <div className="flex flex-col items-start !max-w-[552px] max-[1200px]:max-w-full max-[1200px]:pt-5">
-                      <p className="font-roboto italic !font-extralight !text-[26px] text-white !leading-[1] !mt-0 !-mb-[40px]">
+                      <p className="font-roboto italic !font-extralight !text-[20px] text-white !leading-[1] !mb-[24px]">
                         {article.date}
                       </p>
 
-                      <h3 className="font-bebas !font-normal !text-[64px] text-white !leading-[1] text-shadow-article !mt-0 !-mb-[10px]">
+                      <h3 className="font-bebas !font-normal !text-[58px] text-white !leading-[1] text-shadow-article !mb-[14px]">
                         {article.title}
                       </h3>
 
-                      <p className="font-roboto !text-[24px] !leading-[1.5] text-justify text-white !mt-0">
-                        {article.desc}
+                      <p className="font-roboto !text-[18px] !leading-[1.5] text-justify text-white">
+                        {preview}
+                        {showEllipsis ? "..." : ""} <ContinueReadInline />
                       </p>
                     </div>
                   </article>
-                ))}
-              </div>
-            </div>
-          )}
+                </Link>
+              );
+            })}
+          </div>
 
-          {extra.length > 0 && (
-            <div
-              className={["rs__loadwrap", overlayVisible ? "" : "rs__loadwrap--hidden"].join(" ")}
-              aria-hidden={!overlayVisible}
-            >
-              {!isExpanded && (
-                <button type="button" onClick={handleLoadMore} className="rs__loadbtn">
-                  LOAD MORE...
-                </button>
-              )}
-            </div>
-          )}
+          {/* LOAD MORE di-nonaktifkan
+          <div className={["rs__loadwrap", "rs__loadwrap--hidden"].join(" ")} aria-hidden>
+            <button type="button" className="rs__loadbtn">LOAD MORE...</button>
+          </div>
+          */}
         </div>
       </div>
     </section>

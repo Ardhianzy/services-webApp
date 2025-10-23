@@ -1,12 +1,22 @@
 // src/features/home/components/TimelineOfThoughtSection.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
-import type { FeatureCollection } from "geojson";
+import type { FeatureCollection, Geometry, Feature } from "geojson";
 import "leaflet/dist/leaflet.css";
 
 import PhilosopherMarker from "./map/PhilosopherMarker";
 import PhilosopherDetailCard, { type DetailPhilosopher } from "./map/PhilosopherDetailCard";
-import { timelinePhilosophers as defaultPhilosophers } from "@/data/philosophers";
+import { contentApi } from "@/lib/content/api";
+import type { ToTDTO } from "@/lib/content/types";
+
+import maplibregl from "maplibre-gl";
+import "@openhistoricalmap/maplibre-gl-dates";
+import "@maplibre/maplibre-gl-leaflet";
+import L from "leaflet";
+
+if (typeof window !== "undefined") {
+  (window as any).maplibregl = (window as any).maplibregl || maplibregl;
+}
 
 export type TimelinePhilosopher = {
   id: string | number;
@@ -16,11 +26,28 @@ export type TimelinePhilosopher = {
   lng: number;
   image?: string;
   flag?: string;
+  geoorigin?: string | null;
+  detail_location?: string | null;
 };
 
 type Props = {
   philosophers?: TimelinePhilosopher[];
   onMarkerClick?: (p: TimelinePhilosopher) => void;
+};
+
+const WORLD_BOUNDS: [[number, number], [number, number]] = [
+  [-85, -180],
+  [85, 180],
+];
+
+const START_YEAR = -400;
+const END_YEAR = 2000;
+const PIXELS_PER_YEAR = 2;
+
+const fmtYear = (y: number) => (y < 0 ? `${Math.abs(y)} BC` : `${y}`);
+const isoFromYear = (y: number) => {
+  const s = Math.abs(y).toString().padStart(4, "0");
+  return `${y < 0 ? "-" : ""}${s}-01-01`;
 };
 
 function ZoomButtons() {
@@ -30,18 +57,16 @@ function ZoomButtons() {
     [-90, 180],
   ];
   return (
-    <div
-      className="absolute left-5 top-1/2 z-[1000] -translate-y-1/2 flex flex-col overflow-hidden rounded-[10px] text-[18px] border border-white bg-black shadow-[0_4px_10px_rgba(0,0,0,0.3)]"
-    >
+    <div className="absolute left-5 top-1/2 z-[1000] -translate-y-1/2 flex flex-col overflow-hidden rounded-[10px] text-[18px] border border-white bg-black shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
       {["+", "−", "⟳"].map((label) => (
         <button
           key={label}
           onClick={() => {
             if (label === "+") map.zoomIn();
             else if (label === "−") map.zoomOut();
-            else map.fitBounds(bounds);
+            else map.fitBounds(bounds as any);
           }}
-          className="flex h-10 w-10 items-center justify-center !border-b !border-b-white last:!border-b-0 text-white transition-colors !bg-black hover:bg-white/15 font-sans leading-none text-[18px]" 
+          className="flex h-10 w-10 items-center justify-center !border-b !border-b-white last:!border-b-0 text-white transition-colors !bg-black hover:bg-white/15 font-sans leading-none text-[18px]"
           title={label === "⟳" ? "Reset" : label === "+" ? "Zoom In" : "Zoom Out"}
         >
           {label}
@@ -51,11 +76,82 @@ function ZoomButtons() {
   );
 }
 
+function EnsureFullWidthNoWrap() {
+  const map = useMap();
+  useEffect(() => {
+    const TILE = 256;
+    const apply = () => {
+      const el = map.getContainer();
+      const w = el?.clientWidth || window.innerWidth || 1920;
+      let z = Math.ceil(Math.log2(w / TILE));
+      z = Math.max(2, z);
+
+      const isTabletOrMobile = window.innerWidth < 1024;
+      const center = isTabletOrMobile ? ([54, 15] as any) : ([20, 0] as any);
+
+      map.setMinZoom(z);
+      map.setMaxBounds(WORLD_BOUNDS as any);
+
+      if (map.getZoom() < z) {
+        map.setView(center, z, { animate: false });
+      } else {
+        map.panTo(center, { animate: false });
+      }
+
+      map.invalidateSize();
+    };
+
+    map.whenReady(() => {
+      apply();
+    });
+    const onResize = () => requestAnimationFrame(apply);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [map]);
+
+  return null;
+}
+
+function OHMOverlay({ dateISO }: { dateISO: string }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const styleUrl = "https://openhistoricalmap.github.io/map-styles/ohm/style.json";
+    const gl = (L as any).maplibreGL({
+      style: styleUrl,
+      attribution: "© OpenHistoricalMap contributors",
+      interactive: false,
+    }).addTo(map);
+
+    const m = gl.getMaplibreMap?.();
+    m?.once?.("styledata", () => (m as any)?.filterByDate?.(dateISO));
+
+    return () => {
+      try {
+        map.removeLayer(gl);
+      } catch {
+      }
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const layers = (map as any)?._layers || {};
+    const gl = Object.values(layers).find((x: any) => x?.getMaplibreMap);
+    const m = (gl as any)?.getMaplibreMap?.();
+    try {
+      (m as any)?.filterByDate?.(dateISO);
+    } catch {
+    }
+  }, [map, dateISO]);
+
+  return null;
+}
+
 const mapSourceCandidates: Record<number, string[]> = {
-  600:  ["/data/geoworld/world_600.geo.json"],
-  700:  ["/data/geoworld/world_700.geo.json"],
-  800:  ["/data/geoworld/world_800.geo.json"],
-  900:  ["/data/geoworld/world_900.geo.json"],
+  600: ["/data/geoworld/world_600.geo.json"],
+  700: ["/data/geoworld/world_700.geo.json"],
+  800: ["/data/geoworld/world_800.geo.json"],
+  900: ["/data/geoworld/world_900.geo.json"],
   1000: ["/data/geoworld/world_1000.geo.json"],
   1100: ["/data/geoworld/world_1100.geo.json"],
   1200: ["/data/geoworld/world_1200.geo.json"],
@@ -68,55 +164,181 @@ const mapSourceCandidates: Record<number, string[]> = {
   1900: ["/data/geoworld/countries.geo.json"],
 };
 
-const START_YEAR = 600;
-const END_YEAR = 2000;
-const PIXELS_PER_YEAR = 2;
-
 function parseYears(raw: string | undefined | null): [number, number] {
   if (!raw) return [NaN, NaN];
   const norm = String(raw).trim().replace(/[–—]/g, "-").toUpperCase();
   const hasBC = norm.includes("BC");
-  const parts = norm.replace(/\s*BC/g, "").split("-").map((s) => s.trim()).filter(Boolean);
+  const parts = norm
+    .replace(/\s*BC/g, "")
+    .split("-")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const toNum = (s: string) => {
     const n = Number(s);
     if (Number.isNaN(n)) return NaN;
     return hasBC ? -Math.abs(n) : n;
   };
   if (parts.length === 1) {
-    const a = toNum(parts[0]); return [a, a];
+    const a = toNum(parts[0]);
+    return [a, a];
   }
   if (parts.length >= 2) {
-    const a = toNum(parts[0]); const b = toNum(parts[1]); return [a, b];
+    const a = toNum(parts[0]);
+    const b = toNum(parts[1]);
+    return [a, b];
   }
   return [NaN, NaN];
 }
 
+type CountriesFC = FeatureCollection<Geometry, any> | null;
+function bboxCentroid(feature: Feature<Geometry, any>): [number, number] | null {
+  try {
+    const coords: number[][] = [];
+    const walk = (g: any) => {
+      if (!g) return;
+      if (g.type === "Point") coords.push(g.coordinates);
+      else if (g.type === "MultiPoint" || g.type === "LineString") g.coordinates.forEach((c: number[]) => coords.push(c));
+      else if (g.type === "MultiLineString" || g.type === "Polygon") g.coordinates.flat().forEach((c: number[]) => coords.push(c));
+      else if (g.type === "MultiPolygon") g.coordinates.flat(2).forEach((c: number[]) => coords.push(c));
+      else if (g.type === "GeometryCollection") (g.geometries || []).forEach(walk);
+    };
+    walk(feature.geometry);
+    if (!coords.length) return null;
+    const xs = coords.map((c) => c[0]);
+    const ys = coords.map((c) => c[1]);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    return [cy, cx];
+  } catch {
+    return null;
+  }
+}
+const SYNONYM: Record<string, string> = {
+  macedon: "greece",
+  macedonia: "north macedonia",
+  persia: "iran",
+  byzantine: "turkey",
+  gaul: "france",
+};
+const MANUAL_XY: Record<string, [number, number]> = {
+  stagira: [40.5, 23.8],
+  athens: [37.98, 23.72],
+  rome: [41.9, 12.5],
+  jerusalem: [31.78, 35.22],
+  baghdad: [33.3, 44.38],
+  cordoba: [37.88, -4.77],
+  basra: [30.5, 47.8],
+  alexandria: [31.2, 29.9],
+  konya: [37.87, 32.48],
+  delhi: [28.7, 77.1],
+  beijing: [39.9, 116.4],
+};
+const normName = (s?: string | null) => (s ?? "").toLowerCase().replace(/[^a-z0-9\s\-]/g, "").trim();
+
+function useCountries(): CountriesFC {
+  const [fc, setFc] = useState<CountriesFC>(null);
+  useEffect(() => {
+    let alive = true;
+    const base = (import.meta as any)?.env?.BASE_URL ?? "/";
+    const path = `${base}${"/data/geoworld/countries.geo.json".replace(/^\/+/, "")}`;
+    fetch(path)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => alive && setFc(j))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return fc;
+}
+
+function resolveLatLng(t: ToTDTO, countries: CountriesFC): [number, number] | null {
+  const g = normName(t.geoorigin);
+  if (g && MANUAL_XY[g]) return MANUAL_XY[g];
+  const d = normName(t.detail_location);
+  if (d && MANUAL_XY[d]) return MANUAL_XY[d];
+
+  let cand = g || d || "";
+  if (!cand && t.philosofer) cand = normName(t.philosofer);
+  for (const [k, v] of Object.entries(SYNONYM)) {
+    if (cand.includes(k)) cand = v;
+  }
+
+  if (countries?.features?.length) {
+    const hit = (countries.features as any[]).find((f: any) => {
+      const props = f.properties || {};
+      const name: string = String(props?.name ?? props?.NAME ?? props?.NAME_EN ?? props?.ADMIN ?? "").toLowerCase();
+      return !!name && (name.includes(cand) || cand.includes(name));
+    });
+
+    if (hit) {
+      const xy = bboxCentroid(hit as Feature<Geometry, any>);
+      if (xy) return xy;
+    }
+  }
+  return null;
+}
+
 export default function TimelineOfThoughtSection({
-  philosophers = defaultPhilosophers,
+  philosophers: overridePhilos = undefined,
   onMarkerClick,
 }: Props) {
-  const [isClient, setIsClient] = useState(false);
+  const minYear = START_YEAR;
+  const maxYear = END_YEAR;
   const [year, setYear] = useState(START_YEAR);
+
   const [mapData, setMapData] = useState<FeatureCollection | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [currentMapFile, setCurrentMapFile] = useState<string>("");
 
+  const [philosophers, setPhilosophers] = useState<TimelinePhilosopher[]>([]);
   const [selected, setSelected] = useState<DetailPhilosopher | null>(null);
+
+  const countries = useCountries();
 
   const trackRef = useRef<HTMLDivElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  const trackWidth = useMemo(() => (END_YEAR - START_YEAR) * PIXELS_PER_YEAR, []);
-  const marks = useMemo(
-    () => Array.from({ length: Math.floor((END_YEAR - START_YEAR) / 100) + 1 }, (_, i) => START_YEAR + i * 100),
-    []
-  );
-
-  useEffect(() => setIsClient(true), []);
+  const centerToYear = (y: number, smooth: boolean) => {
+    const track = trackRef.current;
+    const wrap = wrapperRef.current;
+    if (!track || !wrap) return;
+    const wTrack = track.scrollWidth;
+    const wWrap = wrap.clientWidth;
+    const pos = ((y - minYear) / (maxYear - minYear)) * wTrack - wWrap / 2;
+    wrap.scrollTo({
+      left: Math.max(0, Math.min(pos, wTrack - wWrap)),
+      behavior: smooth ? "smooth" : "auto",
+    });
+  };
 
   useEffect(() => {
+    centerToYear(year, false);
+  }, []);
+  useEffect(() => {
+    centerToYear(year, true);
+  }, [year]);
+
+  const trackWidth = useMemo(() => (END_YEAR - START_YEAR) * PIXELS_PER_YEAR, []);
+  const marks = useMemo(() => {
+    const arr: number[] = [];
+    for (let m = START_YEAR; m <= END_YEAR; m += 100) arr.push(m);
+    return arr;
+  }, []);
+
+  useEffect(() => {
+    const centuries = Object.keys(mapSourceCandidates)
+      .map((n) => parseInt(n, 10))
+      .sort((a, b) => a - b);
+
+    let picked = centuries[0];
     const century = Math.floor(year / 100) * 100;
-    const rawCandidates = mapSourceCandidates[century];
+    for (const c of centuries) {
+      if (century >= c) picked = c;
+      else break;
+    }
+
+    const rawCandidates = mapSourceCandidates[picked];
     if (!rawCandidates || rawCandidates.length === 0) return;
 
     const base = (import.meta as any)?.env?.BASE_URL ?? "/";
@@ -136,14 +358,11 @@ export default function TimelineOfThoughtSection({
           setMapData(data);
           return;
         } catch {
-          continue;
         }
       }
       if (!cancelled) {
         setMapData(null);
-        setMapError(
-          `Gagal memuat peta untuk abad ${century}. Pastikan file GeoJSON tersedia di salah satu path kandidat.`
-        );
+        setMapError(`Gagal memuat peta untuk tahun ~${picked}. Pastikan file GeoJSON tersedia.`);
       }
     })();
 
@@ -152,12 +371,48 @@ export default function TimelineOfThoughtSection({
     };
   }, [year]);
 
+  useEffect(() => {
+    if (overridePhilos) {
+      setPhilosophers(overridePhilos);
+      return;
+    }
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const list = await contentApi.tot.list(ac.signal);
+        const mapped: TimelinePhilosopher[] = [];
+
+        for (const t of list) {
+          const xy = resolveLatLng(t, countries);
+          if (!xy) continue;
+
+          mapped.push({
+            id: t.id,
+            name: t.philosofer ?? "Unknown",
+            years: t.years ?? "",
+            lat: xy[0],
+            lng: xy[1],
+            image: t.image ?? undefined,
+            geoorigin: t.geoorigin,
+            detail_location: t.detail_location,
+          } as TimelinePhilosopher);
+        }
+
+        setPhilosophers(mapped);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => ac.abort();
+  }, [overridePhilos, countries]);
+
   const handleYear: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const y = Number(e.target.value);
     setYear(y);
+    centerToYear(y, true);
 
-    if (selected?.years || selected?.fullDates) {
-      const [a, b] = parseYears(selected.fullDates ?? selected.years ?? "");
+    if (selected?.years || (selected as any)?.fullDates) {
+      const [a, b] = parseYears((selected as any).fullDates ?? selected?.years ?? "");
       if (Number.isFinite(a) && Number.isFinite(b) && !(y >= a && y <= b)) {
         setSelected(null);
       }
@@ -168,11 +423,8 @@ export default function TimelineOfThoughtSection({
     if (track && wrap) {
       const wTrack = track.scrollWidth;
       const wWrap = wrap.clientWidth;
-      const pos = ((y - START_YEAR) / (END_YEAR - START_YEAR)) * wTrack - wWrap / 2;
-      wrap.scrollTo({
-        left: Math.max(0, Math.min(pos, wTrack - wWrap)),
-        behavior: "smooth",
-      });
+      const pos = ((y - minYear) / (maxYear - minYear)) * wTrack - wWrap / 2;
+      wrap.scrollTo({ left: Math.max(0, Math.min(pos, wTrack - wWrap)), behavior: "smooth" });
     }
   };
 
@@ -183,13 +435,9 @@ export default function TimelineOfThoughtSection({
     });
   }, [philosophers, year]);
 
-  const WORLD_BOUNDS: [[number, number], [number, number]] = [
-    [-85, -180],
-    [ 85,  180],
-  ];
   const countryStyle = { fillColor: "#333", fillOpacity: 0.5, color: "#888", weight: 1 } as const;
   const onEachCountry: Parameters<typeof GeoJSON>[0]["onEachFeature"] = (feature, layer) => {
-    const props = feature?.properties as any;
+    const props = (feature as any)?.properties as any;
     const name = props?.name ?? props?.NAME;
     if (name && layer) {
       layer.bindPopup(name);
@@ -206,19 +454,16 @@ export default function TimelineOfThoughtSection({
       name: p.name,
       years: p.years,
       hero: p.image,
-    });
+      geoorigin: p.geoorigin ?? undefined,
+      detail_location: p.detail_location ?? undefined,
+    } as any);
     onMarkerClick?.(p);
   };
 
   return (
     <section id="timeline-of-thought" className="relative h-full w-full bg-[#1a1a1a] text-white">
       <div className="relative flex h-full flex-col">
-        {selected && (
-          <PhilosopherDetailCard
-            philosopher={selected}
-            onClose={() => setSelected(null)}
-          />
-        )}
+        {selected && <PhilosopherDetailCard philosopher={selected} onClose={() => setSelected(null)} />}
 
         <div className="relative flex-1 overflow-hidden bg-black">
           {mapError && (
@@ -231,79 +476,82 @@ export default function TimelineOfThoughtSection({
             </div>
           )}
 
-          {!mapError && isClient && (
-            <MapContainer
-              center={[20, 0]}
-              zoom={3}
-              minZoom={3}
-              maxZoom={19}
-              style={{ width: "100%", height: "100%" }}
-              attributionControl={false}
-              zoomControl={false}
-              maxBounds={WORLD_BOUNDS}
-              maxBoundsViscosity={1.0}
+          <MapContainer
+            center={[20, 0]}
+            zoom={3}
+            minZoom={2}
+            maxZoom={19}
+            style={{ width: "100%", height: "100%" }}
+            attributionControl={false}
+            zoomControl={false}
+            maxBounds={WORLD_BOUNDS}
+            maxBoundsViscosity={1.0}
+            className="leaflet-black-bg"
+          >
+            <EnsureFullWidthNoWrap />
+            <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" noWrap bounds={WORLD_BOUNDS} />
+
+            {year < 600 && <OHMOverlay dateISO={isoFromYear(year)} />}
+
+            {mapData?.features && (
+              <GeoJSON key={currentMapFile} data={mapData.features as any} style={() => countryStyle} onEachFeature={onEachCountry} />
+            )}
+
+            {visiblePhilosophers.map((p) => (
+              <PhilosopherMarker key={p.id} philosopher={p} onMarkerClick={openDetailFromMarker} />
+            ))}
+
+            <ZoomButtons />
+          </MapContainer>
+
+          <div className="pointer-events-auto absolute bottom-40 right-4 z-[1101] cursor-pointer">
+            <button
+              type="button"
+              aria-label="Scroll ke bagian berikutnya"
+              title="Scroll ke bawah"
+              onClick={() => {
+                document.getElementById("below-map")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="rounded-lg border border-white/50 bg-black/60 backdrop-blur-sm p-3 hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-white/60"
+              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
             >
-              <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" noWrap bounds={WORLD_BOUNDS} />
-
-              {mapData?.features && (
-                <GeoJSON
-                  key={currentMapFile}
-                  data={mapData.features as any}
-                  style={() => countryStyle}
-                  onEachFeature={onEachCountry}
-                />
-              )}
-
-              {visiblePhilosophers.map((p) => (
-                <PhilosopherMarker
-                  key={p.id}
-                  philosopher={p}
-                  onMarkerClick={openDetailFromMarker}
-                />
-              ))}
-
-              <ZoomButtons />
-            </MapContainer>
-          )}
+              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          </div>
 
           <div
             className="pointer-events-none absolute left-1/2 bottom-[170px] z-[1002] -translate-x-1/2 rounded-[10px] border-2 border-[#555] bg-black px-5 py-[5px] text-center text-[36px] leading-[43px] shadow-[0_4px_10px_rgba(0,0,0,0.25)]"
             style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
-            {year}
+            {fmtYear(year)}
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 z-[1001] flex h-[150px] w-full items-center border-t border-white/10 bg-[rgba(40,40,40,0.3)] backdrop-blur-[10px]">
-          <div className="tol-fade-left pointer-events-none absolute left-0 top-0 h-full w-[100px] z-[1002]" /> 
+        <div className="absolute bottom-0 left-0 z-[1001] flex h-[120px] md:h-[150px] w-full items-center border-t border-white/10 bg-[rgba(40,40,40,0.3)] backdrop-blur-[10px]">
+          <div className="tol-fade-left pointer-events-none absolute left-0 top-0 h-full w-[100px] z-[1002]" />
           <div className="tol-fade-right pointer-events-none absolute right-0 top-0 h-full w-[100px] z-[1002]" />
 
           <div ref={wrapperRef} className="tol-scroll w-full overflow-x-auto overflow-y-hidden">
-            <div
-              ref={trackRef}
-              className="tol-track relative box-border flex h-[60px] items-center px-[100px]"
-              style={{ width: `${trackWidth}px` }}
-            >
+            <div ref={trackRef} className="tol-track relative box-border flex h-[60px] items-center px-[100px]" style={{ width: `${trackWidth}px` }}>
               {marks.map((m) => (
                 <div
                   key={m}
                   className="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 transform flex-col items-center justify-center"
-                  style={{ left: `${((m - START_YEAR) / (END_YEAR - START_YEAR)) * 100}%` }}
+                  style={{ left: `${((m - minYear) / (maxYear - minYear)) * 100}%` }}
                 >
                   <div className="h-5 w-[2px] bg-[#D9D9D9]" />
-                  <div
-                    className="absolute whitespace-nowrap text-[22px] text-white bottom-[-24px]" 
-                    style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-                  >
-                    {m}
+                  <div className="absolute whitespace-nowrap text-[22px] text-white bottom-[-24px]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+                    {fmtYear(m)}
                   </div>
                 </div>
               ))}
 
               <input
                 type="range"
-                min={START_YEAR}
-                max={END_YEAR}
+                min={minYear}
+                max={maxYear}
                 step={1}
                 value={year}
                 onChange={handleYear}
@@ -315,7 +563,8 @@ export default function TimelineOfThoughtSection({
       </div>
 
       <style>{`
-        /* Track garis di tengah + ticks, cocok dengan CSS lama */
+        .leaflet-black-bg { background: #000 !important; }
+
         .tol-track {
           background-image: linear-gradient(#888, #888);
           background-repeat: no-repeat;
@@ -335,10 +584,10 @@ export default function TimelineOfThoughtSection({
           background-position: center;
           pointer-events: none;
         }
+
         .tol-scroll::-webkit-scrollbar { display: none; }
         .tol-scroll { scrollbar-width: none; -ms-overflow-style: none; }
 
-        /* Thumb slider persis: 40px, border 10px hitam, shadow */
         .tol-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
@@ -354,7 +603,6 @@ export default function TimelineOfThoughtSection({
           cursor: pointer;
         }
 
-        /* CHANGED: gradient fade kiri/kanan sesuai legacy: 30% solid #1a1a1a → transparan */
         .tol-fade-left {
           background: linear-gradient(to right, #1a1a1a 30%, transparent 100%);
         }

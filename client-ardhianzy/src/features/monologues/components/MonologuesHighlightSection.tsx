@@ -1,390 +1,216 @@
-// import { useEffect, useMemo, useState, type CSSProperties } from "react";
-// import { articles as dataArticles } from "@/data/articles";
+import { useState, useEffect, type CSSProperties } from "react";
+import { Link } from "react-router-dom";
+import { contentApi } from "@/lib/content/api";
+import type { MonologueDTO } from "@/lib/content/types";
 
-// export type HighlightArticle = {
-//   id: string | number;
-//   title: string;
-//   description: string;
-//   image: string;
-// };
-
-// type Props = { articles?: HighlightArticle[] };
-
-// export default function MonologuesHighlightSection({ articles }: Props) {
-//   const itemsFromCenter: HighlightArticle[] = useMemo(
-//     () =>
-//       dataArticles
-//         .filter((a) => a.section === "monologues" && a.category === "Highlight")
-//         .map((a) => ({
-//           id: a.id,
-//           title: a.title,
-//           description: a.excerpt,
-//           image: a.image ?? a.cover,
-//         })),
-//     []
-//   );
-//   const source = (articles?.length ? articles : itemsFromCenter) as HighlightArticle[];
-
-//   const initialIndex = Math.min(2, Math.max(0, source.length - 1));
-//   const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
-
-//   useEffect(() => {
-//     setCurrentIndex((idx) => {
-//       const max = Math.max(0, source.length - 1);
-//       return Math.min(idx, max);
-//     });
-//   }, [source.length]);
-
-//   const handlePrev = () =>
-//     setCurrentIndex((prev) => (prev === 0 ? source.length - 1 : prev - 1));
-//   const handleNext = () =>
-//     setCurrentIndex((prev) => (prev === source.length - 1 ? 0 : prev + 1));
-
-//   const sliderStyle = { ["--current-index" as any]: currentIndex } as CSSProperties;
-
-//   if (!source.length) return null;
-
-//   return (
-//     <div className="monologues-highlight-wrapper">
-//       <style>{`
-//         .mono__bebas { font-family: 'Bebas Neue', cursive !important; }
-//         .mono__roboto { font-family: 'Roboto', sans-serif !important; }
-//       `}</style>
-
-//       <section
-//         aria-label="Monologues hero"
-//         className="
-//           relative w-screen h-[60vh]
-//           left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]
-//           flex items-center justify-center
-//           bg-black bg-cover bg-center
-//         "
-//         style={{
-//           backgroundImage: "url('/assets/Group 515432_waifu2x_art_noise3_scale.png')",
-//           backgroundBlendMode: "luminosity",
-//         }}
-//       >
-//         <div
-//           aria-hidden
-//           className="absolute inset-0 z-[1]"
-//           style={{
-//             background:
-//               "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)",
-//           }}
-//         />
-//         <h1 className="relative z-[2] text-white mono__bebas !text-[5rem] uppercase text-center">
-//           MONOLOGUES
-//         </h1>
-//       </section>
-
-//       <section className="relative w-full bg-black py-5 overflow-hidden">
-//         <div
-//           aria-hidden
-//           className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]"
-//           style={{
-//             width: "15%",
-//             maxWidth: 200,
-//             background: "linear-gradient(to right, #000 30%, transparent 100%)",
-//           }}
-//         />
-//         <div
-//           aria-hidden
-//           className="pointer-events-none absolute right-0 top-0 bottom-0 z-[3]"
-//           style={{
-//             width: "15%",
-//             maxWidth: 200,
-//             background: "linear-gradient(to left, #000 30%, transparent 100%)",
-//           }}
-//         />
-
-//         <div className="relative mx-auto flex w-full items-center justify-center">
-//           <button
-//             type="button"
-//             aria-label="Previous article"
-//             onClick={handlePrev}
-//             className="
-//               mhl-nav absolute left-10 top-1/2 -translate-y-1/2 z-10
-//               flex !h-[50px] !w-[50px] items-center justify-center
-//               !rounded-full border border-white/20 bg-black/40 pb-1
-//               text-[2.2rem] leading-[0] text-white
-//               transition-all hover:!scale-105 active:!scale-95
-//               max-[768px]:left-2
-//             "
-//           >
-//             &#8249;
-//           </button>
-
-//           <div className="relative h-[417px] w-full overflow-visible">
-//             <div
-//               className="mhl-slider relative flex h-full items-center gap-[30px] transition-transform duration-300"
-//               style={sliderStyle}
-//             >
-//               {source.map((a, idx) => {
-//                 const isActive = idx === currentIndex;
-//                 return (
-//                   <article
-//                     key={a.id}
-//                     className={[
-//                       "mhl-card group relative h-[417px] w-[1029px] cursor-pointer overflow-hidden bg-[#111] shrink-0",
-//                       "transition duration-300 ease-out mt-16",
-//                       isActive ? "!scale-100 !opacity-100" : "!scale-95 !opacity-50",
-//                       "hover:!scale-[1.02] hover:!opacity-100 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
-//                     ].join(" ")}
-//                   >
-//                     <img
-//                       src={a.image}
-//                       alt={a.title}
-//                       className="h-full w-full object-cover transition grayscale group-hover:grayscale-0"
-//                     />
-
-//                     <div
-//                       className="absolute inset-0 flex max-w-none flex-col items-start justify-start text-white"
-//                       style={{
-//                         background:
-//                           "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)",
-//                         padding: "30px 40px",
-//                       }}
-//                     >
-//                       <h3 className="mono__bebas !text-[3.5rem] !font-normal !leading-[1] uppercase tracking-[2px] max-w-[500px] mb-[10px]">
-//                         {a.title}
-//                       </h3>
-//                       <p
-//                         className="mono__roboto max-w-[450px] text-left opacity-90"
-//                         style={{ lineHeight: 1.6, fontSize: "1rem" }}
-//                       >
-//                         {a.description}
-//                       </p>
-//                     </div>
-//                   </article>
-//                 );
-//               })}
-//             </div>
-//           </div>
-
-//           <button
-//             type="button"
-//             aria-label="Next article"
-//             onClick={handleNext}
-//             className="
-//               mhl-nav absolute right-10 top-1/2 -translate-y-1/2 z-10
-//               flex !h-[50px] !w-[50px] items-center justify-center
-//               !rounded-full border border-white/20 bg-black/40 pb-1
-//               text-[2.2rem] leading-[0] text-white
-//               transition-all hover:!scale-105 active:!scale-95
-//               max-[768px]:right-2
-//             "
-//           >
-//             &#8250;
-//           </button>
-//         </div>
-//       </section>
-
-//       <style>{`
-//         .mhl-slider {
-//           transform: translateX(calc(50% - (1029px / 2) - (var(--current-index) * (1029px + 30px))));
-//           transition: transform .6s cubic-bezier(0.4, 0, 0.2, 1);
-//         }
-//         @media (max-width: 1200px) {
-//           .mhl-slider {
-//             gap: 20px;
-//             transform: translateX(calc(50% - (90vw / 2) - (var(--current-index) * (90vw + 20px))));
-//           }
-//           .mhl-card { width: 90vw; height: 350px; }
-//         }
-//         @media (max-width: 768px) {
-//           .mhl-slider {
-//             gap: 15px;
-//             transform: translateX(calc(50% - (95vw / 2) - (var(--current-index) * (95vw + 15px))));
-//           }
-//           .mhl-card { width: 95vw; height: 300px; }
-//         }
-
-//         /* Fallback hard-lock untuk pagination: rounded & scale (important) */
-//         .mhl-nav { border-radius: 9999px !important; }
-//       `}</style>
-//     </div>
-//   );
-// }
-
-
-// src/features/monologues/components/MonologuesHighlightSection.tsx
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { useHybridArticles } from "@/features/articles/hooks";
-
-export type HighlightArticle = {
+type Card = {
   id: string | number;
   title: string;
   description: string;
   image: string;
+  author?: string;
+  dateISO?: string;
+  slug?: string;
 };
 
-type Props = { articles?: HighlightArticle[] };
+type Props = {
+  articles?: Card[];
+  headingTitle?: string;
+  headingBackgroundUrl?: string;
+  initialIndex?: number;
+};
 
-export default function MonologuesHighlightSection({ articles }: Props) {
-  const { articles: hybrid } = useHybridArticles();
+function truncateByPhraseOrWords(text: string, phrase: string, maxWords: number) {
+  const safe = (text ?? "").trim();
+  if (!safe) return "";
+  const idx = safe.toLowerCase().indexOf(phrase.toLowerCase());
+  if (idx !== -1) return safe.slice(0, idx + phrase.length).trim().replace(/\s+$/, "");
+  const words = safe.split(/\s+/);
+  if (words.length <= maxWords) return safe;
+  const cut = words.slice(0, maxWords).join(" ");
+  return cut.replace(/[,\.;:!?\-—]+$/, "");
+}
+function formatDate(iso?: string) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" });
+}
 
-  const itemsFromCenter: HighlightArticle[] = useMemo(
-    () =>
-      (hybrid as any[])
-        .filter((a) => a.section === "monologues" && a.category === "Highlight")
-        .map((a) => ({
-          id: a.id,
-          title: a.title,
-          description: a.excerpt,
-          image: a.image ?? a.cover,
-        })),
-    [hybrid]
-  );
-  const source = (articles?.length ? articles : itemsFromCenter) as HighlightArticle[];
-
-  const initialIndex = Math.min(2, Math.max(0, source.length - 1));
-  const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
+export default function MonologuesHighlightSection({
+  articles,
+  headingTitle = "MONOLOGUES",
+  headingBackgroundUrl = "/assets/Group 515432_waifu2x_art_noise3_scale.png",
+  initialIndex = 0,
+}: Props) {
+  const [remote, setRemote] = useState<Card[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCurrentIndex((idx) => {
-      const max = Math.max(0, source.length - 1);
-      return Math.min(idx, max);
-    });
-  }, [source.length]);
+    let alive = true;
+    if (articles && articles.length) {
+      setRemote(articles);
+      setLoading(false);
+      return;
+    }
+    (async () => {
+      try {
+        setLoading(true);
+        const list = await contentApi.monologues.list();
+        if (!alive) return;
+        const mapped: Card[] = (list ?? []).map((r: MonologueDTO) => ({
+          id: r.id,
+          title: r.title,
+          description: r.dialog,
+          image: r.image ?? "",
+          author: "Ardhianzy",
+          dateISO: r.pdf_uploaded_at || r.created_at || undefined,
+          slug: r.slug,
+        }));
+        setRemote(mapped);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [articles]);
 
-  const handlePrev = () =>
-    setCurrentIndex((prev) => (prev === 0 ? source.length - 1 : prev - 1));
-  const handleNext = () =>
-    setCurrentIndex((prev) => (prev === source.length - 1 ? 0 : prev + 1));
+  const items = articles?.length ? (articles as Card[]) : remote;
+  const [currentIndex, setCurrentIndex] = useState(
+    Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0))
+  );
+  useEffect(() => {
+    setCurrentIndex((prev) => (items.length ? Math.min(prev, items.length - 1) : 0));
+  }, [items.length]);
 
-  const sliderStyle = { ["--current-index" as any]: currentIndex } as CSSProperties;
+  const sliderVars: CSSProperties = { ["--current-index" as any]: currentIndex };
+  const isNavDisabled = items.length <= 1;
 
-  if (!source.length) return null;
+  const goPrev = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === 0 ? items.length - 1 : p - 1)); };
+  const goNext = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === items.length - 1 ? 0 : p + 1)); };
 
   return (
-    <div className="monologues-highlight-wrapper">
-      <style>{`
-        .mono__bebas { font-family: 'Bebas Neue', cursive !important; }
-        .mono__roboto { font-family: 'Roboto', sans-serif !important; }
-      `}</style>
-
+    <>
       <section
-        aria-label="Monologues hero"
-        className="
-          relative w-screen h-[60vh]
-          left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]
-          flex items-center justify-center
-          bg-black bg-cover bg-center
-        "
+        className="relative flex h-[60vh] w-screen items-center justify-center bg-cover bg-center"
         style={{
-          backgroundImage: "url('/assets/Group 515432_waifu2x_art_noise3_scale.png')",
-          backgroundBlendMode: "luminosity",
+          backgroundImage: `url('${headingBackgroundUrl}')`,
+          left: "50%",
+          right: "50%",
+          marginLeft: "-50vw",
+          marginRight: "-50vw",
+          filter: "grayscale(100%)",
+          mixBlendMode: "luminosity",
         }}
       >
         <div
-          aria-hidden
           className="absolute inset-0 z-[1]"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)",
-          }}
+          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)" }}
         />
-        <h1 className="relative z-[2] text-white mono__bebas !text-[5rem] uppercase text-center">
-          MONOLOGUES
+        <h1 className="relative z-[2] font-bebas uppercase text-white text-center !text-[5rem]">
+          {headingTitle}
         </h1>
       </section>
 
       <section className="relative w-full bg-black py-5 overflow-hidden">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]"
-          style={{
-            width: "15%",
-            maxWidth: 200,
-            background: "linear-gradient(to right, #000 30%, transparent 100%)",
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute right-0 top-0 bottom-0 z-[3]"
-          style={{
-            width: "15%",
-            maxWidth: 200,
-            background: "linear-gradient(to left, #000 30%, transparent 100%)",
-          }}
-        />
+        <div aria-hidden className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]"
+             style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to right, #000 30%, transparent 100%)" }} />
+        <div aria-hidden className="pointer-events-none absolute right-0 top-0 bottom-0 z-[3]"
+             style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to left, #000 30%, transparent 100%)" }} />
 
-        <div className="relative mx-auto flex w-full items-center justify-center">
-          <button
-            type="button"
-            aria-label="Previous article"
-            onClick={handlePrev}
-            className="
-              mhl-nav absolute left-10 top-1/2 -translate-y-1/2 z-10
-              flex !h-[50px] !w-[50px] items-center justify-center
-              !rounded-full border border-white/20 bg-black/40 pb-1
-              text-[2.2rem] leading-[0] text-white
-              transition-all hover:!scale-105 active:!scale-95
-              max-[768px]:left-2
-            "
+        <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
+          <button type="button" aria-label="Previous article" onClick={goPrev} disabled={isNavDisabled}
+            aria-disabled={isNavDisabled}
+            className={[
+              "absolute left-10 z-10 flex h-[60px] w-[60px] items-center justify-center !rounded-full border-2 border-white/30 bg-white/10 text-white text-[1.5rem] transition-all",
+              "!hover:scale-110 !hover:bg-white/20",
+              "max-[768px]:left-2 max-[768px]:h-[45px] max-[768px]:w-[45px] max-[768px]:text-[1.2rem]",
+              isNavDisabled ? "opacity-40 cursor-not-allowed" : "",
+            ].join(" ")}
           >
             &#8249;
           </button>
 
           <div className="relative h-[417px] w-full overflow-visible">
             <div
-              className="mhl-slider relative flex h-full items-center gap-[30px] transition-transform duration-300"
-              style={sliderStyle}
+              className="rs-article-slider flex h-full items-center gap-[30px] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+              style={sliderVars}
             >
-              {source.map((a, idx) => {
-                const isActive = idx === currentIndex;
-                return (
-                  <article
-                    key={a.id}
-                    className={[
-                      "mhl-card group relative h-[417px] w-[1029px] cursor-pointer overflow-hidden bg-[#111] shrink-0",
-                      "transition duration-300 ease-out mt-16",
-                      isActive ? "!scale-100 !opacity-100" : "!scale-95 !opacity-50",
-                      "hover:!scale-[1.02] hover:!opacity-100 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
-                    ].join(" ")}
-                  >
-                    <img
-                      src={a.image}
-                      alt={a.title}
-                      className="h-full w-full object-cover transition grayscale group-hover:grayscale-0"
-                    />
+              {(items.length ? items : loading ? [{ id: "skeleton", title: "", description: "", image: "" }] : []).map(
+                (article, idx) => {
+                  const isActive = idx === currentIndex;
+                  const descPreview = truncateByPhraseOrWords(article.description ?? "", "berpartisipasi,serta rekan", 50);
+                  const showEllipsis = (article.description ?? "").trim().length > (descPreview ?? "").trim().length;
+                  const dateHuman = formatDate(article.dateISO);
 
-                    <div
-                      className="absolute inset-0 flex max-w-none flex-col items-start justify-start text-white"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)",
-                        padding: "30px 40px",
-                      }}
+                  return (
+                    <Link
+                      key={article.id}
+                      to={article.slug ? `/monologues/${article.slug}` : "/monologues"}
+                      className="block shrink-0"
+                      style={{ textDecoration: "none" }}
+                      aria-label={article.title}
                     >
-                      <h3 className="mono__bebas !text-[3.5rem] !font-normal !leading-[1] uppercase tracking-[2px] max-w-[500px] mb-[10px]">
-                        {a.title}
-                      </h3>
-                      <p
-                        className="mono__roboto max-w-[450px] text-left opacity-90"
-                        style={{ lineHeight: 1.6, fontSize: "1rem" }}
+                      <article
+                        className={[
+                          "relative cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
+                          "!w-[1029px] !h-[417px]",
+                          "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
+                          "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
+                          isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
+                          "hover:!scale-[1.02] hover:!opacity-100 hover:!shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
+                        ].join(" ")}
                       >
-                        {a.description}
-                      </p>
-                    </div>
-                  </article>
-                );
-              })}
+                        <img
+                          src={article.image}
+                          alt={article.title}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-[filter] duration-300 filter grayscale hover:grayscale-0"
+                        />
+
+                        <div
+                          className="absolute inset-0 flex flex-col items-start justify-start p-[30px] pr-[40px] text-white"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)",
+                          }}
+                        >
+                          <h3 className="font-bebas uppercase !text-[3.5rem] leading-[1] tracking-[2px] max-w-[500px] mb-[10px]">
+                            {article.title}
+                          </h3>
+
+                          {(article.author || dateHuman) ? (
+                            <p className="mb-[12px] font-semibold text[1.1rem] text-[#aaa]">
+                              {article.author ?? "Ardhianzy"}
+                              {article.author && dateHuman ? " • " : ""}
+                              {dateHuman ?? ""}
+                            </p>
+                          ) : null}
+
+                          <p className="font-roboto text-left !text-[1rem] leading-[1.6] opacity-90 max-w-[450px]">
+                            {descPreview}
+                            {showEllipsis ? "..." : ""}{" "}
+                            <span className="ml-2 inline-flex items-center underline underline-offset-4 decoration-white/60 hover:decoration-white">
+                              Continue Read&nbsp;→
+                            </span>
+                          </p>
+                        </div>
+                      </article>
+                    </Link>
+                  );
+                }
+              )}
             </div>
           </div>
 
-          <button
-            type="button"
-            aria-label="Next article"
-            onClick={handleNext}
-            className="
-              mhl-nav absolute right-10 top-1/2 -translate-y-1/2 z-10
-              flex !h-[50px] !w-[50px] items-center justify-center
-              !rounded-full border border-white/20 bg-black/40 pb-1
-              text-[2.2rem] leading-[0] text-white
-              transition-all hover:!scale-105 active:!scale-95
-              max-[768px]:right-2
-            "
+          <button type="button" aria-label="Next article" onClick={goNext} disabled={isNavDisabled}
+            aria-disabled={isNavDisabled}
+            className={[
+              "absolute right-10 z-10 flex h-[60px] w-[60px] items-center justify-center !rounded-full border-2 border-white/30 bg-white/10 text-white text-[1.5rem] transition-all",
+              "!hover:scale-110 !hover:bg-white/20",
+              "max-[768px]:right-2 max-[768px]:h-[45px] max-[768px]:w-[45px] max-[768px]:text-[1.2rem]",
+              isNavDisabled ? "opacity-40 cursor-not-allowed" : "",
+            ].join(" ")}
           >
             &#8250;
           </button>
@@ -392,27 +218,26 @@ export default function MonologuesHighlightSection({ articles }: Props) {
       </section>
 
       <style>{`
-        .mhl-slider {
-          transform: translateX(calc(50% - (1029px / 2) - (var(--current-index) * (1029px + 30px))));
-          transition: transform .6s cubic-bezier(0.4, 0, 0.2, 1);
+        .rs-article-slider {
+          --card-w: 1029px;
+          --card-gap: 30px;
+          transform: translateX(
+            calc(50% - (var(--card-w) / 2) - (var(--current-index) * (var(--card-w) + var(--card-gap))))
+          ) !important;
         }
         @media (max-width: 1200px) {
-          .mhl-slider {
-            gap: 20px;
-            transform: translateX(calc(50% - (90vw / 2) - (var(--current-index) * (90vw + 20px))));
+          .rs-article-slider {
+            --card-w: 90vw;
+            --card-gap: 20px;
           }
-          .mhl-card { width: 90vw; height: 350px; }
         }
         @media (max-width: 768px) {
-          .mhl-slider {
-            gap: 15px;
-            transform: translateX(calc(50% - (95vw / 2) - (var(--current-index) * (95vw + 15px))));
+          .rs-article-slider {
+            --card-w: 95vw;
+            --card-gap: 15px;
           }
-          .mhl-card { width: 95vw; height: 300px; }
         }
-
-        .mhl-nav { border-radius: 9999px !important; }
       `}</style>
-    </div>
+    </>
   );
 }
