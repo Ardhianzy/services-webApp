@@ -1,230 +1,308 @@
 // src/features/reading-guide/components/ReadingGuideHighlightSection.tsx
-import { useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
-import {
-  books as centerBooksRaw,
-  authors as centerAuthors,
-  guides as centerGuidesRaw,
-} from "@/data/books";
+import { contentApi } from "@/lib/content/api";
+import type { ArticleDTO } from "@/lib/content/types";
+import { ROUTES } from "@/app/routes";
 
-export type RGAuthor = { id: string | number; name: string };
-export type RGBook = {
+function formatPrettyDate(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+function normalizeBackendHtml(payload?: string | null): string {
+  if (!payload) return "";
+  let s = (payload ?? "").trim();
+  s = s
+    .replace(/\\u003C/gi, "<")
+    .replace(/\\u003E/gi, ">")
+    .replace(/\\u0026/gi, "&")
+    .replace(/\\"/g, '"');
+  s = s.replace(/^\s*"?content"?\s*:\s*"?/i, "");
+  s = s.replace(/"\s*$/, "");
+  s = s.replace(/<p>\s*<\/p>/g, "");
+  const firstTag = s.indexOf("<");
+  if (firstTag > 0) s = s.slice(firstTag);
+  if (!/<[a-z][\s\S]*>/i.test(s)) s = s ? `<p>${s}</p>` : "";
+  return s.trim();
+}
+
+function stripHtml(html?: string | null) {
+  if (!html) return "";
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function truncateWords(text: string, maxWords: number) {
+  const words = (text ?? "").trim().split(/\s+/);
+  if (words.length <= maxWords) return text ?? "";
+  return words.slice(0, maxWords).join(" ").replace(/[,\.;:!?\-—]+$/, "");
+}
+
+function ContinueReadInline() {
+  return (
+    <span className="ml-2 inline-flex items-center underline underline-offset-4 decoration-white/60 hover:decoration-white">
+      Continue Read&nbsp;→
+    </span>
+  );
+}
+
+type Card = {
   id: string | number;
   title: string;
-  coverImg: string;
-  authorId?: string | number;
-};
-export type RGGuide = {
-  id: string | number;
-  title: string;
-  excerpt: string;
-  targetBookId: string | number;
-  authorId: string | number;
+  image: string;
+  slug?: string;
+  author: string;
+  dateISO?: string;
+  desc: string;
 };
 
 type Props = {
-  guides?: RGGuide[];
-  books?: RGBook[];
-  authors?: RGAuthor[];
+  guides?: Card[];
+  title?: string;
+  heroImageUrl?: string;
   initialIndex?: number;
+  descriptionMaxWords?: number;
 };
 
-const centerBooks: RGBook[] = centerBooksRaw.map((b) => ({
-  id: b.id,
-  title: b.title,
-  coverImg: b.cover,
-  authorId: b.authorId,
-}));
-
-const centerGuides: RGGuide[] = centerGuidesRaw.map((g) => ({
-  id: g.id,
-  title: g.title,
-  excerpt: g.excerpt,
-  targetBookId: g.targetBookId ?? g.steps[0]?.bookId,
-  authorId: g.authorId,
-}));
-
 export default function ReadingGuideHighlightSection({
-  guides = centerGuides,
-  books = centerBooks,
-  authors = centerAuthors,
+  guides,
+  title = "READING GUIDE",
+  heroImageUrl = "/assets/readingGuide/belajar2.png",
   initialIndex = 0,
-}: Partial<Props>) {
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const totalSlides = guides.length;
+  descriptionMaxWords = 40,
+}: Props) {
+  const [remote, setRemote] = useState<Card[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handlePrev = () =>
-    setCurrentIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
-  const handleNext = () => setCurrentIndex((prev) => (prev + 1) % totalSlides);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        if (guides?.length) {
+          setRemote(guides);
+          return;
+        }
+        const list = await contentApi.articles.list();
+        if (!alive) return;
+        const filtered = (list ?? []).filter((a: ArticleDTO) => (a.category ?? "").toUpperCase() === "READING_GUIDE");
+        const mapped: Card[] = filtered.map((a: ArticleDTO) => {
+          const html =
+            normalizeBackendHtml(a.meta_description) ||
+            normalizeBackendHtml(a.excerpt) ||
+            normalizeBackendHtml(a.content);
+          const desc = stripHtml(html);
+          return {
+            id: a.id,
+            title: a.title ?? "Untitled",
+            image: a.image ?? "",
+            slug: a.slug,
+            author: "Ardhianzy",
+            dateISO: a.date || a.created_at || undefined,
+            desc,
+          };
+        });
+        setRemote(
+          mapped.length
+            ? mapped
+            : [{
+                id: "rg-coming-soon",
+                title: "NEXT: COMING SOON",
+                image: "/assets/research/Desain tanpa judul.png",
+                slug: undefined,
+                author: "Ardhianzy",
+                dateISO: undefined,
+                desc: "SOON",
+              }]
+        );
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [guides]);
+
+  const items: Card[] = guides?.length ? guides : remote;
+
+  const [currentIndex, setCurrentIndex] = useState(
+    Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0))
+  );
+  useEffect(() => {
+    setCurrentIndex((prev) => (items.length ? Math.min(prev, items.length - 1) : 0));
+  }, [items.length]);
+
+  const sliderVars: CSSProperties = { ["--current-index" as any]: currentIndex };
+  const isNavDisabled = items.length <= 1;
+
+  const goPrev = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === 0 ? items.length - 1 : p - 1)); };
+  const goNext = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === items.length - 1 ? 0 : p + 1)); };
 
   return (
-    <div className="text-white">
+    <div className="rg-highlight-wrapper text-white">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@300;400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;300&display=swap');
+
         .rg__bebas { font-family: 'Bebas Neue', cursive !important; }
         .rg__roboto { font-family: 'Roboto', sans-serif !important; }
+        .rg__heroTitle { font-size: 5rem !important; }
+
+        .rgh__nav{
+          position:absolute !important; top:50% !important; transform:translateY(-50%) !important; z-index:10 !important;
+          display:flex !important; align-items:center !important; justify-content:center !important;
+          width:60px !important; height:60px !important; border-radius:9999px !important;
+          border:2px solid rgba(255,255,255,0.3) !important; background:rgba(255,255,255,0.1) !important;
+          color:#ffffff !important; font-size:1.5rem !important; line-height:1 !important;
+          transition:transform .2s ease, background-color .2s ease, opacity .2s ease, filter .2s ease !important;
+        }
+        .rgh__nav:hover{ transform:translateY(-50%) scale(1.10) !important; background:rgba(255,255,255,0.2) !important; }
+        .rgh__nav--left{ left:40px !important; }
+        .rgh__nav--right{ right:40px !important; }
+        .rgh__nav[disabled],
+        .rgh__nav[aria-disabled="true"]{
+          opacity:.4 !important; cursor:not-allowed !important; filter:grayscale(40%) !important;
+        }
+
+        .rg-slider {
+          --card-w: 1029px;
+          --card-gap: 30px;
+          transform: translateX(
+            calc(50% - (var(--card-w) / 2) - (var(--current-index) * (var(--card-w) + var(--card-gap))))
+          ) !important;
+        }
+        @media (max-width: 1200px) {
+          .rg-slider { --card-w: 90vw; --card-gap: 20px; }
+        }
+        @media (max-width: 768px) {
+          .rg-slider { --card-w: 95vw; --card-gap: 15px; }
+          .rgh__nav{ width:45px !important; height:45px !important; font-size:1.2rem !important; }
+          .rgh__nav--left{ left:0.5rem !important; }
+          .rgh__nav--right{ right:0.5rem !important; }
+        }
       `}</style>
 
       <section
-        className="relative flex items-center justify-center"
-        style={{
-          width: "100vw",
-          left: "50%",
-          right: "50%",
-          marginLeft: "-50vw",
-          height: "60vh",
-          backgroundImage: "url('/assets/readingGuide/belajar2.png')",
-          backgroundColor: "#000",
-          backgroundBlendMode: "luminosity",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+        aria-label="Reading guide highlight hero"
+        className="relative w-screen h-[60vh] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-black bg-cover bg-center flex items-center justify-center"
+        style={{ backgroundImage: `url('${heroImageUrl}')`, filter: "grayscale(100%)", mixBlendMode: "luminosity" }}
       >
         <div
+          aria-hidden
           className="absolute inset-0 z-[1]"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)",
-          }}
+          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)" }}
         />
-        <h1 className="relative z-[2] rg__bebas uppercase text-white text-center !text-[5rem]">
-          READING GUIDE
+        <h1 className="rg__bebas rg__heroTitle relative z-[2] uppercase text-center text-white">
+          {title}
         </h1>
       </section>
 
-      <div className="bg-black flex flex-col items-center !py-[60px]">
-        <section className="relative w-full max-w-[1100px] flex items-center justify-center !mb-[30px]">
-          <img
-            src="/assets/readingGuide/Group 5185.svg"
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none opacity-50 absolute z-[5] top-1/2 -translate-y-1/2 h-[700px] left-[-420px]"
-          />
-          <img
-            src="/assets/readingGuide/Group 5184.svg"
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none opacity-50 absolute z-[5] top-1/2 -translate-y-1/2 h-[700px] right-[-499px]"
-          />
+      <section className="relative w-full py-5 bg-black overflow-hidden mt-38">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]"
+          style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to right, #000 30%, transparent 100%)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-0 top-0 bottom-0 z-[3]"
+          style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to left, #000 30%, transparent 100%)" }}
+        />
 
+        <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
           <button
             type="button"
-            aria-label="Previous book"
-            onClick={handlePrev}
-            className="absolute top-1/2 -translate-y-1/2 left-0 z-10 flex items-center justify-center !w-[61px] !h-[61px] !rounded-full text-white !text-[2rem] backdrop-blur-[5px] transition-colors"
-            style={{ background: "rgba(177,177,177,0.15)", lineHeight: 0, padding: 0, border: "none" }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget.style.background = "rgba(177,177,177,0.3)"))
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget.style.background = "rgba(177,177,177,0.15)"))
-            }
+            aria-label="Previous guide"
+            onClick={goPrev}
+            disabled={isNavDisabled}
+            aria-disabled={isNavDisabled}
+            className="rgh__nav rgh__nav--left"
           >
-            <span className="grid place-items-center !w-full !h-full leading-[0]">
-              &#8249;
-            </span>
+            &#8249;
           </button>
 
-          <div className="w-full max-w-[890px] overflow-hidden">
+          <div className="relative h-[417px] w-full overflow-visible">
             <div
-              className="flex transition-[transform] duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
-              style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+              className="rg-slider flex h-full items-center gap-[30px] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+              style={sliderVars}
             >
-              {guides.map((guide) => {
-                const targetBook = books.find((b) => b.id === guide.targetBookId);
-                const author = authors.find((a) => a.id === guide.authorId);
-                if (!targetBook || !author) return null;
+              {(items.length ? items : loading ? [{ id: "skeleton", title: "", image: "", author: "Ardhianzy", desc: "" }] : []).map(
+                (g: any, idx: number) => {
+                  const isActive = idx === currentIndex;
+                  const preview = truncateWords(g.desc ?? "", descriptionMaxWords);
+                  const showDots = (g.desc ?? "").trim().length > preview.trim().length;
+                  const dateHuman = formatPrettyDate(g.dateISO);
 
-                return (
-                  <Link
-                    to={`/guide/${guide.id}`}
-                    key={guide.id}
-                    className="flex-[0_0_100%]"
-                  >
-                    <div
-                      className="box-border !p-[25px] !rounded-[20px] flex !gap-[30px] items-center"
-                      style={{
-                        background: "rgba(255,255,255,0.1)",
-                        backdropFilter: "blur(10px)",
-                      }}
+                  const href = g.slug
+                    ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug)
+                    : ROUTES.READING_GUIDE_COMING_SOON;
+
+                  return (
+                    <Link
+                      key={g.id}
+                      to={href}
+                      className={[
+                        "relative shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
+                        "!w-[1029px] !h-[417px]",
+                        "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
+                        "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
+                        isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
+                        "hover:!scale-[1.02] hover:!opacity-100 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
+                      ].join(" ")}
+                      style={{ textDecoration: "none" }}
+                      aria-label={g.title}
                     >
                       <img
-                        className="shadow-[0_10px_30px_rgba(0,0,0,0.3)] !rounded-[5px] object-cover"
-                        src={targetBook.coverImg}
-                        alt={`Cover of ${targetBook.title}`}
-                        width={276}
-                        height={387}
-                        style={{ width: 276, height: 387, flexShrink: 0 }}
+                        src={g.image}
+                        alt={g.title}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-[filter] duration-300 filter grayscale hover:grayscale-0"
                       />
 
-                      <div className="flex flex-col text-left text-white">
-                        <h1 className="rg__bebas !font-normal !text-[48px] !leading-[1.1] m-0 !text-left">
-                          {guide.title}
-                        </h1>
-                        <p className="rg__roboto m-0 !mt-[5px] !font-semibold !text-[12px] !leading-[14px] !text-left">
-                          By {author.name}
+                      <div
+                        className="absolute inset-0 flex flex-col items-start justify-start p-[30px] pr-[40px] text-white"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)",
+                        }}
+                      >
+                        <h3 className="rg__bebas uppercase !text-[3.5rem] !font-normal !leading-[1] tracking-[2px] max-w-[500px] mb-[10px]">
+                          {g.title}
+                        </h3>
+
+                        {(g.author || dateHuman) ? (
+                          <p className="rg__roboto mb-[12px] !text-[0.95rem] leading-[1.4] opacity-80">
+                            {g.author ?? "Ardhianzy"}
+                            {g.author && dateHuman ? " • " : ""}
+                            {dateHuman ?? ""}
+                          </p>
+                        ) : null}
+
+                        <p className="rg__roboto text-left !text-[1rem] leading-[1.6] opacity-90 max-w-[450px]">
+                          {preview}
+                          {showDots ? "..." : ""} <ContinueReadInline />
                         </p>
-
-                        <hr className="!my-[20px] w-full border-0" style={{ borderTop: "1px solid rgba(255,255,255,0.5)" }} />
-
-                        <p className="rg__roboto m-0 !mb-[30px] !font-light !text-[20px] !leading-[1.4] !text-left">
-                          {guide.excerpt}
-                        </p>
-
-                        <div
-                          className="
-                            inline-flex items-center justify-center gap-2
-                            !px-[25px] !py-3 !rounded-[30px] border !border-[#F5F5F5]
-                            cursor-pointer self-start transition-colors
-                            rg__bebas !text-[18px] !leading-[22px]
-                            !text-[#F5F5F5] bg-transparent
-                            hover:!bg-[#F5F5F5] hover:!text-black
-                          "
-                        >
-                          <span>VIEW READING PATH</span>
-                          <span className="transition-transform">→</span>
-                        </div>
                       </div>
-                    </div>
-                  </Link>
-                );
-              })}
+                    </Link>
+                  );
+                }
+              )}
             </div>
           </div>
 
           <button
             type="button"
-            aria-label="Next book"
-            onClick={handleNext}
-            className="absolute !top-1/2 !-translate-y-1/2 right-0 z-10 flex !items-center !justify-center !w-[61px] !h-[61px] !rounded-full text-white !text-[2rem] backdrop-blur-[5px] transition-colors"
-            style={{ background: "rgba(177,177,177,0.15)", lineHeight: 0, padding: 0, border: "none" }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget.style.background = "rgba(177,177,177,0.3)"))
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget.style.background = "rgba(177,177,177,0.15)"))
-            }
+            aria-label="Next guide"
+            onClick={goNext}
+            disabled={isNavDisabled}
+            aria-disabled={isNavDisabled}
+            className="rgh__nav rgh__nav--right"
           >
-            <span className="grid place-items-center !w-full !h-full leading-[0]">
-              &#8250;
-            </span>
+            &#8250;
           </button>
-        </section>
-
-        <div className="flex justify-center !gap-[10px]">
-          {guides.map((_, idx) => (
-            <button
-              key={idx}
-              aria-label={`Go to slide ${idx + 1}`}
-              onClick={() => setCurrentIndex(idx)}
-              className="!w-[15px] !h-[15px] !rounded-full transition-colors"
-              style={{
-                background: idx === currentIndex ? "#D9D9D9" : "#4d4d4d",
-              }}
-            />
-          ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

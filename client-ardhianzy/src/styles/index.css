@@ -55,24 +55,24 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-a {
+/* a {
   font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
 }
 a:hover {
   color: #535bf2;
-}
+} */
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  /* display: flex; */
+  /* place-items: center; */
   min-width: 320px;
-  min-height: 100vh;
+  /* min-height: 100vh; */
 }
 
-h1 {
+/* h1 {
   font-size: 3.2em;
   line-height: 1.1;
 }
@@ -94,9 +94,9 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
-}
+} */
 
-@media (prefers-color-scheme: light) {
+/* @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
     background-color: #ffffff;
@@ -107,7 +107,7 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
-}
+} */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -181,6 +181,21 @@ button:focus-visible {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@theme inline {
+  /* Breakpoints extra-besar untuk 2K/4K */
+  --breakpoint-3xl: 1920px;  /* 2K (WQHD) */
+  --breakpoint-4xl: 2560px;  /* 1440p ultrawide/2.5K */
+  --breakpoint-5xl: 3840px;  /* 4K (UHD) */
+
+  --container-max: clamp(1024px, 75vw, 1400px);
+  --space-fluid: clamp(16px, 2vw, 40px);
+  --gap-fluid: clamp(12px, 1.2vw, 28px);
+  --fz-0: clamp(14px, 0.9vw, 18px);
+  --fz-1: clamp(18px, 1.2vw, 24px);
+  --fz-2: clamp(24px, 1.8vw, 36px);
+  --fz-3: clamp(32px, 2.6vw, 56px);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -190,6 +205,32 @@ button:focus-visible {
   }
 
   html { scroll-behavior: smooth; }
+}
+
+.container-fluid{
+  width: min(var(--container-max), 100%);
+  margin-inline: auto;
+  padding-inline: var(--space-fluid);
+}
+
+.gap-fluid { gap: var(--gap-fluid); }
+
+.text-fluid-sm   { font-size: var(--fz-0); }
+.text-fluid-base { font-size: var(--fz-1); }
+.text-fluid-lg   { font-size: var(--fz-2); }
+.text-fluid-xl   { font-size: var(--fz-3); }
+
+.maxw-desktop {
+  max-width: min(100vw - 2rem, 1400px);
+}
+@media (min-width: 1920px) { /* 3xl */
+  .maxw-desktop { max-width: 1600px; }
+}
+@media (min-width: 2560px) { /* 4xl */
+  .maxw-desktop { max-width: 1800px; }
+}
+@media (min-width: 3840px) { /* 5xl */
+  .maxw-desktop { max-width: 2100px; }
 }
 
 .font-bebas { font-family: 'Bebas Neue', cursive !important; }

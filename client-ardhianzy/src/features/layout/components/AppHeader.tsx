@@ -29,7 +29,7 @@ export default function AppHeader({ }: AppHeaderProps) {
     { kind: "route", to: "/monologues", label: "MONOLOGUES" },
     { kind: "route", to: "/ReadingGuide", label: "READING GUIDE" },
     { kind: "route", to: "/IdeasTradition", label: "IDEAS & TRADITION" },
-    { kind: "route", to: "/PopCultureReview", label: "POP-CULTURE REVIEW" },
+    { kind: "route", to: "/PopCultureReview", label: "POPSHOPIA" },
     { kind: "route", to: "/shop", label: "SHOPS" },
     { kind: "modal", modal: "community", label: "COMMUNITY" },
   ];

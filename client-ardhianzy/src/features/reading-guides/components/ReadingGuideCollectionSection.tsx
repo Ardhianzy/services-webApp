@@ -1,221 +1,214 @@
 // src/features/reading-guide/components/ReadingGuideCollectionSection.tsx
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  books as centerBooksRaw,
-  authors as centerAuthors,
-  guides as centerGuides,
-} from "@/data/books";
+import { contentApi } from "@/lib/content/api";
+import type { ArticleDTO } from "@/lib/content/types";
+import { ROUTES } from "@/app/routes";
 
-type GridBook = {
-  id: string;
+function formatPrettyDate(iso?: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const month = d.toLocaleString("en-US", { month: "long" });
+  return `${month} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+function normalizeBackendHtml(payload?: string | null): string {
+  if (!payload) return "";
+  let s = (payload ?? "").trim();
+  s = s
+    .replace(/\\u003C/gi, "<")
+    .replace(/\\u003E/gi, ">")
+    .replace(/\\u0026/gi, "&")
+    .replace(/\\"/g, '"');
+  s = s.replace(/^\s*"?content"?\s*:\s*"?/i, "");
+  s = s.replace(/"\s*$/, "");
+  s = s.replace(/<p>\s*<\/p>/g, "");
+  const firstTag = s.indexOf("<");
+  if (firstTag > 0) s = s.slice(firstTag);
+  if (!/<[a-z][\s\S]*>/i.test(s)) s = s ? `<p>${s}</p>` : "";
+  return s.trim();
+}
+
+function stripHtml(html?: string | null) {
+  if (!html) return "";
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function truncateWords(text: string, maxWords: number) {
+  const words = (text ?? "").trim().split(/\s+/);
+  if (words.length <= maxWords) return text ?? "";
+  return words.slice(0, maxWords).join(" ").replace(/[,\.;:!?\-—]+$/, "");
+}
+
+function ContinueReadInline() {
+  return (
+    <span className="ml-2 inline-flex items-center underline underline-offset-4 decoration-white/60 hover:decoration-white">
+      Continue Read&nbsp;→
+    </span>
+  );
+}
+
+type GuideCard = {
+  id: string | number;
   title: string;
-  coverImg: string;
-  authorId: string;
+  date: string;
+  image: string;
+  slug?: string;
+  desc: string;
 };
 
 type Props = {
-  books?: GridBook[];
-  initialCount?: number;
+  guides?: GuideCard[];
 };
 
-const centerBooks: GridBook[] = centerBooksRaw.map((b) => ({
-  id: b.id,
-  title: b.title,
-  coverImg: b.cover,
-  authorId: b.authorId,
-}));
+export default function ReadingGuideCollectionSection({ guides }: Props) {
+  const [remote, setRemote] = useState<GuideCard[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default function ReadingGuideCollectionSection({
-  books = centerBooks,
-  initialCount = 15,
-}: Props) {
-  const authors = centerAuthors;
-  const guides = centerGuides;
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        if (guides?.length) {
+          setRemote(guides);
+          return;
+        }
+        const list = await contentApi.articles.list();
+        if (!alive) return;
+        const mapped: GuideCard[] = (list ?? [])
+          .filter((a: ArticleDTO) => (a.category ?? "").toUpperCase() === "READING_GUIDE")
+          .map((a: ArticleDTO) => {
+            const html =
+              normalizeBackendHtml(a.meta_description) ||
+              normalizeBackendHtml(a.excerpt) ||
+              normalizeBackendHtml(a.content);
+            const desc = stripHtml(html);
+            return {
+              id: a.id,
+              title: a.title ?? "Untitled",
+              date: formatPrettyDate(a.date || a.created_at || ""),
+              image: a.image ?? "",
+              slug: a.slug,
+              desc,
+            };
+          });
+        setRemote(mapped);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [guides]);
 
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [overlayVisible, setOverlayVisible] = useState(books.length > initialCount);
-
-  const visibleBooks = isExpanded ? books : books.slice(0, initialCount);
-  const canLoadMore = !isExpanded && books.length > initialCount;
-
-  const findGuideForBook = (bookId: string) => {
-    const g = guides.find(
-      (x) => x.targetBookId === bookId || x.steps.some((s) => s.bookId === bookId)
-    );
-    return g ? g.id : null;
-  };
-
-  const handleLoadMore = () => {
-    setIsExpanded(true);
-    requestAnimationFrame(() => {
-      setOverlayVisible(false);
-    });
-  };
+  const items: GuideCard[] = useMemo(() => (guides?.length ? guides : remote), [guides, remote]);
 
   return (
     <section className="w-full bg-black text-white !py-[60px]">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;600&display=swap');
-        .rg__bebas { font-family: 'Bebas Neue', cursive !important; }
-        .rg__roboto { font-family: 'Roboto', sans-serif !important; }
-
-        /* LOAD MORE overlay & button: disamakan dengan ResearchArticlesSection */
-        .rs__loadwrap {
-          position: absolute !important;
-          left: 0 !important;
-          bottom: 0 !important;
-          width: 100% !important;
-          height: 150px !important;
-          display: flex !important;
-          justify-content: center !important;
-          align-items: flex-end !important;
-          background: linear-gradient(0deg, #000000 16.35%, rgba(0,0,0,0) 100%) !important;
-          z-index: 5 !important;
-          pointer-events: none !important;
-          padding-bottom: 2rem !important;
-          opacity: 1 !important;
-          visibility: visible !important;
-          transition: opacity .35s ease, visibility 0s linear 0s !important;
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap');
+        .rgc__bebas { font-family: 'Bebas Neue', cursive !important; }
+        .rgc__roboto { font-family: 'Roboto', sans-serif !important; }
+        .rgc-grid { grid-template-columns: repeat(3, 1fr); gap: 80px 40px; }
+        .rgc-card .rgc-img { transition: transform .4s ease, filter .4s ease; border-radius: 8px; }
+        .rgc-card:hover .rgc-img { filter: saturate(1.2); }
+        @media (max-width: 992px) { .rgc-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) {
+          .rgc-grid { grid-template-columns: 1fr; gap: 60px 0; }
+          .rgc-img { height: 400px; }
+          .rgc-title { font-size: 38px !important; }
         }
-        .rs__loadwrap--hidden {
-          opacity: 0 !important;
-          visibility: hidden !important;
-          transition: opacity .35s ease, visibility 0s linear .35s !important;
-        }
-        .rs__loadbtn {
-          font-family: 'Bebas Neue', cursive !important;
-          font-size: 42px !important;
-          letter-spacing: .05em !important;
-          color: #FFFFFF !important;
-          background: none !important;
-          border: none !important;
-          cursor: pointer !important;
-          transition: opacity .3s ease !important;
-          pointer-events: all !important;
-          outline: none !important;
-          box-shadow: none !important;
-          -webkit-tap-highlight-color: transparent !important;
-          appearance: none !important;
-        }
-        .rs__loadbtn:hover { opacity: .8 !important; }
       `}</style>
 
-      <div className="max-w-[1241px] mx-auto px-5">
+      <div className="max-w-[1275px] mx-auto px-5">
         <header className="border-t border-white !pt-5 !mb-[30px]">
-          <h2 className="rg__bebas !font-normal !text-[48px] !leading-[58px] text-left m-0">
+          <h2 className="rgc__bebas !font-normal !text-[48px] !leading-[58px] text-left m-0">
             COLLECTED BOOKS
           </h2>
         </header>
 
-        <div className="box-border flex items-center gap-2 w-full max-w-[423px] !h-[46px] mx-auto !mb-[50px] px-[15px] bg-black border border-white !rounded-[20px]">
-          <div className="relative !w-[18px] !h-[18px] rounded-full border-2 border-white shrink-0">
-            <span
-              className="absolute block"
-              style={{
-                width: 8,
-                height: 2,
-                background: "#fff",
-                bottom: -4,
-                right: -4,
-                transform: "rotate(45deg)",
-              }}
-            />
-          </div>
-          <input
-            type="text"
-            placeholder="what are you looking for..."
-            className="w-full bg-transparent outline-none border-none rg__roboto !text-[16px] !text-white placeholder:!text-white/50"
-          />
-        </div>
+        {!loading && items.length === 0 ? (
+          <p className="rgc__roboto text-white/80 text-center mt-6">
+            No collections available yet. Stay tuned!
+          </p>
+        ) : null}
 
-        <div className="relative">
-          <div
-            className="rgc-grid grid overflow-hidden transition-[max-height] duration-700 ease-in-out !gap-y-[40px] !gap-x-[30px]"
-            style={{
-              gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-              maxHeight: isExpanded ? 5000 : 1050,
-            }}
-          >
-            {visibleBooks.map((book) => {
-              const guideId = findGuideForBook(book.id);
-              const author = authors.find((a) => a.id === book.authorId);
+        {items.length > 0 && (
+          <>
+            <div className="rgc-grid grid">
+              {items.slice(0, 9).map((g) => {
+                const preview = truncateWords(g.desc, 45);
+                const showDots = (g.desc ?? "").trim().length > preview.trim().length;
+                const href = g.slug
+                  ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug)
+                  : ROUTES.READING_GUIDE;
 
-              return (
-                <Link
-                  key={book.id}
-                  to={guideId ? `/guide/${guideId}` : "#"}
-                  className="rgc-book-link block text-inherit no-underline"
-                >
-                  <article className="flex flex-col text-center">
-                    <div
-                      className="w-full !mb-[15px] bg-center bg-cover"
-                      style={{
-                        aspectRatio: "157 / 220",
-                        backgroundImage: `url(${book.coverImg})`,
-                      }}
-                      aria-label={book.title}
-                    />
-                    <div className="flex flex-col items-center !gap-2">
-                      <h3 className="rg__bebas m-0 !text-[28px] !leading-[1.1] text-white">
-                        {book.title}
-                      </h3>
-                      <p className="rg__roboto m-0 !font-semibold !text-[12px] !leading-[14px]">
-                        By {author ? author.name : "Unknown"}
-                      </p>
-
+                return (
+                  <Link key={g.id} to={href} className="block" style={{ textDecoration: "none" }}>
+                    <article className="rgc-card text-center cursor-pointer mt-5">
                       <div
-                        className="
-                          inline-flex justify-center items-center
-                          !mt-[5px] !px-[28px] !py-3 border !border-[#F5F5F5] !rounded-[30px]
-                          cursor-pointer transition-colors
-                          rg__bebas !text-[18px] !leading-[20px]
-                          !text-[#F5F5F5] bg-transparent
-                          hover:!bg-[#F5F5F5] hover:!text-black
-                        "
-                      >
-                        READING GUIDE
+                        className="rgc-img w-full h-[470px] bg-cover bg-center bg-black mb-[10px]"
+                        style={{ backgroundImage: `url(${g.image})`, backgroundBlendMode: "luminosity" }}
+                        aria-label={g.title}
+                      />
+                      <div className="flex flex-col items-center">
+                        <p className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4" style={{ fontWeight: 300, fontSize: 17, lineHeight: "18px" }}>
+                          {g.date}
+                        </p>
+                        <h3 className="rgc__bebas rgc-title mt-10" style={{ fontWeight: 400, fontSize: 40, lineHeight: 1.1, textShadow: "0 4px 50px rgba(0,0,0,.25)" }}>
+                          {g.title}
+                        </h3>
+                        <p className="rgc__roboto text-white/90 max-w-[90%] mx-auto" style={{ fontSize: 16, lineHeight: 1.5, marginTop: 10 }}>
+                          {preview}
+                          {showDots ? "..." : ""} <ContinueReadInline />
+                        </p>
                       </div>
-                    </div>
-                  </article>
-                </Link>
-              );
-            })}
-          </div>
-
-          {canLoadMore && (
-            <div
-              className={[
-                "rs__loadwrap",
-                overlayVisible ? "" : "rs__loadwrap--hidden",
-              ].join(" ")}
-              aria-hidden={!overlayVisible}
-            >
-              {!isExpanded && (
-                <button
-                  type="button"
-                  onClick={handleLoadMore}
-                  className="rs__loadbtn"
-                >
-                  LOAD MORE...
-                </button>
-              )}
+                    </article>
+                  </Link>
+                );
+              })}
             </div>
-          )}
-        </div>
-      </div>
 
-      <style>{`
-        @media (max-width: 1200px) {
-          .rgc-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        }
-        @media (max-width: 992px) {
-          .rgc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        }
-        @media (max-width: 768px) {
-          .rgc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-      `}</style>
+            {items.length > 9 && (
+              <div className="rgc-grid grid mt-[80px]">
+                {items.slice(9).map((g) => {
+                  const preview = truncateWords(g.desc, 45);
+                  const showDots = (g.desc ?? "").trim().length > preview.trim().length;
+                  const href = g.slug
+                    ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug)
+                    : ROUTES.READING_GUIDE;
+
+                  return (
+                    <Link key={g.id} to={href} className="block" style={{ textDecoration: "none" }}>
+                      <article className="rgc-card text-center cursor-pointer">
+                        <div
+                          className="rgc-img w-full h-[470px] bg-cover bg-center bg-black mb-[10px]"
+                          style={{ backgroundImage: `url(${g.image})`, backgroundBlendMode: "luminosity" }}
+                          aria-label={g.title}
+                        />
+                        <div className="flex flex-col items-center">
+                          <p className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4" style={{ fontWeight: 300, fontSize: 15, lineHeight: "18px" }}>
+                            {g.date}
+                          </p>
+                          <h3 className="rgc__bebas rgc-title mt-10" style={{ fontWeight: 400, fontSize: 48, lineHeight: 1.1, textShadow: "0 4px 50px rgba(0,0,0,.25)" }}>
+                            {g.title}
+                          </h3>
+                          <p className="rgc__roboto text-white/90 max-w-[90%] mx-auto" style={{ fontSize: 18, lineHeight: 1.5, marginTop: 10 }}>
+                            {preview}
+                            {showDots ? "..." : ""} <ContinueReadInline />
+                          </p>
+                        </div>
+                      </article>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </section>
   );
 }

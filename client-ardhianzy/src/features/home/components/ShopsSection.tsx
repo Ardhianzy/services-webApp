@@ -7,18 +7,8 @@ import {
   type PointerEventHandler,
   type KeyboardEventHandler,
 } from "react";
-import { listShop } from "@/features/shop/api";
-import { API_BASE } from "@/config/endpoints";
-
-type ShopRemote = {
-  id?: string | number;
-  title?: string;
-  image?: string;
-  price?: number | string;
-  category?: string;
-  condition?: string;
-  author?: string;
-};
+import { contentApi } from "@/lib/content/api";
+import type { ShopDTO } from "@/lib/content/types";
 
 type ShopCard = {
   img: string;
@@ -26,52 +16,43 @@ type ShopCard = {
   type: string;
   author: string;
   price: string;
+  href: string;
 };
 
-const FALLBACK: ShopCard[] = [
-  { img: "/assets/Shop/topi.png", name: "LOREM", type: "Merch • Hat", author: "Ardhianzy", price: "Rp. 100.000" },
-  { img: "/assets/Shop/topi.png", name: "LOREM", type: "Merch • Hat", author: "Ardhianzy", price: "Rp. 100.000" },
-  { img: "/assets/Shop/topi.png", name: "LOREM", type: "Merch • Hat", author: "Ardhianzy", price: "Rp. 100.000" },
-  { img: "/assets/Shop/topi.png", name: "LOREM", type: "Merch • Hat", author: "Ardhianzy", price: "Rp. 100.000" },
-  { img: "/assets/Shop/topi.png", name: "LOREM", type: "Merch • Hat", author: "Ardhianzy", price: "Rp. 100.000" },
-  { img: "/assets/Shop/topi.png", name: "LOREM", type: "Merch • Hat", author: "Ardhianzy", price: "Rp. 100.000" },
-  { img: "/assets/Shop/topi.png", name: "LOREM", type: "Merch • Hat", author: "Ardhianzy", price: "Rp. 100.000" },
-  { img: "/assets/Shop/topi.png", name: "LOREM", type: "Merch • Hat", author: "Ardhianzy", price: "Rp. 100.000" },
-  { img: "/assets/Shop/topi.png", name: "LOREM", type: "Merch • Hat", author: "Ardhianzy", price: "Rp. 100.000" },
-];
-
-function toAbsUrl(url?: string): string | undefined {
-  if (!url) return undefined;
-  if (/^https?:\/\//i.test(url)) return url;
-  return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
+function formatIDR(n?: number | string | null) {
+  const num = typeof n === "string" ? Number(n) : n ?? 0;
+  if (!Number.isFinite(num)) return "—";
+  try {
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
+      Number(num)
+    );
+  } catch {
+    return `Rp ${num}`;
+  }
 }
 
-function mapToCard(x: ShopRemote): ShopCard {
-  const img = toAbsUrl(x.image) ?? "/assets/Shop/topi.png";
-  const name = x.title?.trim() || "Untitled";
-  const cat = x.category?.trim();
-  const cond = x.condition?.trim();
-  const type = [cat ? `Merch • ${cat}` : "Merch", cond].filter(Boolean).join(" • ");
-  const author = x.author?.trim() || "Unknown";
-  const priceNum = typeof x.price === "string" ? Number(x.price) : x.price;
-  const price =
-    Number.isFinite(priceNum) && priceNum != null
-      ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
-          Number(priceNum)
-        )
-      : "—";
-  return { img, name, type, author, price };
+function mapToCard(x: ShopDTO): ShopCard {
+  const img = (x.image || "COMING SOON")!.trim();
+  const name = (x.title || "COMING SOON").trim();
+  const type = x.category ? `Merch • ${x.category}` : "Merch";
+  const author = "Ardhianzy";
+  const price = formatIDR(x.price);
+  const href = (x.link || "").trim() || "#";
+  return { img, name, type, author, price, href };
 }
 
 export default function ShopsSection() {
   const listRef = useRef<HTMLDivElement | null>(null);
-  const [cards, setCards] = useState<ShopCard[]>(FALLBACK);
+  const [cards, setCards] = useState<ShopCard[]>([]);
 
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [startScroll, setStartScroll] = useState(0);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
+
+  const dragMovedRef = useRef(false);
+  const startXRef = useRef(0);
 
   const updateArrows = () => {
     const el = listRef.current;
@@ -84,12 +65,12 @@ export default function ShopsSection() {
     let mounted = true;
     (async () => {
       try {
-        const data = await listShop();
+        const data = await contentApi.shops.list();
         const normalized = (Array.isArray(data) ? data : []).slice(0, 12).map(mapToCard);
-        if (mounted && normalized.length) setCards(normalized);
+        if (mounted) setCards(normalized);
       } catch {
       } finally {
-        updateArrows();
+        requestAnimationFrame(updateArrows);
       }
     })();
     const onResize = () => updateArrows();
@@ -106,7 +87,10 @@ export default function ShopsSection() {
     const el = listRef.current;
     if (!el) return;
     setIsDragging(true);
-    setStartX(e.pageX - getLeftOffset(el));
+    dragMovedRef.current = false;
+    const sx = e.pageX - getLeftOffset(el);
+    setStartX(sx);
+    startXRef.current = sx;
     setStartScroll(el.scrollLeft);
   };
   const onMouseUp: MouseEventHandler<HTMLDivElement> = () => setIsDragging(false);
@@ -117,6 +101,7 @@ export default function ShopsSection() {
     const el = listRef.current;
     if (!el) return;
     const x = e.pageX - getLeftOffset(el);
+    if (Math.abs(x - startXRef.current) > 5) dragMovedRef.current = true;
     el.scrollLeft = startScroll - (x - startX);
     updateArrows();
   };
@@ -124,9 +109,11 @@ export default function ShopsSection() {
   const onPointerDown: PointerEventHandler<HTMLDivElement> = (e) => {
     const el = listRef.current;
     if (!el) return;
-    el.setPointerCapture?.(e.pointerId);
     setIsDragging(true);
-    setStartX(e.pageX - getLeftOffset(el));
+    dragMovedRef.current = false;
+    const sx = e.pageX - getLeftOffset(el);
+    setStartX(sx);
+    startXRef.current = sx;
     setStartScroll(el.scrollLeft);
   };
   const onPointerUp: PointerEventHandler<HTMLDivElement> = () => setIsDragging(false);
@@ -135,10 +122,12 @@ export default function ShopsSection() {
     const el = listRef.current;
     if (!el) return;
     const x = e.pageX - getLeftOffset(el);
+    if (Math.abs(x - startXRef.current) > 5) dragMovedRef.current = true;
     el.scrollLeft = startScroll - (x - startX);
     updateArrows();
   };
 
+  // Keyboard nav
   const onKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
     const el = listRef.current;
     if (!el) return;
@@ -168,16 +157,25 @@ export default function ShopsSection() {
         <div aria-hidden className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 bg-black" />
 
         <div className="mb-4 flex items-center justify-between">
-          <h2
-            id="shops_heading"
-            className="m-0 text-[3rem] text-white"
-            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-          >
-            Shops
-          </h2>
+          <div className="flex items-center">
+            <h2
+              id="shops_heading"
+              className="m-0 text-[3rem] text-white"
+              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+            >
+              Shops
+            </h2>
+            <img
+              src="/assets/icon/Shop_Logo.png"
+              alt="Ardhianzy Shop"
+              className="ml-4 hidden sm:inline-block h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
+              draggable={false}
+            />
+          </div>
+
           <a
             href="/shop"
-            className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
+            className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
             style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
           >
             SEE ALL <span className="ml-[0.3rem]">→</span>
@@ -213,14 +211,27 @@ export default function ShopsSection() {
             style={{ touchAction: "pan-y" }}
           >
             {cards.map((item, i) => (
-              <div key={`${item.name}-${i}`} className="w-[170px] flex-shrink-0 text-center">
+              <a
+                key={`${item.name}-${i}`}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-[170px] flex-shrink-0 text-center"
+                onClickCapture={(e) => {
+                  if (dragMovedRef.current) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+              >
                 <div className="mb-3 h-[240px] w-full">
                   <img
                     loading="lazy"
                     decoding="async"
-                    src={item.img.trim()}
+                    src={item.img}
                     alt={item.name}
                     className="h-full w-full object-cover"
+                    draggable={false}
                   />
                 </div>
 
@@ -242,7 +253,7 @@ export default function ShopsSection() {
                   </p>
                   <p className="m-0 text-[1rem] text-white">{item.price}</p>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
 

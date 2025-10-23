@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import ProductDetailPopup from "@/features/shop/components/ProductDetailPopup";
 import type { Product } from "@/types/shop";
-import type { ShopItem } from "@/features/shop/types";
-import { listShop } from "@/features/shop/api";
+import { contentApi } from "@/lib/content/api";
+import type { ShopDTO } from "@/lib/content/types";
 
 type FilterState = {
   product: string;
@@ -87,7 +87,7 @@ export default function ShopListingSection() {
   useEffect(() => {
     (async () => {
       try {
-        const items = await listShop();
+        const items = await contentApi.shops.list();
         const mapped = items.map(mapShopToProduct);
         setData(mapped);
       } catch (e: any) {
@@ -189,22 +189,32 @@ export default function ShopListingSection() {
   );
 }
 
-function mapShopToProduct(item: ShopItem): Product {
-  return {
-    id: item.id ?? Math.random().toString(36).slice(2),
+function mapShopToProduct(item: ShopDTO): Product {
+  const p: Product = {
+    id: item.id,
     title: item.title,
     category: item.category ?? "Merchandise",
-    theme: item.condition ?? item.category ?? "General",
-    price: formatIDR(item.price),
+    theme: item.category ?? "General",
+    price: formatIDR(toNumber(item.price)),
     imageUrl: item.image || "/assets/product-images/placeholder.png",
     galleryImages: item.image ? [item.image] : [],
-    description: item.description,
+    description: item.desc ?? item.meta_description ?? "",
     reviews: { rating: 5.0, count: 0 },
   };
+  (p as any).buyUrl = item.link ?? "";
+  return p;
+}
+
+function toNumber(v?: string | number | null) {
+  if (typeof v === "number") return v;
+  const n = Number((v ?? "").toString().replace(/[^\d.-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
 }
 function formatIDR(n?: number) {
   if (typeof n !== "number") return "—";
   try {
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
-  } catch { return `Rp ${n}`; }
+  } catch {
+    return `Rp ${n}`;
+  }
 }

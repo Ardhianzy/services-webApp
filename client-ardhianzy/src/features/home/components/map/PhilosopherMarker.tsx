@@ -2,7 +2,16 @@
 import { useEffect, useMemo } from "react";
 import { Marker, Tooltip } from "react-leaflet";
 import { divIcon, type DivIcon } from "leaflet";
-import type { TimelinePhilosopher } from "@/data/philosophers";
+
+export type TimelinePhilosopher = {
+  id: string | number;
+  name: string;
+  years: string;
+  lat: number;
+  lng: number;
+  image?: string;
+  flag?: string;
+};
 
 type Props = {
   philosopher: TimelinePhilosopher;
@@ -25,7 +34,7 @@ function ensureMarkerStyles() {
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,.6));
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,6));
     }
 
     .philo-marker-portrait {
@@ -68,7 +77,7 @@ function ensureMarkerStyles() {
       font-size: 10px;
       letter-spacing: .2px;
       color: #fff;
-      text-shadow: 0 1px 2px rgba(0,0,0,.6);
+      text-shadow: 0 1px 2px rgba(0,0,0,6);
       white-space: nowrap;
       max-width: 44px;
       overflow: hidden;

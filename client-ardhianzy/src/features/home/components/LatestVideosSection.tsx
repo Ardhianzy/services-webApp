@@ -4,9 +4,8 @@ import { useEffect, useRef, useState, type FC, useCallback } from "react";
 type VideoItem = {
   id: number;
   thumb: string;
-  date: string;
   title: string;
-  description: string;
+  date: string;
   link: string;
 };
 
@@ -14,60 +13,55 @@ type LatestVideosSectionProps = {
   onSeeAll?: () => void;
 };
 
-const VIDEOS: VideoItem[] = [
-  {
-    id: 1,
-    thumb: "/assets/course/01.png",
-    date: "08 Feb 2024",
-    title: "Pemilu dan Demokrasi itu Salah! Menurut Para Filsuf",
-    description:
-      "Sebuah pengantar singkat tentang pemikiran para filsuf mengenai demokrasi dan pemilu.",
-    link: "https://www.youtube.com/watch?v=_AiEQlK-ec0",
-  },
-  {
-    id: 2,
-    thumb: "/assets/course/02.png",
-    date: "08 Feb 2024",
-    title: "Kebangkitan Penghancur Dunia",
-    description: "Biografi singkat Adolf Hitler dan dampak historisnya.",
-    link: "https://www.youtube.com/watch?v=gzv5A7v4ymI",
-  },
-  {
-    id: 3,
-    thumb: "/assets/course/03.png",
-    date: "08 Feb 2024",
-    title: "Anime Terbaik 2023: Vinland Saga Season 2",
-    description:
-      "Ulasan tentang anime Vinland Saga musim kedua yang sangat dinantikan.",
-    link: "https://www.youtube.com/watch?v=M13URqx_WzQ",
-  },
-  {
-    id: 4,
-    thumb: "/assets/course/04.png",
-    date: "08 Feb 2024",
-    title: "“Tuhan Telah Mati” – Nietzsche",
-    description:
-      "Penjelasan konteks dari kutipan terkenal Friedrich Nietzsche.",
-    link: "https://www.youtube.com/watch?v=BS-HtBfH3nw",
-  },
-  {
-    id: 5,
-    thumb: "/assets/course/05.png",
-    date: "08 Feb 2024",
-    title: "Bagaimana Kekaisaran Mongol Hancur?",
-    description:
-      "Membedah faktor-faktor yang menyebabkan runtuhnya Kekaisaran Mongol.",
-    link: "https://www.youtube.com/watch?v=U7sBVFMVLjw",
-  },
+const RAW_LINKS = [
+  "https://www.youtube.com/watch?v=TSeDVm1bpIM",
+  "https://www.youtube.com/watch?v=B1-wp3gRcZU",
+  "https://www.youtube.com/watch?v=DK4K0-0NS0c",
+  "https://www.youtube.com/watch?v=MSGtgYJgiis",
+  "https://www.youtube.com/watch?v=oryK-XV__eM",
 ];
 
+const MANUAL_META: Array<{ title: string; date: string }> = [
+  { title: "Kenapa Semakin Kita Sadar, Semakin Kita Justru Menderita? | Zapffe The Last Messiah", date: "Oct 15, 2025" },
+  { title: "Hal-Hal PALING PENTING Yang Kita Lupakan Ketika Jadi Dewasa | Filosofi The Little Prince", date: "Oct 9, 2025" },
+  { title: "TIDAK ADA SOLUSI! | Inilah Alasan Kenapa Kita Merasa Kosong!", date: "Oct 1, 2025" },
+  { title: "Sejarah Lengkap Dan Ringkas Penjelajahan Dan Penjajahan Dunia Pertama Tahun (±1450–1914)", date: "Sep 25, 2025" },
+  { title: "Mengapa Dari Dulu FILSAFAT Selalu Dicap SESAT Sampai Sekarang? Ilmu Pengetahuan Terlarang?!", date: "Sep 17, 2025" },
+];
+
+function extractYouTubeId(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtube.com")) {
+      return u.searchParams.get("v") || "";
+    }
+    if (u.hostname === "youtu.be") {
+      return u.pathname.replace("/", "");
+    }
+  } catch {}
+  const m = url.match(/v=([A-Za-z0-9_\-]+)/);
+  return m?.[1] ?? "";
+}
+
+const VIDEOS: VideoItem[] = RAW_LINKS.map((link, idx) => {
+  const vid = extractYouTubeId(link);
+  const thumb = vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : "/assets/course/01.png";
+  const meta = MANUAL_META[idx] || { title: "Judul Video (isi manual)", date: "" };
+  return {
+    id: idx + 1,
+    thumb,
+    title: meta.title,
+    date: meta.date,
+    link,
+  };
+});
+
 const getPanSize = (container: HTMLElement | null) => {
-  if (!container) return 300; // fallback aman
+  if (!container) return 300;
   const first = container.querySelector<HTMLElement>("[data-video-card]");
   if (!first) return 300;
   const styles = window.getComputedStyle(container);
-  const gap =
-    parseFloat((styles as any).gap || (styles as any).columnGap || "0") || 0;
+  const gap = parseFloat((styles as any).gap || (styles as any).columnGap || "0") || 0;
   return first.offsetWidth + gap;
 };
 
@@ -171,18 +165,28 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
 
       <div className="mx-auto max-w-[1560px] px-8 py-6 max-[768px]:px-4">
         <div className="mb-16 flex items-center justify-between">
-          <h2
-            className="m-0 text-[3rem] text-white"
-            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-          >
-            Check Our Latest Videos
-          </h2>
+          <div className="flex items-center">
+            <h2
+              className="m-0 text-[3rem] text-white"
+              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+            >
+              Check Our Latest Videos
+            </h2>
+            <img
+              src="/assets/icon/LatestVideo_Logo.png"
+              alt="Ardhianzy Latest Video"
+              className="ml-4 hidden sm:inline-block h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
+              draggable={false}
+            />
+          </div>
 
           <a
-            href="https://www.youtube.com/@ardhianzy"
-            className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
+            href="https://www.youtube.com/@ardhianzy/videos"
+            className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
             style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
             aria-label="See all videos on YouTube"
+            target="_blank"
+            rel="noopener noreferrer"
           >
             SEE ALL <span className="ml-[0.3rem]">→</span>
           </a>
@@ -240,49 +244,36 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
                   href={v.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative mb-8 block aspect-video w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-white/60"
+                  className="block cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/60"
                   aria-label={`Open video: ${v.title}`}
+                  style={{ textDecoration: "none" }}
                 >
-                  <img
-                    src={v.thumb}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                  <span
-                    aria-hidden
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[2rem] text-white/80"
-                  >
-                    ▶
-                  </span>
-                </a>
-
-                <div className="flex flex-col items-start px-4 pb-4 text-left">
-                  <div
-                    className="mb-2 text-[0.85rem] text-[#aaa]"
-                    style={{ fontFamily: "'Roboto Condensed', sans-serif" }}
-                  >
-                    {v.date}
+                  <div className="relative mb-6 block aspect-video w-full overflow-hidden hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow">
+                    <img src={v.thumb} alt="" className="h-full w-full object-cover" />
+                    <span
+                      aria-hidden
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[2rem] text-white/80"
+                    >
+                      ▶
+                    </span>
                   </div>
 
-                  <a
-                    href={v.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mb-4 block truncate text-[1.1rem] leading-[1.3] text-white focus:outline-none focus:ring-2 focus:ring-white/60"
-                    style={{ fontFamily: "'Bebas Neue', sans-serif", textDecoration: "none" }}
-                    aria-label={`Open video: ${v.title}`}
-                    title={v.title}
-                  >
-                    {v.title}
-                  </a>
+                  <div className="flex flex-col items-start px-4 pb-4 text-left">
+                    <div
+                      className="mb-2 text-[0.85rem] text-[#aaa]"
+                      style={{ fontFamily: "'Roboto', sans-serif" }}
+                    >
+                      {v.date}
+                    </div>
 
-                  <p
-                    className="m-0 text-[0.9rem] leading-[1.4] text-[#eee]"
-                    style={{ fontFamily: "Roboto, sans-serif", opacity: 0.85 }}
-                  >
-                    {v.description}
-                  </p>
-                </div>
+                    <div
+                      className="mb-1 block text-[1.1rem] leading-[1.3] text-white"
+                      style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+                    >
+                      {v.title}
+                    </div>
+                  </div>
+                </a>
               </article>
             ))}
           </div>
