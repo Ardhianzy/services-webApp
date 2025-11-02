@@ -8,7 +8,7 @@ import researchRoutes from "./research";
 import MonologuesHandler from "./monologues";
 import articelRoutes from "./articel";
 import totMetaRoutes from "./tot_meta";
-
+import youtubeRoutes from "./youtube.route";
 const router = Router();
 
 router.use("/auth", authRoutes);
@@ -19,5 +19,6 @@ router.use("/research", researchRoutes); //ini tuh nanti ada file pdf nya
 router.use("/monologues", MonologuesHandler);
 router.use("/articel", articelRoutes);
 router.use("/tot-meta", totMetaRoutes);
+router.use("/youtube", youtubeRoutes);
 
 export default router;

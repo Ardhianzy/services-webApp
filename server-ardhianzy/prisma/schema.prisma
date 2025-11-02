@@ -227,3 +227,11 @@ model Megazine {
 
   @@map("megazine")
 }
+
+model Youtube {
+  id          String   @id @default(cuid())
+  title       String
+  url         String   @unique
+  description String
+  created_at  DateTime @default(now())
+}
