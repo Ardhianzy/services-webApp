@@ -162,9 +162,6 @@ export class ArticleRepository {
       );
     }
   }
-
-  // ... (method deleteById tidak perlu diubah) ...
-
   async deleteById(id: string): Promise<Article> {
     try {
       const deletedArticle = await prisma.article.delete({
@@ -187,10 +184,6 @@ export class ArticleRepository {
       );
     }
   }
-
-  /**
-   * Get all Article records with pagination
-   */
   async getAll(
     paginationParams: PaginationParams = {}
   ): Promise<PaginatedResult<Article>> {
@@ -210,7 +203,7 @@ export class ArticleRepository {
         "is_published",
         "is_featured",
         "view_count",
-        "category", // <-- TAMBAHKAN CATEGORY KE SORTING
+        "category",
       ];
 
       const sortBy = (
@@ -251,9 +244,6 @@ export class ArticleRepository {
       );
     }
   }
-
-  // ... (method getByTitle tidak perlu diubah) ...
-
   async getByTitle(title: string): Promise<Article | null> {
     try {
       const article = await prisma.article.findFirst({
@@ -263,6 +253,26 @@ export class ArticleRepository {
     } catch (error) {
       throw new Error(
         `Failed to get Article by title: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
+  async getByArticelCategory(category: ArticleCategory, paginationParams: PaginationParams = {}): Promise<Article[]> {
+    try {
+      const page = Math.max(1, paginationParams.page ?? 1);
+      const limit = Math.min(100, Math.max(1, paginationParams.limit ?? 10));
+      const skip = (page - 1) * limit;
+      const articles = await prisma.article.findMany({
+        where: { category },
+        skip,
+        take: limit,
+        orderBy: { date: "desc" },
+      });
+      return articles;
+    } catch (error) {
+      throw new Error(
+        `Failed to get Articles by category: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );

@@ -181,4 +181,24 @@ export class ArticleService {
     }
     return article;
   }
+  async getByArticleCategory(
+    category: ArticleCategory,
+    paginationParams?: PaginationParams
+  ): Promise<PaginatedResult<Article>> {
+    const result = await this.repo.getByArticelCategory(
+      category,
+      paginationParams || {}
+    );
+    if (!result || result.length === 0)
+      throw new Error("No articles found for the specified category");
+    
+    return {
+      data: result,
+      pagination: {
+        total: result.length,
+        page: paginationParams?.page || 1,
+        limit: paginationParams?.limit || 10
+      }
+    };
+  }
 }

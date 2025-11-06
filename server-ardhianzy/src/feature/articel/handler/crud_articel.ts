@@ -236,9 +236,7 @@ export class ArticleHandler {
         });
         return;
       }
-
       const article = await this.articleService.getByTitle(title);
-
       res.status(200).json({
         success: true,
         message: "Article retrieved successfully",
@@ -256,6 +254,59 @@ export class ArticleHandler {
         success: false,
         message:
           error instanceof Error ? error.message : "Failed to fetch Article",
+      });
+    }
+  };
+  getByArticelCategory = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { category } = req.params;
+      if (!category) {
+        res.status(400).json({
+          success: false,
+          message: "Category parameter is required",
+        });
+        return;
+      }
+      if (!Object.values(ArticleCategory).includes(category as ArticleCategory)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid article category",
+        });
+        return;
+      }
+      const validCategory = category as ArticleCategory;
+      const { page, limit } = req.query;
+      const paginationParams = {
+        page: page ? parseInt(page as string, 10) : 1,
+        limit: limit ? parseInt(limit as string, 10) : 10,
+      };
+      if (isNaN(paginationParams.page) || paginationParams.page < 1) {
+        paginationParams.page = 1;
+      }
+      if (isNaN(paginationParams.limit) || paginationParams.limit < 1) {
+        paginationParams.limit = 10;
+      }
+      const paginatedResult = await this.articleService.getByArticleCategory(
+        validCategory,
+        paginationParams
+      );
+      res.status(200).json({
+        success: true,
+        message: "Articles retrieved successfully",
+        data: paginatedResult,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("No articles found")) {
+        res.status(44).json({
+          success: false,
+          message: "No articles found for the specified category",
+        });
+        return;
+      }
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to fetch articles",
       });
     }
   };
