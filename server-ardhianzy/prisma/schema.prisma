@@ -16,6 +16,7 @@ enum DifficultyLevel {
 enum ArticleCategory {
   IDEAS_AND_TRADITIONS
   POP_CULTURE
+  READING_GUIDLINE
 }
 
 model Admin {
