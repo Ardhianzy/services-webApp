@@ -1,5 +1,5 @@
 // src/config/endpoints.ts
-const DEFAULT_BASE = "http://localhost:5000"; // fallback dari YAML/env
+const DEFAULT_BASE = "https://services-api.ardhianzy.com"; // fallback dari YAML/env
 export const API_BASE =
   (import.meta as any)?.env?.VITE_API_URL ??
   DEFAULT_BASE;
@@ -9,7 +9,7 @@ export const endpoints = {
   login:    () => `${API_BASE}/api/auth/login`,
   profile:  () => `${API_BASE}/api/auth/profile`,
   register: () => `${API_BASE}/api/auth/register`,
-  logout:   () => `${API_BASE}/api/auth/logout`, // opsional
+  logout:   () => `${API_BASE}/api/auth/logout`,
 
   // ARTICLES
   articles: {

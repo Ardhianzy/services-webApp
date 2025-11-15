@@ -8,7 +8,7 @@ type VideoCard = {
   title: string;
   date: string;
   publishedAt?: string;
-  desc: string;
+  // desc: string;
   thumb: string;
 };
 
@@ -20,10 +20,10 @@ const VIDEO_LINKS: VideoInput[] = [
 ];
 
 const MAX_TITLE_WORDS = 10;
-const MAX_DESC_WORDS = 12;
+// const MAX_DESC_WORDS = 12;
 
-const DEFAULT_DESC =
-  "Access exclusive Philosophy101 membership videos and deepen your understanding with curated lessons.";
+// const DEFAULT_DESC =
+//   "Access exclusive Philosophy101 membership videos and deepen your understanding with curated lessons.";
 
 function extractYouTubeId(url: string): string | null {
   try {
@@ -64,11 +64,11 @@ function ContinueReadInline() {
   return (
     <span
       className="
-        ml-2 inline-flex items-center underline underline-offset-4
+        inline-flex items-center underline underline-offset-4
         decoration-white/60 hover:decoration-white
       "
     >
-      Continue Read&nbsp;→
+      Continue to Watch&nbsp;→
     </span>
   );
 }
@@ -93,9 +93,9 @@ const PlayIcon: FC = () => (
   </div>
 );
 
-const CourseCard: FC<VideoCard> = ({ href, title, date, desc, thumb }) => {
+const CourseCard: FC<VideoCard> = ({ href, title, thumb }) => {
   const [titleCut, titleTrimmed] = truncateWords(title, MAX_TITLE_WORDS);
-  const [descCut, descTrimmed] = truncateWords(desc, MAX_DESC_WORDS);
+  // const [descCut, descTrimmed] = truncateWords(desc, MAX_DESC_WORDS);
 
   return (
     <a
@@ -134,16 +134,17 @@ const CourseCard: FC<VideoCard> = ({ href, title, date, desc, thumb }) => {
           {titleTrimmed ? "..." : ""}
         </h3>
 
-        <p
+        {/* <p
           className="mb-[0.6rem] text-[0.9rem] text-white"
           style={{ fontFamily: "'Roboto Condensed', sans-serif", opacity: 0.8 }}
         >
           {date}
-        </p>
+        </p> */}
 
         <p className="mb-0 text-[0.95rem] leading-[1.6] text-white" style={{ opacity: 0.85 }}>
-          {descCut}
-          {descTrimmed ? "..." : ""} <ContinueReadInline />
+          {/* {descCut}
+          {descTrimmed ? "..." : ""}  */}
+          <ContinueReadInline />
         </p>
       </article>
     </a>
@@ -214,7 +215,7 @@ export default function CourseSection() {
         title: titles[vid!]?.title || "YouTube Video",
         publishedAt: titles[vid!]?.publishedAt,
         date: prettyDate(titles[vid!]?.publishedAt),
-        desc: DEFAULT_DESC,
+        // desc: DEFAULT_DESC,
         thumb: ytThumb(vid!),
       }));
 
@@ -234,19 +235,19 @@ export default function CourseSection() {
 
       <div className="course-container mx-auto max-w-[1460px] px-8 py-6">
         <header className="course-header relative mb-2 md:flex md:items-center md:justify-start">
+          <img
+            src="/assets/icon/MembershipCourse_Logo.png"
+            alt="Ardhianzy Research"
+            className="hidden sm:inline-block h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
+            draggable={false}
+          />
+
           <h2
-            className="m-0 text-left text-[3rem] text-white"
+            className="ml-4 text-left text-[3rem] text-white"
             style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
             Membership Course
           </h2>
-
-          <img
-            src="/assets/icon/MembershipCourse_Logo.png"
-            alt="Ardhianzy Research"
-            className="ml-4 hidden sm:inline-block h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
-            draggable={false}
-          />
 
           <a
             href="https://www.youtube.com/@ardhianzy/membership"

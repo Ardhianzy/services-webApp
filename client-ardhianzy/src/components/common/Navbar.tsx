@@ -34,7 +34,7 @@ function Navbar({
         >
           <img src={logoSrc} alt="Ardhianzy Logo" className="w-[40px] h-auto mr-2" />
           <span
-            className="text-white transition-colors group-hover:!text-[#4249CA]"
+            className="text-white transition-colors"
             style={{ ...bebas, fontSize: "48px", letterSpacing: "1px" }}
           >
             ARDHIANZY

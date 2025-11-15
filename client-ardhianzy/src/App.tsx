@@ -8,7 +8,7 @@ import { Navbar } from "@/components/common/Navbar";
 import { Footer } from "@/components/common/Footer";
 import SectionNavLinks from "@/features/layout/components/SectionNavLinks";
 import AppHeader from "@/features/layout/components/AppHeader";
-
+// 
 import TimelineOfThoughtSection from "@/features/home/components/TimelineOfThoughtSection";
 // import HighlightSection from "@/features/home/components/HighlightSection";
 import MagazineSection from "@/features/home/components/MagazineSection";
@@ -41,7 +41,7 @@ import MonologuesPage from "@/features/monologues/pages/MonologuesPage";
 import IdeasTraditionPage from "@/features/ideas-tradition/pages/IdeasTraditionPage";
 import PopCultureReviewPage from "@/features/pop-cultures/pages/PopCultureReviewPage";
 import ReadingGuidePage from "@/features/reading-guides/pages/ReadingGuidePage";
-import ReadPage from "@/features/articles/pages/ReadPage";
+// import ReadPage from "@/features/articles/pages/ReadPage";
 // import LoginPage from "@/features/auth/pages/LoginPage";
 // import SignUpPage from "@/features/auth/pages/SignUpPage";
 // import ProfilePage from "@/features/user/pages/ProfilePage";
@@ -51,17 +51,17 @@ import ReadPage from "@/features/articles/pages/ReadPage";
 import AdminRoute from "@/routes/AdminRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminLoginPage from "@/features/admin/pages/AdminLoginPage";
-import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
-import AdminArticlePage from "@/features/admin/pages/AdminArticlePage";
-import AdminAddArticlePage from "@/features/admin/pages/AdminAddArticlePage";
-import AdminEditArticlePage from "@/features/admin/pages/AdminEditArticlePage";
+// import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
+// import AdminArticlePage from "@/features/admin/pages/AdminArticlePage";
+// import AdminAddArticlePage from "@/features/admin/pages/AdminAddArticlePage";
+// import AdminEditArticlePage from "@/features/admin/pages/AdminEditArticlePage";
 import AdminAddItemPage from "@/features/admin/pages/AdminAddItemPage";
 import AdminListItemPage from "@/features/admin/pages/AdminListItemPage";
-import AdminAnalyticsPage from "@/features/admin/pages/AdminAnalyticsPage";
-import AdminToTListPage from "@/features/admin/pages/AdminToTListPage";
-import AdminToTAddPage from "@/features/admin/pages/AdminToTAddPage";
-import AdminToTMetaListPage from "@/features/admin/pages/AdminToTMetaListPage";
-import AdminToTMetaAddPage from "@/features/admin/pages/AdminToTMetaAddPage";
+// import AdminAnalyticsPage from "@/features/admin/pages/AdminAnalyticsPage";
+// import AdminToTListPage from "@/features/admin/pages/AdminToTListPage";
+// import AdminToTAddPage from "@/features/admin/pages/AdminToTAddPage";
+// import AdminToTMetaListPage from "@/features/admin/pages/AdminToTMetaListPage";
+// import AdminToTMetaAddPage from "@/features/admin/pages/AdminToTMetaAddPage";
 // import AdminResearchShopCollectedPage from "@/features/admin/pages/AdminResearchShopCollectedPage";
 
 import { ROUTES } from "@/app/routes";
@@ -238,7 +238,7 @@ function AppRoutes() {
         path={ROUTES.READING_GUIDE_COMING_SOON}
         element={<ReadingGuideComingSoonPage />}
       />
-      <Route
+      {/* <Route
         path={ROUTES.READ}
         element={
           <>
@@ -247,7 +247,7 @@ function AppRoutes() {
             <Footer />
           </>
         }
-      />
+      /> */}
 
       {/* <Route
         path={ROUTES.PROFILE}
@@ -286,17 +286,17 @@ function AppRoutes() {
       <Route path={`${ROUTES.ADMIN.ROOT}/*`} element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
           <Route index element={<Navigate to={ROUTES.ADMIN.DASHBOARD} replace />} />
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="articles/list" element={<AdminArticlePage />} />
-          <Route path="articles/add" element={<AdminAddArticlePage />} />
-          <Route path="articles/edit/:id" element={<AdminEditArticlePage />} />
+          {/* <Route path="dashboard" element={<AdminDashboardPage />} /> */}
+          {/* <Route path="articles/list" element={<AdminArticlePage />} /> */}
+          {/* <Route path="articles/add" element={<AdminAddArticlePage />} /> */}
+          {/* <Route path="articles/edit/:id" element={<AdminEditArticlePage />} /> */}
           <Route path="shop/list" element={<AdminListItemPage />} />
           <Route path="shop/add" element={<AdminAddItemPage />} />
-          <Route path="analytics" element={<AdminAnalyticsPage />} />
-          <Route path="tot/list" element={<AdminToTListPage />} />
-          <Route path="tot/add" element={<AdminToTAddPage />} />
-          <Route path="tot-meta/list" element={<AdminToTMetaListPage />} />
-          <Route path="tot-meta/add" element={<AdminToTMetaAddPage />} />
+          {/* <Route path="analytics" element={<AdminAnalyticsPage />} /> */}
+          {/* <Route path="tot/list" element={<AdminToTListPage />} /> */}
+          {/* <Route path="tot/add" element={<AdminToTAddPage />} /> */}
+          {/* <Route path="tot-meta/list" element={<AdminToTMetaListPage />} /> */}
+          {/* <Route path="tot-meta/add" element={<AdminToTMetaAddPage />} /> */}
           {/* <Route path="content" element={<AdminResearchShopCollectedPage />} /> */}
         </Route>
       </Route>

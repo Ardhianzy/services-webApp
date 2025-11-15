@@ -28,7 +28,7 @@ export type ToTMetaDTO = {
 export type ArticleCategory =
   | "POP_CULTURE"
   | "IDEAS_AND_TRADITIONS"
-  | "READING_GUIDE"
+  | "READING_GUIDLINE"
   | string;
 
 export interface ArticleDTO {
@@ -169,6 +169,14 @@ export type MonologueCardVM = {
   dateISO?: string;
   slug: string;
   href: string;
+};
+
+export type LatestYoutubeDTO = {
+  id: string;
+  title: string;
+  url: string;
+  description?: string | null;
+  created_at: string;
 };
 
 export type Pagination = {

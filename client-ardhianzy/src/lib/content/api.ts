@@ -9,6 +9,7 @@ import type {
   ArticleCategory,
   ShopDTO,
   ToTDTO, 
+  LatestYoutubeDTO,
 } from "./types";
 
 const API_BASE =
@@ -140,6 +141,14 @@ export const contentApi = {
       if (any?.data && !Array.isArray(any.data)) return any.data as ToTMetaDTO;
       if (Array.isArray(any?.data)) return (any.data as ToTMetaDTO[])[0] ?? null;
       return (any as ToTMetaDTO) ?? null;
+    },
+  },
+
+  youtube: {
+    async latest(signal?: AbortSignal): Promise<LatestYoutubeDTO[]> {
+      const url = `${import.meta.env.VITE_API_URL}/api/youtube/latest`;
+      const res = await getJSON<{ data?: LatestYoutubeDTO[] }>(url, signal);
+      return Array.isArray(res?.data) ? res.data : [];
     },
   },
 };

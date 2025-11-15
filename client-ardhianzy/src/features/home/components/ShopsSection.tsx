@@ -1,154 +1,196 @@
 // src/features/home/components/ShopsSection.tsx
-import {
-  useEffect,
-  useRef,
-  useState,
-  type MouseEventHandler,
-  type PointerEventHandler,
-  type KeyboardEventHandler,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { contentApi } from "@/lib/content/api";
 import type { ShopDTO } from "@/lib/content/types";
 
 type ShopCard = {
-  img: string;
+  img?: string | null;
   name: string;
   type: string;
   author: string;
   price: string;
-  href: string;
+  href?: string;
+  isComingSoon?: boolean;
+  desc?: string;
 };
+
+const MAX_VISIBLE = 5;
+const SIMULATE_EXTRA_SOON = 0;
 
 function formatIDR(n?: number | string | null) {
   const num = typeof n === "string" ? Number(n) : n ?? 0;
   if (!Number.isFinite(num)) return "—";
   try {
-    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
-      Number(num)
-    );
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(num));
   } catch {
     return `Rp ${num}`;
   }
 }
 
 function mapToCard(x: ShopDTO): ShopCard {
-  const img = (x.image || "COMING SOON")!.trim();
-  const name = (x.title || "COMING SOON").trim();
-  const type = x.category ? `Merch • ${x.category}` : "Merch";
-  const author = "Ardhianzy";
-  const price = formatIDR(x.price);
-  const href = (x.link || "").trim() || "#";
-  return { img, name, type, author, price, href };
+  return {
+    img: (x.image || "").trim() || null,
+    name: (x.title || "").trim(),
+    type: x.category ? `Merch • ${x.category}` : "Merch",
+    author: "Ardhianzy",
+    price: formatIDR(x.price),
+    href: (x.link || "").trim() || "#",
+    isComingSoon: false,
+    desc: (x.meta_description || x.desc || "").trim(),
+  };
+}
+
+function buildComingSoonCard(): ShopCard {
+  return {
+    img: null,
+    name: "Coming Soon",
+    type: "",
+    author: "Nantikan produk Ardhianzy lainnya!",
+    price: "—",
+    href: undefined,
+    isComingSoon: true,
+  };
 }
 
 export default function ShopsSection() {
-  const listRef = useRef<HTMLDivElement | null>(null);
   const [cards, setCards] = useState<ShopCard[]>([]);
-
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [startScroll, setStartScroll] = useState(0);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
-
-  const dragMovedRef = useRef(false);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [showBar, setShowBar] = useState(false);
   const startXRef = useRef(0);
-
-  const updateArrows = () => {
-    const el = listRef.current;
-    if (!el) return;
-    setCanPrev(el.scrollLeft > 0);
-    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-  };
+  const scrollLeftRef = useRef(0);
+  const hideTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const data = await contentApi.shops.list();
-        const normalized = (Array.isArray(data) ? data : []).slice(0, 12).map(mapToCard);
+        const normalized = (Array.isArray(data) ? data : []).map(mapToCard);
         if (mounted) setCards(normalized);
       } catch {
-      } finally {
-        requestAnimationFrame(updateArrows);
+        if (mounted) setCards([]);
       }
     })();
-    const onResize = () => updateArrows();
-    window.addEventListener("resize", onResize, { passive: true });
     return () => {
       mounted = false;
-      window.removeEventListener("resize", onResize);
+      if (hideTimerRef.current) {
+        window.clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
     };
   }, []);
 
-  const getLeftOffset = (el: HTMLElement) => el.getBoundingClientRect().left + window.scrollX;
+  const baseFive = useMemo(() => {
+    const real = cards.slice(0, MAX_VISIBLE);
+    const fillers = Array.from({ length: Math.max(0, MAX_VISIBLE - real.length) }, buildComingSoonCard);
+    return [...real, ...fillers];
+  }, [cards]);
 
-  const onMouseDown: MouseEventHandler<HTMLDivElement> = (e) => {
-    const el = listRef.current;
-    if (!el) return;
-    setIsDragging(true);
-    dragMovedRef.current = false;
-    const sx = e.pageX - getLeftOffset(el);
-    setStartX(sx);
-    startXRef.current = sx;
-    setStartScroll(el.scrollLeft);
+  const overflowCards = useMemo(() => {
+    const extras = Array.from({ length: SIMULATE_EXTRA_SOON }, buildComingSoonCard);
+    return [...cards, ...extras];
+  }, [cards]);
+
+  const hasOverflow = overflowCards.length > MAX_VISIBLE;
+
+  const revealScrollbar = () => {
+    if (!hasOverflow) return;
+    setShowBar(true);
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = window.setTimeout(() => setShowBar(false), 700);
   };
-  const onMouseUp: MouseEventHandler<HTMLDivElement> = () => setIsDragging(false);
-  const onMouseLeave: MouseEventHandler<HTMLDivElement> = () => setIsDragging(false);
-  const onMouseMove: MouseEventHandler<HTMLDivElement> = (e) => {
-    if (!isDragging) return;
+
+  const onMouseDown: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if (!hasOverflow || !scrollerRef.current) return;
+    setDragging(true);
+    startXRef.current = e.pageX - scrollerRef.current.offsetLeft;
+    scrollLeftRef.current = scrollerRef.current.scrollLeft;
+  };
+  const onMouseLeave: React.MouseEventHandler<HTMLDivElement> = () => setDragging(false);
+  const onMouseUp: React.MouseEventHandler<HTMLDivElement> = () => setDragging(false);
+  const onMouseMove: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if (!dragging || !scrollerRef.current) return;
     e.preventDefault();
-    const el = listRef.current;
-    if (!el) return;
-    const x = e.pageX - getLeftOffset(el);
-    if (Math.abs(x - startXRef.current) > 5) dragMovedRef.current = true;
-    el.scrollLeft = startScroll - (x - startX);
-    updateArrows();
+    const x = e.pageX - scrollerRef.current.offsetLeft;
+    const walk = (x - startXRef.current) * 1;
+    scrollerRef.current.scrollLeft = scrollLeftRef.current - walk;
   };
+  const onTouchStart: React.TouchEventHandler<HTMLDivElement> = (e) => {
+    if (!hasOverflow || !scrollerRef.current) return;
+    setDragging(true);
+    startXRef.current = e.touches[0].pageX - scrollerRef.current.offsetLeft;
+    scrollLeftRef.current = scrollerRef.current.scrollLeft;
+  };
+  const onTouchMove: React.TouchEventHandler<HTMLDivElement> = (e) => {
+    if (!dragging || !scrollerRef.current) return;
+    const x = e.touches[0].pageX - scrollerRef.current.offsetLeft;
+    const walk = (x - startXRef.current) * 1;
+    scrollerRef.current.scrollLeft = scrollLeftRef.current - walk;
+  };
+  const onTouchEnd: React.TouchEventHandler<HTMLDivElement> = () => setDragging(false);
 
-  const onPointerDown: PointerEventHandler<HTMLDivElement> = (e) => {
-    const el = listRef.current;
-    if (!el) return;
-    setIsDragging(true);
-    dragMovedRef.current = false;
-    const sx = e.pageX - getLeftOffset(el);
-    setStartX(sx);
-    startXRef.current = sx;
-    setStartScroll(el.scrollLeft);
-  };
-  const onPointerUp: PointerEventHandler<HTMLDivElement> = () => setIsDragging(false);
-  const onPointerMove: PointerEventHandler<HTMLDivElement> = (e) => {
-    if (!isDragging) return;
-    const el = listRef.current;
-    if (!el) return;
-    const x = e.pageX - getLeftOffset(el);
-    if (Math.abs(x - startXRef.current) > 5) dragMovedRef.current = true;
-    el.scrollLeft = startScroll - (x - startX);
-    updateArrows();
-  };
+  const Card = (item: ShopCard, i: number, clickable = true) => {
+    const inner = (
+      <>
+        <div className="mb-3 h-[240px] w-full">
+          {item.isComingSoon ? (
+            <div className="h-full w-full grid place-items-center border border-white/30 bg-black/30 p-4">
+              <img
+                src="/assets/icon/Ardhianzy_Logo_2.png"
+                alt="Ardhianzy"
+                className="max-h-[70%] w-auto object-contain select-none"
+                draggable={false}
+              />
+            </div>
+          ) : item.img ? (
+            <img
+              loading="lazy"
+              decoding="async"
+              src={item.img}
+              alt={item.name}
+              className="h-full w-full object-cover"
+              draggable={false}
+            />
+          ) : (
+            <div className="h-full w-full grid place-items-center border border-white/30 bg-black/30" />
+          )}
+        </div>
 
-  // Keyboard nav
-  const onKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
-    const el = listRef.current;
-    if (!el) return;
-    if (e.key === "ArrowLeft") {
-      el.scrollBy({ left: -el.clientWidth, behavior: "smooth" });
-      e.preventDefault();
-    } else if (e.key === "ArrowRight") {
-      el.scrollBy({ left: el.clientWidth, behavior: "smooth" });
-      e.preventDefault();
+        <div className="flex flex-col items-center text-center">
+          <h3 className="my-1 text-[1.25rem] text-white" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+            {item.name || "Untitled"}
+          </h3>
+          <p className="m-0 text-[0.85rem] italic text-white opacity-80" style={{ fontFamily: "Roboto, sans-serif" }}>
+            {item.type}
+          </p>
+          <p className="my-1 text-[0.9rem] font-semibold text-white opacity-90" style={{ fontFamily: "Roboto, sans-serif" }}>
+            {item.isComingSoon ? item.author : "Ardhianzy"}
+          </p>
+          <p className="m-0 text-[1rem] text-white">{item.price}</p>
+        </div>
+      </>
+    );
+
+    const wrapperClass = "w-[170px] mx-auto text-center";
+    if (!clickable || item.isComingSoon) {
+      return (
+        <div key={`soon-${i}`} className={wrapperClass} aria-disabled="true">
+          {inner}
+        </div>
+      );
     }
-  };
-
-  const handlePrev = () => {
-    const el = listRef.current;
-    if (!el) return;
-    el.scrollBy({ left: -el.clientWidth, behavior: "smooth" });
-  };
-  const handleNext = () => {
-    const el = listRef.current;
-    if (!el) return;
-    el.scrollBy({ left: el.clientWidth, behavior: "smooth" });
+    return (
+      <a
+        key={`${item.name}-${i}`}
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={wrapperClass}
+      >
+        {inner}
+      </a>
+    );
   };
 
   return (
@@ -158,116 +200,51 @@ export default function ShopsSection() {
 
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center">
-            <h2
-              id="shops_heading"
-              className="m-0 text-[3rem] text-white"
-              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-            >
-              Shops
-            </h2>
             <img
               src="/assets/icon/Shop_Logo.png"
               alt="Ardhianzy Shop"
-              className="ml-4 hidden sm:inline-block h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
+              className="hidden sm:inline-block h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
               draggable={false}
             />
+            <h2 id="shops_heading" className="ml-4 text-[3rem] text-white" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+              Shops
+            </h2>
           </div>
 
-          <a
+          {/* <a
             href="/shop"
             className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
             style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
           >
             SEE ALL <span className="ml-[0.3rem]">→</span>
-          </a>
+          </a> */}
         </div>
 
-        <div className="relative overflow-visible">
-          {canPrev && (
-            <button
-              type="button"
-              aria-label="Previous"
-              onClick={handlePrev}
-              className="absolute left-[-24px] top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center !rounded-full border-0 bg-black/60 p-0 text-white transition hover:bg-black/80"
-            >
-              ‹
-            </button>
-          )}
+        {!hasOverflow && (
+          <div className="flex flex-wrap justify-evenly gap-8" aria-label="Shop items grid">
+            {baseFive.map((item, i) => Card(item, i, !item.isComingSoon))}
+          </div>
+        )}
 
+        {hasOverflow && (
           <div
-            ref={listRef}
+            ref={scrollerRef}
+            className={`x-scrollbar ${showBar ? "show-scrollbar" : ""} ${dragging ? "dragging" : ""} scroll-drag overflow-x-auto overflow-y-hidden px-1 py-1 select-none`}
+            onScroll={revealScrollbar}
             onMouseDown={onMouseDown}
             onMouseLeave={onMouseLeave}
             onMouseUp={onMouseUp}
             onMouseMove={onMouseMove}
-            onPointerDown={onPointerDown}
-            onPointerUp={onPointerUp}
-            onPointerMove={onPointerMove}
-            onKeyDown={onKeyDown}
-            tabIndex={0}
-            aria-label="Shop items carousel"
-            onScroll={updateArrows}
-            className="flex cursor-grab gap-[75px] overflow-x-hidden scroll-smooth active:cursor-grabbing"
-            style={{ touchAction: "pan-y" }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            aria-label="Shop items scroller"
           >
-            {cards.map((item, i) => (
-              <a
-                key={`${item.name}-${i}`}
-                href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-[170px] flex-shrink-0 text-center"
-                onClickCapture={(e) => {
-                  if (dragMovedRef.current) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                }}
-              >
-                <div className="mb-3 h-[240px] w-full">
-                  <img
-                    loading="lazy"
-                    decoding="async"
-                    src={item.img}
-                    alt={item.name}
-                    className="h-full w-full object-cover"
-                    draggable={false}
-                  />
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <h3 className="my-1 text-[1.25rem] text-white" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-                    {item.name}
-                  </h3>
-                  <p
-                    className="m-0 text-[0.85rem] italic text-white opacity-80"
-                    style={{ fontFamily: "Roboto, sans-serif" }}
-                  >
-                    {item.type}
-                  </p>
-                  <p
-                    className="my-1 text-[0.9rem] font-semibold text-white opacity-90"
-                    style={{ fontFamily: "Roboto, sans-serif" }}
-                  >
-                    {item.author}
-                  </p>
-                  <p className="m-0 text-[1rem] text-white">{item.price}</p>
-                </div>
-              </a>
-            ))}
+            <div className="shop-track">
+              {overflowCards.map((item, i) => Card(item, i, !item.isComingSoon))}
+            </div>
           </div>
-
-          {canNext && (
-            <button
-              type="button"
-              aria-label="Next"
-              onClick={handleNext}
-              className="absolute right-[-24px] top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center !rounded-full border-0 bg-black/60 p-0 text-white transition hover:bg-black/80"
-            >
-              ›
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </section>
   );

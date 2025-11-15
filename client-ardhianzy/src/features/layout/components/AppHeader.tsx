@@ -10,7 +10,7 @@ interface AppHeaderProps {
 
 type NavItem =
   | { kind: "route"; to: string; label: string }
-  | { kind: "modal"; modal: "course" | "community"; label: string };
+  | { kind: "modal"; modal: "course" | "community" | "shop"; label: string };
 
 const YT_URL = "https://www.youtube.com/@ardhianzy/";
 const DISCORD_URL = "https://discord.gg/Q79ScExgG4";
@@ -19,8 +19,8 @@ const LOGO_ARDHIANZY = "/assets/icon/Ardhianzy_Logo_1.png";
 const LOGO_YOUTUBE = "/assets/icon/youtube.png";
 const LOGO_DISCORD = "/assets/icon/discord.png";
 
-// saya comment, jaga-jaga kalau nanti dibutuhkan
-// export default function AppHeader({ isLoggedIn, handleLogout }: AppHeaderProps) {
+const SHOP_URL = "";
+
 export default function AppHeader({ }: AppHeaderProps) {
   const NAV_ITEMS: NavItem[] = [
     { kind: "route", to: "/magazine", label: "MAGAZINE" },
@@ -29,13 +29,14 @@ export default function AppHeader({ }: AppHeaderProps) {
     { kind: "route", to: "/monologues", label: "MONOLOGUES" },
     { kind: "route", to: "/ReadingGuide", label: "READING GUIDE" },
     { kind: "route", to: "/IdeasTradition", label: "IDEAS & TRADITION" },
-    { kind: "route", to: "/PopCultureReview", label: "POPSHOPIA" },
-    { kind: "route", to: "/shop", label: "SHOPS" },
+    { kind: "route", to: "/PopCultureReview", label: "POPSOPHIA" },
+    { kind: "modal", modal: "shop", label: "SHOPS" },
     { kind: "modal", modal: "community", label: "COMMUNITY" },
   ];
 
   const [showCourse, setShowCourse] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
+  const [showShop, setShowShop] = useState(false);
 
   return (
     <div className="fixed top-0 left-0 w-full z-[1000]">
@@ -51,7 +52,6 @@ export default function AppHeader({ }: AppHeaderProps) {
           text-decoration: none;
           transition: color .3s ease;
         }
-        .secnav-link:hover { color: #4249CA !important; }
         @media (max-width: 1200px) { .secnav-link { font-size: 16px; } }
         @media (max-width: 960px)  { .secnav-link { font-size: 14px; } }
 
@@ -76,46 +76,6 @@ export default function AppHeader({ }: AppHeaderProps) {
             </span>
           </Link>
         </div>
-        {/* <div className="flex-1 flex justify-end items-center gap-4">
-          {isLoggedIn ? (
-            <UserProfile handleLogout={handleLogout} />
-          ) : (
-            <>
-              <Link
-                to="/signup"
-                className="flex justify-center items-center h-[44px] px-[25px] rounded-[30px] no-underline transition-opacity duration-300"
-                style={{
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: "18px",
-                  fontWeight: 400,
-                  backgroundColor: "#000000",
-                  color: "#F5F5F5",
-                  border: "1px solid #F5F5F5",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-              >
-                SIGN UP
-              </Link>
-              <Link
-                to="/login"
-                className="flex justify-center items-center h-[44px] px-[25px] rounded-[30px] no-underline shadow-[0_0_10px_rgba(255,255,255,0.3)] transition-opacity duration-300"
-                style={{
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: "18px",
-                  fontWeight: 400,
-                  backgroundColor: "#F5F5F5",
-                  color: "#000000",
-                  border: "1px solid #000000",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-              >
-                LOG IN
-              </Link>
-            </>
-          )}
-        </div> */}
       </header>
 
       <nav
@@ -138,6 +98,7 @@ export default function AppHeader({ }: AppHeaderProps) {
                     e.preventDefault();
                     if (item.modal === "course") setShowCourse(true);
                     if (item.modal === "community") setShowCommunity(true);
+                    if (item.modal === "shop") setShowShop(true);
                   }}
                 >
                   {item.label}
@@ -170,13 +131,38 @@ export default function AppHeader({ }: AppHeaderProps) {
           backgroundUrl={MODAL_BG}
           heading="JOIN THE ARDHIANZY COMMUNITY"
           subheading="Conversations for people who love ideas."
-          description="Join our Community to discuss episodes and texts, share notes, get feedback, and join reading circles, from Stoicism and dialectics to media critique and history. High-signal, welcoming, and learner-first."
+          description="Belajar filsafat dari nol! Filsafat berasal dari bahasa Yunani, yang melalui bahasa latin, philosophia, kalau diterjemahkan artinya cinta terhadap kebijaksanaan. Perjalanan 'dari nol' ini akan lebih seru jika dilakukan bersama. Bergabunglah dengan komunitas kami untuk bertukar pikiran!"
           ctaLabel="Enter the Community"
           onCta={() => window.location.assign(DISCORD_URL)}
           logos={[
             { src: LOGO_ARDHIANZY, alt: "Ardhianzy" },
             { src: LOGO_DISCORD, alt: "Discord" },
           ]}
+        />
+      )}
+
+      {showShop && (
+        <GenericCtaModal
+          onClose={() => setShowShop(false)}
+          backgroundUrl={MODAL_BG}
+          {...(!SHOP_URL
+            ? {
+                heading: "The Official Ardhianzy Store is Launching Soon.",
+                subheading: "We look forward to welcoming you soon.",
+                description:
+                  "Our official online store is currently under construction. We are carefully preparing our products to ensure the best quality and experience.",
+                showCta: false,
+              }
+            : {
+                heading: "Shop the Official Ardhianzy Collection",
+                subheading: "Explore our exclusive collection, curated just for you.",
+                description:
+                  "We are pleased to offer our complete range of products online. Browse our categories and find your new favorites today.",
+                ctaLabel: "Shop Now!",
+                onCta: () => window.location.assign(SHOP_URL),
+                showCta: true,
+              })}
+          logos={[{ src: LOGO_ARDHIANZY, alt: "Ardhianzy" }]}
         />
       )}
     </div>
@@ -189,9 +175,10 @@ type CtaModalProps = {
   heading: string;
   subheading?: string;
   description: string;
-  ctaLabel: string;
-  onCta: () => void;
+  ctaLabel?: string;
+  onCta?: () => void;
   logos?: { src: string; alt: string }[];
+  showCta?: boolean;
 };
 
 function GenericCtaModal({
@@ -203,6 +190,7 @@ function GenericCtaModal({
   ctaLabel,
   onCta,
   logos = [],
+  showCta = true,
 }: CtaModalProps) {
   const bgStyle: React.CSSProperties = backgroundUrl
     ? {
@@ -230,7 +218,7 @@ function GenericCtaModal({
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="absolute top-4 right-8 inline-flex !h-9 !w-9 !items-center !justify-center !rounded-full border !border-white/40 hover:!border-transparent !bg-transparent text-xl leading-none transition hover:!bg-white/10"
+          className="absolute top-4 right-8 inline-flex !h-9 !w-9 !items-center !justify-center !rounded-full border !border-white/40 hover:!border-transparent !bg-transparent text-xl leading-none transition hover:bg-[#151515] cursor-pointer"
         >
           <span className="block translate-x-[-0.5px] !text-white">×</span>
         </button>
@@ -265,7 +253,7 @@ function GenericCtaModal({
           {subheading ? (
             <p
               className="mt-2 mb-6 text-[#F5F5F5]"
-              style={{ fontFamily: "'Roboto', sans-serif',", fontWeight: 700, fontSize: "16px", letterSpacing: "0.01em" }}
+              style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: "16px", letterSpacing: "0.01em" }}
             >
               {subheading}
             </p>
@@ -278,16 +266,18 @@ function GenericCtaModal({
             {description}
           </p>
 
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={onCta}
-              className="inline-flex items-center justify-center gap-[8px] !rounded-[30px] border !border-[#F5F5F5] px-[26px] py-[14px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black"
-              style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", lineHeight: "22px", letterSpacing: "0.02em" }}
-            >
-              {ctaLabel} <span>&rarr;</span>
-            </button>
-          </div>
+          {showCta && ctaLabel && onCta ? (
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={onCta}
+                className="inline-flex items-center justify-center gap-[8px] !rounded-[30px] border !border-[#F5F5F5] px-[26px] py-[14px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black"
+                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", lineHeight: "22px", letterSpacing: "0.02em" }}
+              >
+                {ctaLabel} <span>&rarr;</span>
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
