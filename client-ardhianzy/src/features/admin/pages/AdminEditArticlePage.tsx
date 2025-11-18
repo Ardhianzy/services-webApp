@@ -1,180 +1,514 @@
-// // src/features/admin/pages/AdminEditArticlePage.tsx
-// import { useEffect, useState } from "react";
-// import { useParams, Link } from "react-router-dom";
-// import { getArticleById, updateArticle, type CreateOrUpdatePayload } from "@/features/articles/api";
+// src/features/admin/pages/AdminEditArticlePage.tsx
 
-// export default function AdminEditArticlePage() {
-//   const { id } = useParams<{ id: string }>();
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { ROUTES } from "@/app/routes";
+import {
+  adminGetArticleById,
+  adminUpdateArticle,
+} from "@/lib/content/api";
+import type { ArticleDTO } from "@/lib/content/types";
+import type { ArticleCategory } from "./AdminAddArticlePage";
 
-//   const [loading, setLoading] = useState(true);
-//   const [saving, setSaving]  = useState(false);
-//   const [message, setMessage] = useState<string | null>(null);
+type AdminArticleForm = {
+  title: string;
+  slug: string;
+  author: string;
+  date: string;
+  category: ArticleCategory;
+  excerpt: string;
+  canonicalUrl: string;
+  metaTitle: string;
+  metaDescription: string;
+  keywords: string;
+  content: string;
+  isPublished: boolean;
+};
 
-//   // form state (disamakan dengan Add)
-//   const [title, setTitle] = useState("");
-//   const [slug, setSlug] = useState("");
-//   const [author, setAuthor] = useState("");
-//   const [excerpt, setExcerpt] = useState("");
-//   const [content, setContent] = useState("");
-//   const [publishedAt, setPublishedAt] = useState(""); // yyyy-mm-dd
-//   const [image, setImage] = useState<File | null>(null);
+function toISODateFromInput(date: string): string {
+  if (!date) return "";
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return date;
+  return d.toISOString();
+}
 
-//   // hybrid-only (tidak dikirim ke BE "articel", tapi kita tetap tampilkan bila ada)
-//   const [section, setSection] = useState<string>("");
-//   const [category, setCategory] = useState<string>("");
-//   const [isFeatured, setIsFeatured] = useState<boolean>(false);
-//   const [highlightQuote, setHighlightQuote] = useState<string>("");
+function dateInputFromISO(value?: string): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
 
-//   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
+const AdminEditArticlePage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
-//   useEffect(() => {
-//     let alive = true;
-//     (async () => {
-//       try {
-//         const a = await getArticleById(String(id));
-//         if (!alive || !a) return;
+  const [form, setForm] = useState<AdminArticleForm | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-//         setTitle(a.title ?? "");
-//         setSlug(a.slug ?? "");
-//         setAuthor(typeof a.author === "string" ? a.author : a.author?.name ?? "");
-//         setExcerpt(a.excerpt ?? a.meta_description ?? "");
-//         setContent(a.content ?? "");
-//         // dukung "date" atau "publishedAt" dari server
-//         const d = (a.date ?? a.publishedAt ?? "").slice(0, 10);
-//         setPublishedAt(d);
+  // NEW: helper update field
+  const updateField = <K extends keyof AdminArticleForm>(
+    key: K,
+    value: AdminArticleForm[K]
+  ) => {
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
 
-//         setSection(a.section ?? "");
-//         setCategory(a.category ?? "");
-//         setIsFeatured(Boolean(a.isFeatured ?? a.featured));
-//         setHighlightQuote(a.highlightQuote ?? "");
+  // NEW: load article by ID
+  useEffect(() => {
+    if (!id) {
+      setError("ID artikel tidak ditemukan di URL.");
+      setLoading(false);
+      return;
+    }
 
-//         setCurrentImageUrl(a.image ?? a.cover ?? a.thumbnail ?? "");
-//       } catch (e: any) {
-//         setMessage(e?.message || "Gagal memuat artikel");
-//       } finally {
-//         setLoading(false);
-//       }
-//     })();
-//     return () => { alive = false; };
-//   }, [id]);
+    let cancelled = false;
 
-//   async function onSubmit(e: React.FormEvent) {
-//     e.preventDefault();
-//     if (!id) return;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data: ArticleDTO = await adminGetArticleById(id);
+        if (cancelled) return;
 
-//     setSaving(true);
-//     setMessage(null);
+        const raw: any = data;
 
-//     const payload: CreateOrUpdatePayload = {
-//       title, slug, author, excerpt, content,
-//       publishedAt: publishedAt || undefined,
-//       image: image ?? undefined,
-//       // hybrid-only (tidak terkirim ke BE "articel"; aman untuk auth):
-//       section, category, isFeatured, highlightQuote,
-//     };
+        const formData: AdminArticleForm = {
+          title: raw.title ?? "",
+          slug: raw.slug ?? "",
+          author: raw.author ?? "",
+          date: dateInputFromISO(raw.date),
+          category: (raw.category as ArticleCategory) ?? "POP_CULTURE",
+          excerpt: raw.excerpt ?? "",
+          canonicalUrl: raw.canonical_url ?? "",
+          metaTitle: raw.meta_title ?? "",
+          metaDescription: raw.meta_description ?? "",
+          keywords: raw.keywords ?? "",
+          content: raw.content ?? "",
+          isPublished: Boolean(raw.is_published),
+        };
 
-//     try {
-//       await updateArticle(id, payload);
-//       setMessage("Perubahan berhasil disimpan.");
-//     } catch (e: any) {
-//       setMessage(e?.message || "Gagal menyimpan perubahan.");
-//     } finally {
-//       setSaving(false);
-//     }
-//   }
+        setForm(formData);
 
-//   if (loading) return <p>Memuat…</p>;
+        if (raw.image && typeof raw.image === "string") {
+          setImagePreviewUrl(raw.image);
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setError(
+            e?.message || "Gagal memuat data artikel untuk di-edit."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    })();
 
-//   return (
-//     <div>
-//       <h2>Edit Article</h2>
-//       <p>Perbarui informasi artikel di bawah ini.</p>
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
-//       <form onSubmit={onSubmit} className="bg-white border border-[#e2e8f0] rounded-[12px] p-6 mt-4 space-y-4">
-//         {message && <div className="text-sm p-3 rounded border" style={{borderColor:'#e2e8f0'}}>{message}</div>}
+  // NEW: image handler
+  const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const file = e.target.files?.[0];
+    setImageFile(file ?? null);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setImagePreviewUrl(url);
+    }
+  };
 
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//           <label className="block">
-//             <span className="text-sm text-[#4a5568]">Title</span>
-//             <input value={title} onChange={(e)=>setTitle(e.target.value)} required className="mt-1 w-full rounded border px-3 py-2" />
-//           </label>
+  // NEW: submit update
+  const handleSubmit = async () => {
+    if (!id || !form) return;
 
-//           <label className="block">
-//             <span className="text-sm text-[#4a5568]">Slug</span>
-//             <input value={slug} onChange={(e)=>setSlug(e.target.value)} required className="mt-1 w-full rounded border px-3 py-2" />
-//           </label>
+    if (!form.title || !form.content) {
+      setError("Minimal isi judul dan konten artikel (HTML).");
+      return;
+    }
 
-//           <label className="block">
-//             <span className="text-sm text-[#4a5568]">Author</span>
-//             <input value={author} onChange={(e)=>setAuthor(e.target.value)} className="mt-1 w-full rounded border px-3 py-2" />
-//           </label>
+    setError(null);
+    setSubmitting(true);
 
-//           <label className="block">
-//             <span className="text-sm text-[#4a5568]">Published At</span>
-//             <input type="date" value={publishedAt} onChange={(e)=>setPublishedAt(e.target.value)} className="mt-1 w-full rounded border px-3 py-2" />
-//           </label>
-//         </div>
+    try {
+      const fd = new FormData();
 
-//         <label className="block">
-//           <span className="text-sm text-[#4a5568]">Excerpt</span>
-//           <textarea value={excerpt} onChange={(e)=>setExcerpt(e.target.value)} className="mt-1 w-full rounded border px-3 py-2 h-24" />
-//         </label>
+      fd.append("title", form.title);
+      if (form.slug) fd.append("slug", form.slug);
+      if (imageFile) fd.append("image", imageFile);
+      fd.append("content", form.content);
+      if (form.author) fd.append("author", form.author);
+      if (form.date) fd.append("date", toISODateFromInput(form.date));
+      if (form.metaTitle) fd.append("meta_title", form.metaTitle);
+      if (form.metaDescription)
+        fd.append("meta_description", form.metaDescription);
+      if (form.keywords) fd.append("keywords", form.keywords);
+      if (form.excerpt) fd.append("excerpt", form.excerpt);
+      if (form.canonicalUrl)
+        fd.append("canonical_url", form.canonicalUrl);
+      fd.append("category", form.category);
+      fd.append("is_published", String(form.isPublished));
 
-//         <label className="block">
-//           <span className="text-sm text-[#4a5568]">Content (opsional)</span>
-//           <textarea value={content} onChange={(e)=>setContent(e.target.value)} className="mt-1 w-full rounded border px-3 py-2 h-32" />
-//         </label>
+      await adminUpdateArticle(id, fd);
 
-//         {/* hybrid-only controls (tidak merusak style) */}
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//           <label className="block">
-//             <span className="text-sm text-[#4a5568]">Section (hybrid)</span>
-//             <input value={section} onChange={(e)=>setSection(e.target.value)} className="mt-1 w-full rounded border px-3 py-2" placeholder="research / ideas-tradition / ..." />
-//           </label>
+      navigate(ROUTES.ADMIN.ARTICLES);
+    } catch (e: any) {
+      setError(
+        e?.message ||
+          "Gagal menyimpan perubahan artikel. Cek kembali data yang kamu ubah."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-//           <label className="block">
-//             <span className="text-sm text-[#4a5568]">Category (hybrid)</span>
-//             <input value={category} onChange={(e)=>setCategory(e.target.value)} className="mt-1 w-full rounded border px-3 py-2" placeholder="Highlight / Monologues / ..." />
-//           </label>
-//         </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white px-10 py-8 flex items-center justify-center">
+        <p className="text-sm text-neutral-400">
+          Memuat artikel untuk di-edit...
+        </p>
+      </div>
+    );
+  }
 
-//         <label className="inline-flex items-center gap-2">
-//           <input type="checkbox" checked={isFeatured} onChange={(e)=>setIsFeatured(e.target.checked)} />
-//           <span className="text-sm text-[#4a5568]">Featured (hybrid)</span>
-//         </label>
+  if (!form) {
+    return (
+      <div className="min-h-screen bg-black text-white px-10 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-semibold tracking-[0.15em]">
+            EDIT ARTICLE
+          </h1>
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.ADMIN.ARTICLES)}
+            className="px-4 py-2 rounded-full border border-zinc-600 text-xs tracking-[0.15em]
+                       hover:bg-white hover:text-black transition"
+          >
+            KEMBALI KE LIST
+          </button>
+        </div>
+        <p className="text-sm text-red-400">
+          {error || "Artikel tidak ditemukan."}
+        </p>
+      </div>
+    );
+  }
 
-//         <label className="block">
-//           <span className="text-sm text-[#4a5568]">Highlight Quote (hybrid, opsional)</span>
-//           <textarea value={highlightQuote} onChange={(e)=>setHighlightQuote(e.target.value)} className="mt-1 w-full rounded border px-3 py-2 h-20" />
-//         </label>
+  return (
+    <div className="min-h-screen bg-black text-white px-10 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-[0.15em]">
+            EDIT ARTICLE
+          </h1>
+          <p className="text-sm text-neutral-400 mt-1 max-w-xl">
+            Perbarui konten artikel. Perubahan akan meng-update data pada
+            endpoint <span className="font-mono">/api/articel</span>.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate(ROUTES.ADMIN.ARTICLES)}
+          className="px-4 py-2 rounded-full border border-zinc-600 text-xs tracking-[0.15em]
+                     hover:bg-white hover:text-black transition"
+        >
+          KEMBALI KE LIST
+        </button>
+      </div>
 
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//           <label className="block">
-//             <span className="text-sm text-[#4a5568]">Image</span>
-//             <input type="file" accept="image/*" onChange={(e)=>setImage(e.target.files?.[0] ?? null)} className="mt-1" />
-//             {currentImageUrl ? (
-//               <div className="mt-2 text-xs text-[#4a5568]">
-//                 <div>Current:</div>
-//                 <img src={currentImageUrl} alt="current" className="mt-1 max-h-[120px] object-cover rounded border" />
-//               </div>
-//             ) : null}
-//           </label>
+      {/* Layout form + preview */}
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
+        {/* KIRI: FORM */}
+        <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                TITLE
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.title}
+                onChange={(e) => updateField("title", e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                SLUG
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white font-mono"
+                value={form.slug}
+                onChange={(e) => updateField("slug", e.target.value)}
+              />
+            </div>
+          </div>
 
-//           <div className="block">
-//             <span className="text-sm text-[#4a5568]"> </span>
-//             <div className="mt-1 text-sm text-[#4a5568]">
-//               Gambar baru akan menggantikan gambar lama saat disimpan.
-//             </div>
-//           </div>
-//         </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                KATEGORI
+              </label>
+              <select
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.category}
+                onChange={(e) =>
+                  updateField(
+                    "category",
+                    e.target.value as ArticleCategory
+                  )
+                }
+              >
+                <option value="READING_GUIDLINE">Reading Guide</option>
+                <option value="IDEAS_AND_TRADITIONS">Ideas & Tradition</option>
+                <option value="POP_CULTURE">Popsophia / Pop Culture</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                AUTHOR
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.author}
+                onChange={(e) => updateField("author", e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                DATE
+              </label>
+              <input
+                type="date"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.date}
+                onChange={(e) => updateField("date", e.target.value)}
+              />
+            </div>
+          </div>
 
-//         <div className="pt-2 flex items-center gap-3">
-//           <button disabled={saving} className="px-4 py-2 rounded bg-[#2d3748] text-white disabled:opacity-60">
-//             {saving ? "Menyimpan…" : "Simpan Perubahan"}
-//           </button>
-//           <Link to="/admin/articles/list" className="text-[#2b6cb0] no-underline">← Kembali</Link>
-//         </div>
-//       </form>
-//     </div>
-//   );
-// }
+          <div className="flex flex-col gap-2">
+            <label className="text-xs text-neutral-400 tracking-[0.15em]">
+              EXCERPT
+            </label>
+            <textarea
+              className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                         focus:border-white min-h-[60px]"
+              value={form.excerpt}
+              onChange={(e) => updateField("excerpt", e.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                CANONICAL URL
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.canonicalUrl}
+                onChange={(e) =>
+                  updateField("canonicalUrl", e.target.value)
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                KEYWORDS
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.keywords}
+                onChange={(e) =>
+                  updateField("keywords", e.target.value)
+                }
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                META TITLE (SEO)
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.metaTitle}
+                onChange={(e) =>
+                  updateField("metaTitle", e.target.value)
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                META DESCRIPTION (SEO)
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.metaDescription}
+                onChange={(e) =>
+                  updateField("metaDescription", e.target.value)
+                }
+              />
+            </div>
+          </div>
+
+          {/* Upload image cover */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs text-neutral-400 tracking-[0.15em]">
+              COVER IMAGE
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="text-xs text-neutral-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-full
+                         file:border file:border-zinc-600 file:bg-zinc-900 file:text-xs
+                         file:hover:bg-zinc-800"
+            />
+            {imagePreviewUrl && (
+              <div className="mt-2 rounded-2xl overflow-hidden border border-zinc-800 max-h-56">
+                <img
+                  src={imagePreviewUrl}
+                  alt="Preview cover"
+                  className="w-full h-56 object-cover"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Konten HTML */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs text-neutral-400 tracking-[0.15em]">
+              CONTENT (HTML)
+            </label>
+            <textarea
+              className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
+                         focus:border-white min-h-[260px] font-mono leading-relaxed"
+              value={form.content}
+              onChange={(e) => updateField("content", e.target.value)}
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-400 mt-1">
+              {error}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-3 justify-between pt-3 border-t border-zinc-800 mt-2">
+            <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded border-zinc-600 bg-black"
+                checked={form.isPublished}
+                onChange={(e) =>
+                  updateField("isPublished", e.target.checked)
+                }
+              />
+              <span>Publish ke user</span>
+            </label>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={handleSubmit}
+                className="px-4 py-2 rounded-full border border-white bg-white text-black text-xs tracking-[0.15em]
+                           hover:bg-transparent hover:text-white hover:border-white disabled:opacity-50"
+              >
+                SAVE CHANGES
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* KANAN: PREVIEW */}
+        <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
+          <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
+            LIVE PREVIEW (HTML)
+          </h2>
+          <div className="bg-black rounded-2xl border border-zinc-800 p-6 h-full overflow-y-auto">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
+                {form.category}
+              </span>
+              {form.date && (
+                <span className="text-[11px] text-neutral-500">
+                  {form.date}
+                </span>
+              )}
+              {form.author && (
+                <span className="text-[11px] text-neutral-500">
+                  • {form.author}
+                </span>
+              )}
+              <span
+                className={`ml-auto text-[11px] px-2 py-1 rounded-full ${
+                  form.isPublished
+                    ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
+                    : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40"
+                }`}
+              >
+                {form.isPublished ? "Published" : "Draft / Preview"}
+              </span>
+            </div>
+
+            <h1 className="text-2xl md:text-3xl font-semibold mb-4">
+              {form.title || "Judul artikel"}
+            </h1>
+
+            {form.excerpt && (
+              <p className="text-sm text-neutral-300 mb-4">
+                {form.excerpt}
+              </p>
+            )}
+
+            {imagePreviewUrl && (
+              <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-800">
+                <img
+                  src={imagePreviewUrl}
+                  alt="Preview cover"
+                  className="w-full h-64 object-cover"
+                />
+              </div>
+            )}
+
+            <div
+              className="prose prose-invert prose-sm max-w-none"
+              dangerouslySetInnerHTML={{
+                __html: form.content || "<p>Konten HTML akan tampil di sini...</p>",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminEditArticlePage;

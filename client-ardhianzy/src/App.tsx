@@ -47,16 +47,15 @@ import ReadingGuidePage from "@/features/reading-guides/pages/ReadingGuidePage";
 // import ProfilePage from "@/features/user/pages/ProfilePage";
 // import ReadHistoryPage from "@/features/user/pages/ReadHistoryPage";
 
-// import ProtectedRoute from "@/routes/ProtectedRoute";
 import AdminRoute from "@/routes/AdminRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminLoginPage from "@/features/admin/pages/AdminLoginPage";
-// import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
-// import AdminArticlePage from "@/features/admin/pages/AdminArticlePage";
-// import AdminAddArticlePage from "@/features/admin/pages/AdminAddArticlePage";
-// import AdminEditArticlePage from "@/features/admin/pages/AdminEditArticlePage";
 import AdminAddItemPage from "@/features/admin/pages/AdminAddItemPage";
 import AdminListItemPage from "@/features/admin/pages/AdminListItemPage";
+// import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
+import AdminArticlePage from "@/features/admin/pages/AdminArticlePage";
+import AdminAddArticlePage from "@/features/admin/pages/AdminAddArticlePage";
+import AdminEditArticlePage from "@/features/admin/pages/AdminEditArticlePage";
 // import AdminAnalyticsPage from "@/features/admin/pages/AdminAnalyticsPage";
 // import AdminToTListPage from "@/features/admin/pages/AdminToTListPage";
 // import AdminToTAddPage from "@/features/admin/pages/AdminToTAddPage";
@@ -282,26 +281,29 @@ function AppRoutes() {
       <Route path={ROUTES.LEGACY.POP_CULTURE_REVIEW} element={<Navigate to={ROUTES.POP_CULTURE_REVIEW} replace />} />
       <Route path={ROUTES.LEGACY.READING_GUIDE} element={<Navigate to={ROUTES.READING_GUIDE} replace />} />
 
-
       <Route path={`${ROUTES.ADMIN.ROOT}/*`} element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
-          <Route index element={<Navigate to={ROUTES.ADMIN.DASHBOARD} replace />} />
+          {/* /admin -> default ke list artikel */}
+          <Route index element={<Navigate to="articles" replace />} />
+
+          {/* Nanti: /admin/dashboard */}
           {/* <Route path="dashboard" element={<AdminDashboardPage />} /> */}
-          {/* <Route path="articles/list" element={<AdminArticlePage />} /> */}
-          {/* <Route path="articles/add" element={<AdminAddArticlePage />} /> */}
-          {/* <Route path="articles/edit/:id" element={<AdminEditArticlePage />} /> */}
+
+          {/* Sudah aktif: manajemen artikel */}
+          <Route path="articles" element={<AdminArticlePage />} />
+          <Route path="articles/add" element={<AdminAddArticlePage />} />
+          <Route path="articles/:id" element={<AdminEditArticlePage />} />
+
+          {/* Sudah aktif sekarang: shop list & add */}
           <Route path="shop/list" element={<AdminListItemPage />} />
           <Route path="shop/add" element={<AdminAddItemPage />} />
-          {/* <Route path="analytics" element={<AdminAnalyticsPage />} /> */}
-          {/* <Route path="tot/list" element={<AdminToTListPage />} /> */}
-          {/* <Route path="tot/add" element={<AdminToTAddPage />} /> */}
-          {/* <Route path="tot-meta/list" element={<AdminToTMetaListPage />} /> */}
-          {/* <Route path="tot-meta/add" element={<AdminToTMetaAddPage />} /> */}
-          {/* <Route path="content" element={<AdminResearchShopCollectedPage />} /> */}
         </Route>
       </Route>
 
+      {/* ====== ADMIN LOGIN (PUBLIC) ====== */}
       <Route path={ROUTES.ADMIN.LOGIN} element={<AdminLoginPage />} />
+
+      {/* ====== FALLBACK ====== */}
       <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
     </Routes>
   );

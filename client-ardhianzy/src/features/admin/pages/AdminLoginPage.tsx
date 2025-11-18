@@ -1,5 +1,5 @@
 // src/features/admin/pages/AdminLoginPage.tsx
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/store";
 import { ROUTES } from "@/app/routes";
@@ -8,20 +8,24 @@ const AdminLoginPage: React.FC = () => {
   const [adminUsername, setAdminUsername] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  const navigate = useNavigate();
+  const { login, loading } = useAuth();
+
+  const handleAdminLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setAuthError("");
+    setAuthError(null);
+
     if (!adminUsername || !adminPassword) {
       setAuthError("Username dan password harus diisi.");
       return;
     }
+
     try {
       await login({ username: adminUsername, password: adminPassword });
-      navigate(ROUTES.ADMIN.DASHBOARD);
+
+      navigate(ROUTES.ADMIN.ROOT);
     } catch (err: any) {
       setAuthError(err?.message || "Username atau password admin salah.");
     }
@@ -126,14 +130,16 @@ const AdminLoginPage: React.FC = () => {
 
           <button
             type="submit"
+            disabled={loading}
             className="h-[45px] rounded-[30px] text-[18px] cursor-pointer
                        transition-opacity duration-300 flex justify-center items-center gap-3 mt-[10px]
                        bg-transparent border border-[#F5F5F5] text-[#F5F5F5]
                        focus:outline-none focus:ring-2 focus:ring-white/60
-                       hover:text-black hover:bg-white hover:border-black"
+                       hover:text-black hover:bg-white hover:border-black
+                       disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
-            LOG IN
+            {loading ? "LOGGING IN..." : "LOG IN"}
           </button>
         </form>
       </div>

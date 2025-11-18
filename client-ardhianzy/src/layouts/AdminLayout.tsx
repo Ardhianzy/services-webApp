@@ -66,7 +66,7 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
 
   return (
     <aside
-      className="fixed left-0 top-0 z-[1000] h-screen w-[377px] bg-black text-[#F5F5F5] flex flex-col justify-between py-[25px] overflow-y-auto"
+      className="fixed left-0 top-0 z-[1000] h-screen w-[270px] bg-black text-[#F5F5F5] flex flex-col justify-between py-[25px] overflow-y-auto"
       style={{
         boxSizing: "border-box",
         // Border-right 0.5px sesuai CSS lama
@@ -379,14 +379,14 @@ const AdminLayout: FC = () => {
   const { logout } = useAuth();
 
   const handleLogout = () => {
-    logout();            // clear token in-memory + (opsional) server logout
+    logout();
     navigate(ROUTES.ADMIN.LOGIN);
   };
 
   return (
     <div className="relative flex bg-[#1E1E1E]">
       <Sidebar handleLogout={handleLogout} />
-      <main className="flex-1 text-white px-[38px] py-[25px] ml-[377px]">
+      <main className="flex-1 text-white px-[14px] py-[25px] ml-[280px]">
         <AdminHeader />
         <Outlet />
       </main>
