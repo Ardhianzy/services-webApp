@@ -107,14 +107,16 @@ export default function HighlightSection({
           return (tb || 0) - (ta || 0);
         });
 
+        const latest = sortedDesc[0];
+
         setRemote(
-          sortedDesc.length
-            ? sortedDesc
+          latest
+            ? [latest]
             : [
                 {
                   id: "ideas-coming-soon",
                   title: "NEXT: COMING SOON",
-                  image: "/assets/research/Desain tanpa judul.png",
+                  image: "/assets/icon/Ardhianzy_Logo_2.png",
                   // slug: undefined,
                   author: "Ardhianzy",
                   dateISO: undefined,

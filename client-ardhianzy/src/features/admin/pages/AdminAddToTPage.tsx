@@ -1,35 +1,23 @@
-// src/features/admin/pages/AdminAddArticlePage.tsx
+// src/features/admin/pages/AdminAddToTPage.tsx
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
-import { adminCreateArticle } from "@/lib/content/api";
+import { adminCreateToT } from "@/lib/content/api";
 
-// NEW: kategori mengikuti field "category" di backend
-export type ArticleCategory = "READING_GUIDLINE" | "IDEAS_AND_TRADITIONS" | "POP_CULTURE";
-
-const CATEGORY_OPTIONS: { value: ArticleCategory; label: string }[] = [
-  { value: "READING_GUIDLINE", label: "Reading Guide" },
-  { value: "IDEAS_AND_TRADITIONS", label: "Ideas & Tradition" },
-  { value: "POP_CULTURE", label: "Popsophia / Pop Culture" },
-];
-
-type AdminArticleForm = {
-  title: string;
+type AdminToTForm = {
+  philosofer: string;
   slug: string;
-  author: string;
-  date: string;
-  category: ArticleCategory;
-  excerpt: string;
-  canonicalUrl: string;
+  geoorigin: string;
+  detailLocation: string;
+  years: string;
   metaTitle: string;
   metaDescription: string;
   keywords: string;
-  content: string;
   isPublished: boolean;
 };
 
-// NEW: slugify sederhana (dari title)
+// slugify sederhana
 function slugify(input: string): string {
   return input
     .toLowerCase()
@@ -38,53 +26,43 @@ function slugify(input: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function toISODateFromInput(date: string): string {
-  // "2025-10-26" -> "2025-10-26T00:00:00.000Z"
-  if (!date) return "";
-  const d = new Date(date);
-  if (Number.isNaN(d.getTime())) return date;
-  return d.toISOString();
-}
-
-const AdminAddArticlePage: React.FC = () => {
+const AdminAddToTPage: React.FC = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState<AdminArticleForm>({
-    title: "",
+
+  const [form, setForm] = useState<AdminToTForm>({
+    philosofer: "",
     slug: "",
-    author: "",
-    date: new Date().toISOString().slice(0, 10),
-    category: "POP_CULTURE",
-    excerpt: "",
-    canonicalUrl: "",
+    geoorigin: "",
+    detailLocation: "",
+    years: "",
     metaTitle: "",
     metaDescription: "",
     keywords: "",
-    content: "",
     isPublished: false,
   });
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // NEW: handler generic untuk field text
-  const updateField = <K extends keyof AdminArticleForm>(
+  const updateField = <K extends keyof AdminToTForm>(
     key: K,
-    value: AdminArticleForm[K]
+    value: AdminToTForm[K]
   ) => {
     setForm((prev) => ({
       ...prev,
       [key]: value,
-      ...(key === "title" && !prev.slug
+      ...(key === "philosofer" && !prev.slug
         ? { slug: slugify(String(value)) }
         : null),
     }));
   };
 
-  // NEW: handler file image cover
   const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    const file = e.target.files?.[0];
-    setImageFile(file ?? null);
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
     if (file) {
       const url = URL.createObjectURL(file);
       setImagePreviewUrl(url);
@@ -93,10 +71,11 @@ const AdminAddArticlePage: React.FC = () => {
     }
   };
 
-  // NEW: submit create
   const handleSubmit = async (publish: boolean) => {
-    if (!form.title || !form.content) {
-      setError("Minimal isi judul dan konten artikel (HTML).");
+    if (!form.philosofer || !form.geoorigin || !form.years) {
+      setError(
+        "Minimal isi nama tokoh, geo origin, dan periode tahun (years)."
+      );
       return;
     }
 
@@ -105,31 +84,27 @@ const AdminAddArticlePage: React.FC = () => {
 
     try {
       const fd = new FormData();
-
-      fd.append("title", form.title);
+      fd.append("philosofer", form.philosofer);
       if (form.slug) fd.append("slug", form.slug);
-      if (imageFile) fd.append("image", imageFile);
-      fd.append("content", form.content);
-      if (form.author) fd.append("author", form.author);
-      if (form.date) fd.append("date", toISODateFromInput(form.date));
+      if (form.geoorigin) fd.append("geoorigin", form.geoorigin);
+      if (form.detailLocation) fd.append("detail_location", form.detailLocation);
+      if (form.years) fd.append("years", form.years);
       if (form.metaTitle) fd.append("meta_title", form.metaTitle);
       if (form.metaDescription)
         fd.append("meta_description", form.metaDescription);
       if (form.keywords) fd.append("keywords", form.keywords);
-      if (form.excerpt) fd.append("excerpt", form.excerpt);
-      if (form.canonicalUrl)
-        fd.append("canonical_url", form.canonicalUrl);
-      fd.append("category", form.category);
-      // Flag draft/publish – backend bisa memutuskan dipakai atau diabaikan
-      fd.append("is_published", String(publish)); // NEW
+      fd.append("is_published", String(publish));
 
-      await adminCreateArticle(fd);
+      if (imageFile) {
+        fd.append("image", imageFile);
+      }
 
-      navigate(ROUTES.ADMIN.ARTICLES);
+      await adminCreateToT(fd);
+      navigate(ROUTES.ADMIN.TOT_LIST);
     } catch (e: any) {
       setError(
         e?.message ||
-          "Gagal menyimpan artikel. Cek kembali data yang kamu isi."
+          "Gagal menyimpan ToT. Cek kembali data yang kamu isi."
       );
     } finally {
       setSubmitting(false);
@@ -142,17 +117,17 @@ const AdminAddArticlePage: React.FC = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
-            NEW ARTICLE
+            NEW TIMELINE OF THOUGHT (ToT)
           </h1>
           <p className="text-sm text-neutral-400 mt-3 max-w-xl">
-            Buat artikel baru untuk salah satu kategori (Reading Guide,
-            Ideas &amp; Tradition, atau Popsophia). Konten utama diisi
-            dalam format <span className="font-mono">&lt;HTML&gt;</span>.
+            Buat entri baru Timeline of Thought. ToT berisi tokoh filsafat,
+            asal geografis, lokasi detail, dan periode tahun. Konten detail
+            (metafisika, epsimologi, dll.) akan diatur di ToT Meta.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => navigate(ROUTES.ADMIN.ARTICLES)}
+          onClick={() => navigate(ROUTES.ADMIN.TOT_LIST)}
           className="px-4 py-2 rounded-full border border-zinc-600 text-xs tracking-[0.15em]
                      hover:bg-white hover:text-black transition cursor-pointer"
         >
@@ -160,22 +135,22 @@ const AdminAddArticlePage: React.FC = () => {
         </button>
       </div>
 
-      {/* Layout dua kolom: kiri form, kanan preview */}
+      {/* Layout */}
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
         {/* KIRI: FORM */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                TITLE
+                PHILOSOFER NAME
               </label>
               <input
                 type="text"
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
-                value={form.title}
-                onChange={(e) => updateField("title", e.target.value)}
-                placeholder="Judul artikel"
+                value={form.philosofer}
+                onChange={(e) => updateField("philosofer", e.target.value)}
+                placeholder="Nama tokoh (misal: Albert Camus)"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -188,109 +163,56 @@ const AdminAddArticlePage: React.FC = () => {
                            focus:border-white font-mono"
                 value={form.slug}
                 onChange={(e) => updateField("slug", e.target.value)}
-                placeholder="apa-itu-wille-zur-macht"
+                placeholder="albert-camus"
               />
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                KATEGORI
-              </label>
-              <select
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
-                value={form.category}
-                onChange={(e) =>
-                  updateField(
-                    "category",
-                    e.target.value as ArticleCategory
-                  )
-                }
-              >
-                {CATEGORY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                AUTHOR
+                GEO ORIGIN
               </label>
               <input
                 type="text"
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
-                value={form.author}
-                onChange={(e) => updateField("author", e.target.value)}
-                placeholder="Nama penulis"
+                value={form.geoorigin}
+                onChange={(e) => updateField("geoorigin", e.target.value)}
+                placeholder="Misal: German idealism, Modern (Europe)"
               />
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                DATE
+                DETAIL LOCATION
               </label>
               <input
-                type="date"
+                type="text"
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
-                value={form.date}
-                onChange={(e) => updateField("date", e.target.value)}
+                value={form.detailLocation}
+                onChange={(e) => updateField("detailLocation", e.target.value)}
+                placeholder="Misal: Amsterdam, Netherlands"
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 max-w-xs">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              EXCERPT (RINGKASAN PENDEK)
+              YEARS (PERIODE)
             </label>
-            <textarea
+            <input
+              type="text"
               className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                         focus:border-white min-h-[60px]"
-              value={form.excerpt}
-              onChange={(e) => updateField("excerpt", e.target.value)}
-              placeholder="Ringkasan 1–2 kalimat untuk card / meta."
+                         focus:border-white"
+              value={form.years}
+              onChange={(e) => updateField("years", e.target.value)}
+              placeholder="Misal: 1632–1677"
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                CANONICAL URL
-              </label>
-              <input
-                type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
-                value={form.canonicalUrl}
-                onChange={(e) =>
-                  updateField("canonicalUrl", e.target.value)
-                }
-                placeholder="https://..."
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                KEYWORDS
-              </label>
-              <input
-                type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
-                value={form.keywords}
-                onChange={(e) =>
-                  updateField("keywords", e.target.value)
-                }
-                placeholder="Nietzsche, Wille zur Macht, nihilisme..."
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="flex flex-col gap-2 md:col-span-1">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
                 META TITLE (SEO)
               </label>
@@ -299,13 +221,11 @@ const AdminAddArticlePage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.metaTitle}
-                onChange={(e) =>
-                  updateField("metaTitle", e.target.value)
-                }
+                onChange={(e) => updateField("metaTitle", e.target.value)}
                 placeholder="Judul SEO..."
               />
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:col-span-1">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
                 META DESCRIPTION (SEO)
               </label>
@@ -314,18 +234,29 @@ const AdminAddArticlePage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.metaDescription}
-                onChange={(e) =>
-                  updateField("metaDescription", e.target.value)
-                }
-                placeholder="Deskripsi meta SEO..."
+                onChange={(e) => updateField("metaDescription", e.target.value)}
+                placeholder="Deskripsi singkat tokoh..."
+              />
+            </div>
+            <div className="flex flex-col gap-2 md:col-span-1">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                KEYWORDS (OPSIONAL)
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.keywords}
+                onChange={(e) => updateField("keywords", e.target.value)}
+                placeholder="Pisahkan dengan koma..."
               />
             </div>
           </div>
 
-          {/* Upload image cover */}
+          {/* Upload image (opsional) */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              COVER IMAGE
+              PORTRAIT IMAGE (OPSIONAL)
             </label>
             <input
               type="file"
@@ -339,33 +270,13 @@ const AdminAddArticlePage: React.FC = () => {
               <div className="mt-2 rounded-2xl overflow-hidden border border-zinc-800 max-h-56">
                 <img
                   src={imagePreviewUrl}
-                  alt="Preview cover"
+                  alt="Preview ToT"
                   className="w-full h-56 object-cover"
                 />
               </div>
             )}
           </div>
 
-          {/* Konten HTML */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              CONTENT (HTML)
-            </label>
-            <textarea
-              className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
-                         focus:border-white min-h-[260px] font-mono leading-relaxed"
-              value={form.content}
-              onChange={(e) => updateField("content", e.target.value)}
-              placeholder={`<h1>Judul</h1>\n<p>Paragraf pertama...</p>\n<ul><li>Poin 1</li></ul>`}
-            />
-            <p className="text-[11px] text-neutral-500">
-              *Masukkan HTML utuh (h1, p, blockquote, table, dll). Di
-              sisi user, HTML ini akan dirender sama persis (setelah
-              normalisasi).
-            </p>
-          </div>
-
-          {/* Error + tombol */}
           {error && (
             <p className="text-sm text-red-400 mt-1">
               {error}
@@ -408,24 +319,16 @@ const AdminAddArticlePage: React.FC = () => {
           </div>
         </div>
 
-        {/* KANAN: LIVE PREVIEW */}
+        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
-            LIVE PREVIEW (HTML)
+            LIVE PREVIEW
           </h2>
           <div className="bg-black rounded-2xl border border-zinc-800 p-6 h-full overflow-y-auto">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
-                {form.category}
-              </span>
-              {form.date && (
-                <span className="text-[11px] text-neutral-500">
-                  {form.date}
-                </span>
-              )}
-              {form.author && (
-                <span className="text-[11px] text-neutral-500">
-                  • {form.author}
+              {form.slug && (
+                <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
+                  {form.slug}
                 </span>
               )}
               <span
@@ -439,13 +342,32 @@ const AdminAddArticlePage: React.FC = () => {
               </span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-semibold mb-4">
-              {form.title || "Judul artikel akan tampil di sini"}
+            <h1 className="text-2xl md:text-3xl font-semibold mb-2">
+              {form.philosofer ||
+                "Nama tokoh akan tampil di sini"}
             </h1>
 
-            {form.excerpt && (
+            <div className="flex flex-wrap gap-2 text-[11px] text-neutral-300 mb-3">
+              {form.geoorigin && (
+                <span className="px-2 py-1 rounded-full border border-zinc-700">
+                  Origin: {form.geoorigin}
+                </span>
+              )}
+              {form.detailLocation && (
+                <span className="px-2 py-1 rounded-full border border-zinc-700">
+                  Lokasi: {form.detailLocation}
+                </span>
+              )}
+              {form.years && (
+                <span className="px-2 py-1 rounded-full border border-zinc-700">
+                  Years: {form.years}
+                </span>
+              )}
+            </div>
+
+            {form.metaDescription && (
               <p className="text-sm text-neutral-300 mb-4">
-                {form.excerpt}
+                {form.metaDescription}
               </p>
             )}
 
@@ -453,17 +375,20 @@ const AdminAddArticlePage: React.FC = () => {
               <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-800">
                 <img
                   src={imagePreviewUrl}
-                  alt="Preview cover"
+                  alt="Preview ToT"
                   className="w-full h-64 object-cover"
                 />
               </div>
             )}
 
-            <div
-              className="prose prose-invert prose-sm max-w-none"
-              // NEW: preview langsung HTML yang diinput di textarea
-              dangerouslySetInnerHTML={{ __html: form.content || "<p>Konten HTML akan tampil di sini...</p>" }}
-            />
+            <div className="mt-4 text-[11px] text-neutral-500 space-y-1">
+              {!form.metaDescription && (
+                <p>
+                  Meta description kosong. Ringkasan singkat tokoh bisa diisi
+                  untuk kebutuhan SEO dan preview.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -471,4 +396,4 @@ const AdminAddArticlePage: React.FC = () => {
   );
 };
 
-export default AdminAddArticlePage;
+export default AdminAddToTPage;

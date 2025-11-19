@@ -66,7 +66,12 @@ const IdeasTraditionGridSection: FC = () => {
     typeof window !== "undefined" ? window.innerWidth : 1920
   );
 
-  const [items, setItems] = useState<IdeaItem[]>([PLACEHOLDER, PLACEHOLDER, PLACEHOLDER, PLACEHOLDER]);
+  const [items, setItems] = useState<IdeaItem[]>([
+    PLACEHOLDER,
+    PLACEHOLDER,
+    PLACEHOLDER,
+    PLACEHOLDER,
+  ]);
   const [featured, setFeatured] = useState<IdeaItem>(PLACEHOLDER);
 
   useEffect(() => {
@@ -81,12 +86,14 @@ const IdeasTraditionGridSection: FC = () => {
       try {
         const list = await contentApi.articles.list();
         const ideasAll = (list as ArticleDTO[])
-          .filter(a => (a.category ?? "").toUpperCase() === "IDEAS_AND_TRADITIONS")
-          .map<IdeaItem>(a => ({
+          .filter((a) => (a.category ?? "").toUpperCase() === "IDEAS_AND_TRADITIONS")
+          .map<IdeaItem>((a) => ({
             img: a.image ?? "/assets/research/Desain tanpa judul.png",
             title: a.title ?? "Untitled",
             excerpt: normalizeMetaText(a.meta_description) || a.excerpt || "—",
-            link: a.slug ? generatePath(ROUTES.IDEAS_TRADITION_DETAIL, { slug: a.slug }) : ROUTES.IDEAS_TRADITION,
+            link: a.slug
+              ? generatePath(ROUTES.IDEAS_TRADITION_DETAIL, { slug: a.slug })
+              : ROUTES.IDEAS_TRADITION,
           }));
 
         const latest = ideasAll.slice(0, 5);
@@ -107,21 +114,34 @@ const IdeasTraditionGridSection: FC = () => {
         setItems([PLACEHOLDER, PLACEHOLDER, PLACEHOLDER, PLACEHOLDER]);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const isNarrow = vw <= 1200;
   const gridTemplateColumns = isNarrow ? "repeat(2, 1fr)" : COLS_DESKTOP;
   const headerMaxWidth = isNarrow ? "100%" : HEADER_MAX_WIDTH_DESKTOP;
-  const featuredImgHeight = isNarrow ? "350px" : `calc(${ROW_HEIGHT} * 2 + ${GAP_REM}rem)`;
+  const featuredImgHeight = isNarrow
+    ? "350px"
+    : `calc(${ROW_HEIGHT} * 2 + ${GAP_REM}rem)`;
 
   const { preview: featPrev, truncated: featCut } = previewClamp(featured.excerpt, 40);
 
   return (
     <section id="ideas" aria-labelledby="ideas-title" className="relative mt-50">
-      <div className="relative mx-auto flex max-w-[1560px] flex-col items-center px-8 py-6" style={{ zIndex: 1 }}>
-        <div aria-hidden className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 bg-black" />
-        <div className="mb-6 flex w-full items-center justify-between" style={{ maxWidth: headerMaxWidth }}>
+      <div
+        className="relative mx-auto flex max-w-[1560px] flex-col items-center px-8 py-6"
+        style={{ zIndex: 1 }}
+      >
+        <div
+          aria-hidden
+          className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 bg-black"
+        />
+        <div
+          className="mb-6 flex w-full items-center justify-between"
+          style={{ maxWidth: headerMaxWidth }}
+        >
           <div className="flex items-center">
             <img
               src="/assets/icon/IdeasTradition_Logo.png"
@@ -129,14 +149,22 @@ const IdeasTraditionGridSection: FC = () => {
               className="hidden sm:inline-block h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
               draggable={false}
             />
-            <h2 id="ideas-title" className="ml-4 text-[3rem] text-white" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+            <h2
+              id="ideas-title"
+              className="ml-4 text-[3rem] text-white"
+              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+            >
               Philosophical Ideas &amp; Tradition
             </h2>
           </div>
           <a
             href={ROUTES.IDEAS_TRADITION}
             className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
-            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: "1rem",
+              textDecoration: "none",
+            }}
             aria-label="See all Ideas & Tradition"
           >
             SEE ALL <span className="ml-2">→</span>
@@ -154,37 +182,121 @@ const IdeasTraditionGridSection: FC = () => {
           }}
         >
           {items.map((item, i) => {
-            const itemStyle: React.CSSProperties = isNarrow ? {} : (WIDE_POS[i] ?? {});
+            const itemStyle: React.CSSProperties = isNarrow ? {} : WIDE_POS[i] ?? {};
             const { preview, truncated } = previewClamp(item.excerpt, 36);
-            return (
-              <div key={`${item.title}-${i}`} className="relative overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow border-1" style={itemStyle} aria-label={item.title}>
-                <img src={item.img} alt={item.title} className="h-full w-full object-contain p-24" />
-                <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: OVERLAY }} />
+            const isPlaceholder =
+              item.link === PLACEHOLDER.link && item.title === PLACEHOLDER.title;
+
+            const imgClass = isPlaceholder
+              ? "h-full w-full object-contain p-24"
+              : "h-full w-full object-cover";
+
+            const inner = (
+              <>
+                <img
+                  src={item.img}
+                  alt={item.title}
+                  className={imgClass}
+                />
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0"
+                  style={{ background: OVERLAY }}
+                />
                 <div className="absolute bottom-6 left-6 right-6 z-[2] flex flex-col items-start text-left text-white">
-                  <h3 className="mb-2 text-[1.5rem]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>{item.title}</h3>
-                  <p className="mb-3 text-[0.9rem] leading-[1.4] line-clamp-3" style={{ fontFamily: "'Roboto Condensed', sans-serif", opacity: 0.85 }}>
-                    {preview}{truncated && "…"}
+                  <h3
+                    className="mb-2 text-[1.5rem]"
+                    style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+                  >
+                    {item.title}
+                  </h3>
+                  <p
+                    className="mb-3 text-[0.9rem] leading-[1.4] line-clamp-3"
+                    style={{
+                      fontFamily: "'Roboto Condensed', sans-serif",
+                      opacity: 0.85,
+                    }}
+                  >
+                    {preview}
+                    {truncated && "…"}
                     {truncated && (
-                      <Link to={item.link}><ContinueReadInline /></Link>
+                      isPlaceholder ? (
+                        <Link to={item.link}>
+                          <ContinueReadInline />
+                        </Link>
+                      ) : (
+                        <ContinueReadInline />
+                      )
                     )}
                   </p>
                 </div>
-              </div>
+              </>
+            );
+
+            if (isPlaceholder) {
+              return (
+                <div
+                  key={`${item.title}-${i}`}
+                  className="relative overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow border-1"
+                  style={itemStyle}
+                  aria-label={item.title}
+                >
+                  {inner}
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={`${item.title}-${i}`}
+                to={item.link}
+                className="relative block cursor-pointer overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow border-1"
+                style={itemStyle}
+                aria-label={item.title}
+              >
+                {inner}
+              </Link>
             );
           })}
 
           <Link
             to={featured.link}
             className="relative flex flex-col justify-end overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow"
-            style={isNarrow ? { gridColumn: "1 / -1" } : { gridColumn: "4", gridRow: "1 / span 2", width: "400px" }}
+            style={
+              isNarrow
+                ? { gridColumn: "1 / -1" }
+                : { gridColumn: "4", gridRow: "1 / span 2", width: "400px" }
+            }
             aria-label={featured.title}
           >
-            <img src={featured.img} alt={featured.title} className="w-full object-cover" style={{ height: featuredImgHeight }} />
-            <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: OVERLAY }} />
+            <img
+              src={featured.img}
+              alt={featured.title}
+              className="w-full object-cover"
+              style={{ height: featuredImgHeight }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{ background: OVERLAY }}
+            />
             <div className="absolute bottom-6 left-6 right-6 z-[2] flex flex-col items-start text-left text-white">
-              <h3 className="mb-2 text-[1.5rem]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>{featured.title}</h3>
-              <p className="mb-3 text-[0.9rem] leading-[1.4] line-clamp-3" style={{ fontFamily: "'Roboto Condensed', sans-serif", opacity: 0.85 }}>
-                {featPrev}{featCut && "…"}{featCut && <ContinueReadInline />}
+              <h3
+                className="mb-2 text-[1.5rem]"
+                style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+              >
+                {featured.title}
+              </h3>
+              <p
+                className="mb-3 text-[0.9rem] leading-[1.4] line-clamp-3"
+                style={{
+                  fontFamily: "'Roboto Condensed', sans-serif",
+                  opacity: 0.85,
+                }}
+              >
+                {featPrev}
+                {featCut && "…"}
+                {featCut && <ContinueReadInline />}
               </p>
             </div>
           </Link>

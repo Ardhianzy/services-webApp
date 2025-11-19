@@ -124,16 +124,20 @@ const MagazineSection: FC = () => {
   }, []);
 
   const hasBig = !!big;
+  const hasRight = !!right;
 
   const { preview: descPreview, truncated: isTruncated } = loading
     ? { preview: "", truncated: false }
-    : makePreview(big?.description ?? "", "", 50);
+    : makePreview(big?.description ?? "", "", 45);
 
   const rightTitle = right?.title ?? RIGHT_CARD_PLACEHOLDER.title;
   const rightImage = right?.imageUrl ?? RIGHT_CARD_PLACEHOLDER.image;
-  const rightDesc =
-    right ? makePreview(right.description ?? "", "", 24).preview || "Continue to Read →"
-          : RIGHT_CARD_PLACEHOLDER.description;
+
+  const rightPreview = right
+    ? makePreview(right.description ?? "", "", 3)
+    : { preview: "", truncated: false };
+  const rightDesc = right ? rightPreview.preview : RIGHT_CARD_PLACEHOLDER.description;
+  const rightTruncated = right ? rightPreview.truncated : false;
 
   return (
     <section id="magazine" className="relative w-full overflow-hidden bg-black py-[120px]">
@@ -183,6 +187,7 @@ const MagazineSection: FC = () => {
             "max-[992px]:grid-cols-1",
           ].join(" ")}
         >
+          {/* LEFT CARD */}
           <Link
             to={big ? `/magazine/${big.slug}` : ROUTES.MAGAZINE}
             className={[
@@ -254,37 +259,80 @@ const MagazineSection: FC = () => {
             </div>
           </Link>
 
-          <div
-            className="
-              group relative overflow-hidden
-              shadow-[0_12px_40px_rgba(255,255,255,0.10)] 
-              hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow
-              block
-              border-l-2 border-r-1 border-[#444444]
-            "
-            aria-label={rightTitle}
-          >
-            <div className="relative w-full h-[clamp(240px,37vw,487px)] bg-black flex items-center justify-center">
-              <img
-                src={rightImage}
-                alt={rightTitle}
-                className="max-h-full max-w-full object-contain"
-              />
-              <div className="pointer-events-none absolute inset-0" />
-            </div>
+          {/* RIGHT CARD */}
+          {hasRight ? (
+            <Link
+              to={`/magazine/${right!.slug}`}
+              className="
+                group relative overflow-hidden cursor-pointer
+                shadow-[0_12px_40px_rgba(255,255,255,0.10)] 
+                hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow
+                block
+                border-l-2 border-r-1 border-[#444444]
+              "
+              aria-label={rightTitle}
+            >
+              <div className="relative w-full h-[clamp(240px,37vw,487px)] bg-black">
+                <img
+                  src={rightImage}
+                  alt={rightTitle}
+                  className="h-full w-full object-contain"
+                />
+                <div className="pointer-events-none absolute inset-0" />
+              </div>
 
-            <div className="px-4 py-5 text-left ml-4">
-              <h3
-                className="mt-[9px] text-white"
-                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
-              >
-                {rightTitle}
-              </h3>
-              <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
-                {rightDesc}
-              </p>
+              <div className="px-4 py-5 text-left ml-4">
+                <h3
+                  className="mt-[9px] text-white"
+                  style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
+                >
+                  {rightTitle}
+                </h3>
+                <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                  <>
+                    {rightDesc}
+                    {rightTruncated && rightDesc && (
+                      <>
+                        {"…"}<ContinueReadInline />
+                      </>
+                    )}
+                  </>
+                </p>
+              </div>
+            </Link>
+          ) : (
+            <div
+              className="
+                group relative overflow-hidden
+                shadow-[0_12px_40px_rgba(255,255,255,0.10)] 
+                hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow
+                block
+                border-l-2 border-r-1 border-[#444444]
+              "
+              aria-label={rightTitle}
+            >
+              <div className="relative w-full h-[clamp(240px,37vw,487px)] bg-black flex items-center justify-center">
+                <img
+                  src={rightImage}
+                  alt={rightTitle}
+                  className="max-h-full max-w-full object-contain"
+                />
+                <div className="pointer-events-none absolute inset-0" />
+              </div>
+
+              <div className="px-4 py-5 text-left ml-4">
+                <h3
+                  className="mt-[9px] text-white"
+                  style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
+                >
+                  {rightTitle}
+                </h3>
+                <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                  {RIGHT_CARD_PLACEHOLDER.description}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </section>

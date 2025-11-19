@@ -18,6 +18,33 @@ type Props = {
   articles?: MonologueArticle[];
 };
 
+function normalizeBackendHtml(payload?: string | null): string {
+  if (!payload) return "";
+  let s = String(payload).trim();
+  s = s.replace(/\\u003C/gi, "<").replace(/\\u003E/gi, ">").replace(/\\u0026/gi, "&");
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
+  return s;
+}
+function sanitizeBasicHtml(html: string): string {
+  let out = html;
+  out = out.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+  out = out.replace(/\son[a-z]+\s*=\s*"(?:[^"]*)"/gi, "");
+  out = out.replace(/\son[a-z]+\s*=\s*'(?:[^']*)'/gi, "");
+  out = out.replace(/\son[a-z]+\s*=\s*[^>\s]+/gi, "");
+  out = out.replace(/(href|src)\s*=\s*"(?:\s*javascript:[^"]*)"/gi, '$1="#"');
+  out = out.replace(/(href|src)\s*=\s*'(?:\s*javascript:[^']*)'/gi, '$1="#"');
+  return out;
+}
+function htmlToPlainText(html?: string): string {
+  const s = sanitizeBasicHtml(normalizeBackendHtml(html || ""));
+  return s
+    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/\s*p\s*>/gi, "\n\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function formatPrettyDate(iso?: string) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -84,7 +111,7 @@ export default function MonologuesArticleGridSection({ articles }: Props) {
           id: m.id,
           date: formatPrettyDate(m.pdf_uploaded_at || m.created_at || ""),
           title: m.title,
-          desc: m.dialog,
+          desc: htmlToPlainText(m.dialog ?? ""),
           image: m.image ?? "",
           slug: m.slug,
         }));

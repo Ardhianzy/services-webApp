@@ -29,11 +29,35 @@ export const ROUTES = {
   ADMIN: {
     ROOT: "/admin",
     LOGIN: "/admin-ardhianzy/login",
-
     DASHBOARD: "/admin/dashboard",
+
     ARTICLES: "/admin/articles",
     ARTICLES_ADD: "/admin/articles/add",
-    ARTICLES_EDIT: (id: string | number) => `/admin/articles/${id}`,
+    ARTICLES_EDIT: (id: string) => `/admin/articles/${id}`,
+
+    MAGAZINES: "/admin/magazines",
+    MAGAZINES_ADD: "/admin/magazines/add",
+    MAGAZINES_EDIT: (id: string) => `/admin/magazines/${id}`,
+
+    RESEARCH: "/admin/research",
+    RESEARCH_ADD: "/admin/research/add",
+    RESEARCH_EDIT: (id: string) => `/admin/research/${id}`,
+
+    MONOLOGUES: "/admin/monologues",
+    MONOLOGUES_ADD: "/admin/monologues/add",
+    MONOLOGUES_EDIT: (id: string) => `/admin/monologues/${id}`,
+
+    SHOP: "/admin/shop",
+    SHOP_ADD: "/admin/shop/add",
+    SHOP_EDIT: (id: string) => `/admin/shop/${id}`,
+
+    TOT_LIST: "/admin/tot/list",
+    TOT_ADD: "/admin/tot/add",
+    TOT_EDIT: (id: string) => `/admin/tot/${id}`,
+
+    TOT_META_LIST: "/admin/meta-tot/list",
+    TOT_META_ADD: "/admin/meta-tot/add",
+    TOT_META_EDIT: (id: string) => `/admin/meta-tot/${id}`,
   },
 
   LEGACY: {

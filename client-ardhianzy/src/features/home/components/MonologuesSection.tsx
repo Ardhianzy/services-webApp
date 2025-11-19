@@ -159,7 +159,7 @@ const MonologuesSection: FC = () => {
           setRight({
             id: latestShop.id,
             title: latestShop.title,
-            description: [priceText, latestShop.desc ?? ""].filter(Boolean).join(" "),
+            description: [priceText ?? ""].filter(Boolean).join(" "),
             imageUrl: latestShop.image || "/assets/icon/Ardhianzy_Logo_2.png",
             author: "Ardhianzy",
             dateISO: latestShop.created_at ?? undefined,
@@ -180,9 +180,9 @@ const MonologuesSection: FC = () => {
 
   const dateHuman = big?.dateISO ? formatDate(big.dateISO) : "";
 
-  const { html: descHTML, truncated: isTruncated } = loading
+  const { html: descPreviewHtml, truncated: isTruncated } = loading
     ? { html: "", truncated: false }
-    : makeStructuredPreview(big?.description ?? "", "", 55);
+    : makeStructuredPreview(big?.description ?? "", "",95);
 
   const rightTitle = right?.title ?? RIGHT_CARD_PLACEHOLDER.title;
   const rightImage = right?.imageUrl ?? RIGHT_CARD_PLACEHOLDER.image;
@@ -230,6 +230,7 @@ const MonologuesSection: FC = () => {
             "max-[992px]:grid-cols-1",
           ].join(" ")}
         >
+          {/* LEFT CARD */}
           <Link
             to={big ? `/monologues/${big.slug}` : ROUTES.MONOLOGUES}
             className={[
@@ -292,7 +293,11 @@ const MonologuesSection: FC = () => {
                 {loading ? (
                   "Please wait while fetching the monologue..."
                 ) : (
-                  <span dangerouslySetInnerHTML={{ __html: descHTML || "Content will be available soon." }} />
+                  <span
+                    dangerouslySetInnerHTML={{
+                      __html: descPreviewHtml || "Content will be available soon.",
+                    }}
+                  />
                 )}
                 {!loading && isTruncated && (
                   <>
@@ -303,6 +308,7 @@ const MonologuesSection: FC = () => {
             </div>
           </Link>
 
+          {/* RIGHT CARD */}
           {right ? (
             <a
               href={right.href}
@@ -324,7 +330,7 @@ const MonologuesSection: FC = () => {
                   alt={rightTitle}
                   className="max-h-full w-[40%] object-contain"
                 />
-                <div className="pointer-events-none absolute inset-0" />
+              <div className="pointer-events-none absolute inset-0" />
               </div>
 
               <div className="px-4 py-5 text-left ml-4">

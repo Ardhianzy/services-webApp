@@ -1,35 +1,24 @@
-// src/features/admin/pages/AdminAddArticlePage.tsx
+// src/features/admin/pages/AdminAddResearchPage.tsx
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
-import { adminCreateArticle } from "@/lib/content/api";
+import { adminCreateResearch } from "@/lib/content/api";
 
-// NEW: kategori mengikuti field "category" di backend
-export type ArticleCategory = "READING_GUIDLINE" | "IDEAS_AND_TRADITIONS" | "POP_CULTURE";
-
-const CATEGORY_OPTIONS: { value: ArticleCategory; label: string }[] = [
-  { value: "READING_GUIDLINE", label: "Reading Guide" },
-  { value: "IDEAS_AND_TRADITIONS", label: "Ideas & Tradition" },
-  { value: "POP_CULTURE", label: "Popsophia / Pop Culture" },
-];
-
-type AdminArticleForm = {
-  title: string;
+type AdminResearchForm = {
+  researchTitle: string;
   slug: string;
-  author: string;
-  date: string;
-  category: ArticleCategory;
-  excerpt: string;
-  canonicalUrl: string;
+  summaryHtml: string;
+  researcher: string;
+  researchDate: string; // YYYY-MM-DD
+  field: string;
   metaTitle: string;
   metaDescription: string;
   keywords: string;
-  content: string;
   isPublished: boolean;
 };
 
-// NEW: slugify sederhana (dari title)
+// slugify sederhana
 function slugify(input: string): string {
   return input
     .toLowerCase()
@@ -38,53 +27,47 @@ function slugify(input: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function toISODateFromInput(date: string): string {
-  // "2025-10-26" -> "2025-10-26T00:00:00.000Z"
-  if (!date) return "";
-  const d = new Date(date);
-  if (Number.isNaN(d.getTime())) return date;
-  return d.toISOString();
-}
-
-const AdminAddArticlePage: React.FC = () => {
+const AdminAddResearchPage: React.FC = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState<AdminArticleForm>({
-    title: "",
+
+  const [form, setForm] = useState<AdminResearchForm>({
+    researchTitle: "",
     slug: "",
-    author: "",
-    date: new Date().toISOString().slice(0, 10),
-    category: "POP_CULTURE",
-    excerpt: "",
-    canonicalUrl: "",
+    summaryHtml: "",
+    researcher: "",
+    researchDate: "",
+    field: "",
     metaTitle: "",
     metaDescription: "",
     keywords: "",
-    content: "",
     isPublished: false,
   });
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfPreviewName, setPdfPreviewName] = useState<string | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // NEW: handler generic untuk field text
-  const updateField = <K extends keyof AdminArticleForm>(
+  const updateField = <K extends keyof AdminResearchForm>(
     key: K,
-    value: AdminArticleForm[K]
+    value: AdminResearchForm[K]
   ) => {
     setForm((prev) => ({
       ...prev,
       [key]: value,
-      ...(key === "title" && !prev.slug
+      ...(key === "researchTitle" && !prev.slug
         ? { slug: slugify(String(value)) }
         : null),
     }));
   };
 
-  // NEW: handler file image cover
   const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    const file = e.target.files?.[0];
-    setImageFile(file ?? null);
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
     if (file) {
       const url = URL.createObjectURL(file);
       setImagePreviewUrl(url);
@@ -93,10 +76,17 @@ const AdminAddArticlePage: React.FC = () => {
     }
   };
 
-  // NEW: submit create
+  const handlePdfChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const file = e.target.files?.[0] ?? null;
+    setPdfFile(file);
+    setPdfPreviewName(file ? file.name : null);
+  };
+
   const handleSubmit = async (publish: boolean) => {
-    if (!form.title || !form.content) {
-      setError("Minimal isi judul dan konten artikel (HTML).");
+    if (!form.researchTitle || !form.summaryHtml || !pdfFile) {
+      setError(
+        "Minimal isi judul penelitian, ringkasan (HTML), dan unggah file PDF."
+      );
       return;
     }
 
@@ -105,31 +95,31 @@ const AdminAddArticlePage: React.FC = () => {
 
     try {
       const fd = new FormData();
-
-      fd.append("title", form.title);
+      fd.append("research_title", form.researchTitle);
       if (form.slug) fd.append("slug", form.slug);
-      if (imageFile) fd.append("image", imageFile);
-      fd.append("content", form.content);
-      if (form.author) fd.append("author", form.author);
-      if (form.date) fd.append("date", toISODateFromInput(form.date));
+      fd.append("research_sum", form.summaryHtml);
+      if (form.researcher) fd.append("researcher", form.researcher);
+      if (form.researchDate) fd.append("research_date", form.researchDate);
+      if (form.field) fd.append("fiel", form.field);
       if (form.metaTitle) fd.append("meta_title", form.metaTitle);
       if (form.metaDescription)
         fd.append("meta_description", form.metaDescription);
       if (form.keywords) fd.append("keywords", form.keywords);
-      if (form.excerpt) fd.append("excerpt", form.excerpt);
-      if (form.canonicalUrl)
-        fd.append("canonical_url", form.canonicalUrl);
-      fd.append("category", form.category);
-      // Flag draft/publish – backend bisa memutuskan dipakai atau diabaikan
-      fd.append("is_published", String(publish)); // NEW
+      fd.append("is_published", String(publish));
 
-      await adminCreateArticle(fd);
+      if (imageFile) {
+        fd.append("image", imageFile);
+      }
 
-      navigate(ROUTES.ADMIN.ARTICLES);
+      // PDF wajib
+      fd.append("pdf", pdfFile);
+
+      await adminCreateResearch(fd);
+      navigate(ROUTES.ADMIN.RESEARCH);
     } catch (e: any) {
       setError(
         e?.message ||
-          "Gagal menyimpan artikel. Cek kembali data yang kamu isi."
+          "Gagal menyimpan research. Cek kembali data yang kamu isi."
       );
     } finally {
       setSubmitting(false);
@@ -142,17 +132,17 @@ const AdminAddArticlePage: React.FC = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
-            NEW ARTICLE
+            NEW RESEARCH
           </h1>
           <p className="text-sm text-neutral-400 mt-3 max-w-xl">
-            Buat artikel baru untuk salah satu kategori (Reading Guide,
-            Ideas &amp; Tradition, atau Popsophia). Konten utama diisi
-            dalam format <span className="font-mono">&lt;HTML&gt;</span>.
+            Buat entri baru Ardhianzy Research. Ringkasan penelitian diisi dalam
+            format <span className="font-mono">&lt;HTML&gt;</span> dan
+            terhubung dengan satu file PDF laporan.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => navigate(ROUTES.ADMIN.ARTICLES)}
+          onClick={() => navigate(ROUTES.ADMIN.RESEARCH)}
           className="px-4 py-2 rounded-full border border-zinc-600 text-xs tracking-[0.15em]
                      hover:bg-white hover:text-black transition cursor-pointer"
         >
@@ -160,22 +150,22 @@ const AdminAddArticlePage: React.FC = () => {
         </button>
       </div>
 
-      {/* Layout dua kolom: kiri form, kanan preview */}
+      {/* Layout */}
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
         {/* KIRI: FORM */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                TITLE
+                RESEARCH TITLE
               </label>
               <input
                 type="text"
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
-                value={form.title}
-                onChange={(e) => updateField("title", e.target.value)}
-                placeholder="Judul artikel"
+                value={form.researchTitle}
+                onChange={(e) => updateField("researchTitle", e.target.value)}
+                placeholder="Judul penelitian"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -188,109 +178,55 @@ const AdminAddArticlePage: React.FC = () => {
                            focus:border-white font-mono"
                 value={form.slug}
                 onChange={(e) => updateField("slug", e.target.value)}
-                placeholder="apa-itu-wille-zur-macht"
+                placeholder="apa-itu-ardhianzy-research"
               />
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                KATEGORI
-              </label>
-              <select
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
-                value={form.category}
-                onChange={(e) =>
-                  updateField(
-                    "category",
-                    e.target.value as ArticleCategory
-                  )
-                }
-              >
-                {CATEGORY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                AUTHOR
+                RESEARCHER
               </label>
               <input
                 type="text"
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
-                value={form.author}
-                onChange={(e) => updateField("author", e.target.value)}
-                placeholder="Nama penulis"
+                value={form.researcher}
+                onChange={(e) => updateField("researcher", e.target.value)}
+                placeholder="Nama peneliti / tim"
               />
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                DATE
+                FIELD / FIEL
               </label>
               <input
-                type="date"
+                type="text"
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
-                value={form.date}
-                onChange={(e) => updateField("date", e.target.value)}
+                value={form.field}
+                onChange={(e) => updateField("field", e.target.value)}
+                placeholder="Misal: Psychological Well-Being"
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 max-w-xs">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              EXCERPT (RINGKASAN PENDEK)
+              TANGGAL PENELITIAN
             </label>
-            <textarea
+            <input
+              type="date"
               className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                         focus:border-white min-h-[60px]"
-              value={form.excerpt}
-              onChange={(e) => updateField("excerpt", e.target.value)}
-              placeholder="Ringkasan 1–2 kalimat untuk card / meta."
+                         focus:border-white"
+              value={form.researchDate}
+              onChange={(e) => updateField("researchDate", e.target.value)}
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                CANONICAL URL
-              </label>
-              <input
-                type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
-                value={form.canonicalUrl}
-                onChange={(e) =>
-                  updateField("canonicalUrl", e.target.value)
-                }
-                placeholder="https://..."
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                KEYWORDS
-              </label>
-              <input
-                type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
-                value={form.keywords}
-                onChange={(e) =>
-                  updateField("keywords", e.target.value)
-                }
-                placeholder="Nietzsche, Wille zur Macht, nihilisme..."
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="flex flex-col gap-2 md:col-span-1">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
                 META TITLE (SEO)
               </label>
@@ -299,13 +235,11 @@ const AdminAddArticlePage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.metaTitle}
-                onChange={(e) =>
-                  updateField("metaTitle", e.target.value)
-                }
+                onChange={(e) => updateField("metaTitle", e.target.value)}
                 placeholder="Judul SEO..."
               />
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:col-span-1">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
                 META DESCRIPTION (SEO)
               </label>
@@ -314,18 +248,48 @@ const AdminAddArticlePage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.metaDescription}
-                onChange={(e) =>
-                  updateField("metaDescription", e.target.value)
-                }
-                placeholder="Deskripsi meta SEO..."
+                onChange={(e) => updateField("metaDescription", e.target.value)}
+                placeholder="Deskripsi singkat..."
+              />
+            </div>
+            <div className="flex flex-col gap-2 md:col-span-1">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                KEYWORDS (OPSIONAL)
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.keywords}
+                onChange={(e) => updateField("keywords", e.target.value)}
+                placeholder="Pisahkan dengan koma..."
               />
             </div>
           </div>
 
-          {/* Upload image cover */}
+          {/* Ringkasan HTML */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              COVER IMAGE
+              RINGKASAN PENELITIAN (HTML)
+            </label>
+            <textarea
+              className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
+                         focus:border-white min-h-[220px] font-mono leading-relaxed"
+              value={form.summaryHtml}
+              onChange={(e) => updateField("summaryHtml", e.target.value)}
+              placeholder={`<p>Penelitian ini dilaksanakan dalam lingkup Ardhianzy Research...</p>\n<p>Paragraf kedua...</p>`}
+            />
+            <p className="text-[11px] text-neutral-500">
+              *Masukkan HTML utuh (&lt;p&gt;, &lt;h2&gt;, &lt;ul&gt;, dll).
+              Di sisi user, HTML ini akan dirender sama persis (setelah
+              normalisasi).
+            </p>
+          </div>
+
+          {/* Upload image cover (opsional) */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs text-neutral-400 tracking-[0.15em]">
+              COVER IMAGE (OPSIONAL)
             </label>
             <input
               type="file"
@@ -346,26 +310,26 @@ const AdminAddArticlePage: React.FC = () => {
             )}
           </div>
 
-          {/* Konten HTML */}
+          {/* Upload PDF */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              CONTENT (HTML)
+              PDF FILE (WAJIB)
             </label>
-            <textarea
-              className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
-                         focus:border-white min-h-[260px] font-mono leading-relaxed"
-              value={form.content}
-              onChange={(e) => updateField("content", e.target.value)}
-              placeholder={`<h1>Judul</h1>\n<p>Paragraf pertama...</p>\n<ul><li>Poin 1</li></ul>`}
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handlePdfChange}
+              className="text-xs text-neutral-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-full
+                         file:border file:border-zinc-600 file:bg-zinc-900 file:text-xs
+                         file:hover:bg-zinc-800 cursor-pointer"
             />
             <p className="text-[11px] text-neutral-500">
-              *Masukkan HTML utuh (h1, p, blockquote, table, dll). Di
-              sisi user, HTML ini akan dirender sama persis (setelah
-              normalisasi).
+              {pdfPreviewName
+                ? `File terpilih: ${pdfPreviewName}`
+                : "Belum ada file PDF dipilih."}
             </p>
           </div>
 
-          {/* Error + tombol */}
           {error && (
             <p className="text-sm text-red-400 mt-1">
               {error}
@@ -408,24 +372,16 @@ const AdminAddArticlePage: React.FC = () => {
           </div>
         </div>
 
-        {/* KANAN: LIVE PREVIEW */}
+        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
-            LIVE PREVIEW (HTML)
+            LIVE PREVIEW
           </h2>
           <div className="bg-black rounded-2xl border border-zinc-800 p-6 h-full overflow-y-auto">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
-                {form.category}
-              </span>
-              {form.date && (
-                <span className="text-[11px] text-neutral-500">
-                  {form.date}
-                </span>
-              )}
-              {form.author && (
-                <span className="text-[11px] text-neutral-500">
-                  • {form.author}
+              {form.slug && (
+                <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
+                  {form.slug}
                 </span>
               )}
               <span
@@ -439,13 +395,32 @@ const AdminAddArticlePage: React.FC = () => {
               </span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-semibold mb-4">
-              {form.title || "Judul artikel akan tampil di sini"}
+            <h1 className="text-2xl md:text-3xl font-semibold mb-2">
+              {form.researchTitle ||
+                "Judul penelitian akan tampil di sini"}
             </h1>
 
-            {form.excerpt && (
+            <div className="flex flex-wrap gap-2 text-[11px] text-neutral-300 mb-3">
+              {form.researcher && (
+                <span className="px-2 py-1 rounded-full border border-zinc-700">
+                  Peneliti: {form.researcher}
+                </span>
+              )}
+              {form.field && (
+                <span className="px-2 py-1 rounded-full border border-zinc-700">
+                  Field: {form.field}
+                </span>
+              )}
+              {form.researchDate && (
+                <span className="px-2 py-1 rounded-full border border-zinc-700">
+                  Tanggal: {form.researchDate}
+                </span>
+              )}
+            </div>
+
+            {form.metaDescription && (
               <p className="text-sm text-neutral-300 mb-4">
-                {form.excerpt}
+                {form.metaDescription}
               </p>
             )}
 
@@ -461,9 +436,23 @@ const AdminAddArticlePage: React.FC = () => {
 
             <div
               className="prose prose-invert prose-sm max-w-none"
-              // NEW: preview langsung HTML yang diinput di textarea
-              dangerouslySetInnerHTML={{ __html: form.content || "<p>Konten HTML akan tampil di sini...</p>" }}
+              dangerouslySetInnerHTML={{
+                __html:
+                  form.summaryHtml ||
+                  "<p>Ringkasan HTML akan tampil di sini...</p>",
+              }}
             />
+
+            <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 text-xs text-neutral-300">
+              <div className="font-medium mb-1">
+                PDF Research (Preview)
+              </div>
+              <div>
+                {pdfPreviewName
+                  ? pdfPreviewName
+                  : "Belum ada file PDF dipilih."}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -471,4 +460,4 @@ const AdminAddArticlePage: React.FC = () => {
   );
 };
 
-export default AdminAddArticlePage;
+export default AdminAddResearchPage;

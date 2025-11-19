@@ -1,25 +1,20 @@
-// src/features/admin/pages/AdminArticlePage.tsx
+// src/features/admin/pages/AdminToTPage.tsx
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
-import {
-  adminFetchArticles,
-  adminDeleteArticle,
-} from "@/lib/content/api";
-import type { ArticleDTO } from "@/lib/content/types";
+import { adminFetchToT, adminDeleteToT } from "@/lib/content/api";
+import type { ToTDTO } from "@/lib/content/types";
 
-type FilterCategory = "ALL" | "READING_GUIDLINE" | "IDEAS_AND_TRADITIONS" | "POP_CULTURE";
+type StatusFilter = "ALL" | "PUBLISHED" | "DRAFT";
 
-const CATEGORY_LABEL: Record<FilterCategory, string> = {
-  ALL: "Semua Kategori",
-  READING_GUIDLINE: "Reading Guide",
-  IDEAS_AND_TRADITIONS: "Ideas & Tradition",
-  POP_CULTURE: "Popsophia / Pop Culture",
+const STATUS_LABEL: Record<StatusFilter, string> = {
+  ALL: "Semua Status",
+  PUBLISHED: "Published",
+  DRAFT: "Draft / Preview",
 };
 
-// Helper kecil untuk format tanggal di list
-function formatDateShort(value?: string) {
+function formatDateShort(value?: string | null) {
   if (!value) return "-";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
@@ -30,16 +25,17 @@ function formatDateShort(value?: string) {
   });
 }
 
-const AdminArticlePage: React.FC = () => {
+const AdminToTPage: React.FC = () => {
   const navigate = useNavigate();
-  const [articles, setArticles] = useState<ArticleDTO[]>([]);
+
+  const [rows, setRows] = useState<ToTDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState<FilterCategory>("ALL");
-  const [search, setSearch] = useState("");
-  const [selectedArticle, setSelectedArticle] = useState<ArticleDTO | null>(null);
 
-  // NEW: load data artikel admin
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [selected, setSelected] = useState<ToTDTO | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -47,19 +43,16 @@ const AdminArticlePage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await adminFetchArticles();
-        if (!cancelled) {
-          setArticles(data);
-          setSelectedArticle(data[0] ?? null);
-        }
+        const data = await adminFetchToT();
+        if (cancelled) return;
+        setRows(data);
+        setSelected(data[0] ?? null);
       } catch (e: any) {
         if (!cancelled) {
-          setError(e?.message || "Gagal memuat daftar artikel.");
+          setError(e?.message || "Gagal memuat daftar ToT.");
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     })();
 
@@ -68,47 +61,62 @@ const AdminArticlePage: React.FC = () => {
     };
   }, []);
 
-  // NEW: filter berdasarkan kategori + search
-  const filteredArticles = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return articles.filter((raw: any) => {
-      const title: string = raw.title ?? "";
-      const category: string | undefined = raw.category;
-      const matchSearch = !q || title.toLowerCase().includes(q);
-      const matchCategory =
-        filterCategory === "ALL" || category === filterCategory;
-      return matchSearch && matchCategory;
-    });
-  }, [articles, filterCategory, search]);
+    return rows.filter((t) => {
+      const name = (t.philosofer ?? "").toLowerCase();
+      const origin = (t.geoorigin ?? "").toLowerCase();
+      const location = (t.detail_location ?? "").toLowerCase();
+      const years = (t.years ?? "").toLowerCase();
+      const slug = (t.slug ?? "").toLowerCase();
+      const metaTitle = (t.meta_title ?? "").toLowerCase();
+      const metaDescription = (t.meta_description ?? "").toLowerCase();
 
-  // NEW: delete artikel
+      const matchSearch =
+        !q ||
+        name.includes(q) ||
+        origin.includes(q) ||
+        location.includes(q) ||
+        years.includes(q) ||
+        slug.includes(q) ||
+        metaTitle.includes(q) ||
+        metaDescription.includes(q);
+
+      const isPublished = Boolean(t.is_published);
+      const matchStatus =
+        statusFilter === "ALL"
+          ? true
+          : statusFilter === "PUBLISHED"
+          ? isPublished
+          : !isPublished;
+
+      return matchSearch && matchStatus;
+    });
+  }, [rows, search, statusFilter]);
+
+  // Pastikan selected tetap valid setelah filter berubah
+  useEffect(() => {
+    if (!selected) return;
+    const stillExists = filteredRows.some((t) => t.id === selected.id);
+    if (!stillExists) {
+      setSelected(filteredRows[0] ?? null);
+    }
+  }, [filteredRows, selected]);
+
   const handleDelete = async (id: string) => {
-    const sure = window.confirm(
-      "Yakin ingin menghapus artikel ini? Tindakan ini tidak bisa dibatalkan."
+    const ok = window.confirm(
+      "Yakin ingin menghapus ToT ini? Tindakan ini tidak bisa dibatalkan."
     );
-    if (!sure) return;
+    if (!ok) return;
 
     try {
-      await adminDeleteArticle(id);
-      setArticles((prev) => prev.filter((a: any) => a.id !== id));
-      setSelectedArticle((prev: any) =>
-        prev && prev.id === id ? null : prev
-      );
+      await adminDeleteToT(id);
+      setRows((prev) => prev.filter((t) => t.id !== id));
+      setSelected((prev) => (prev && prev.id === id ? null : prev));
     } catch (e: any) {
-      alert(e?.message || "Gagal menghapus artikel.");
+      alert(e?.message || "Gagal menghapus ToT.");
     }
   };
-
-  // NEW: jika artikel yang sedang terpilih hilang dari filtered list, reset
-  useEffect(() => {
-    if (!selectedArticle) return;
-    const stillExists = filteredArticles.some(
-      (a: any) => a.id === (selectedArticle as any).id
-    );
-    if (!stillExists) {
-      setSelectedArticle(filteredArticles[0] ?? null);
-    }
-  }, [filteredArticles, selectedArticle]);
 
   return (
     <div className="min-h-screen bg-black text-white px-7 py-8">
@@ -116,24 +124,21 @@ const AdminArticlePage: React.FC = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
-            ADMIN ARTICLES
+            ADMIN TIMELINE OF THOUGHT
           </h1>
           <p className="text-sm text-neutral-400 mt-3 max-w-xl">
-            Kelola artikel untuk Reading Guide, Ideas &amp; Tradition,
-            dan Popsophia. Data di sini terhubung langsung dengan API
-            <span className="ml-1 text-neutral-500">
-              (/api/articel)
-            </span>
-            .
+            Kelola entri Timeline of Thought (ToT): tokoh filsafat, asal
+            geografis, lokasi detail, periode tahun, dan status publikasi
+            (Published / Draft / Preview).
           </p>
         </div>
         <button
           type="button"
-          onClick={() => navigate(ROUTES.ADMIN.ARTICLES_ADD)}
+          onClick={() => navigate(ROUTES.ADMIN.TOT_ADD)}
           className="px-5 py-2 rounded-full border border-white text-sm font-medium tracking-[0.15em]
                      hover:bg-white hover:text-black transition cursor-pointer"
         >
-          + ARTICLE BARU
+          + ToT BARU
         </button>
       </div>
 
@@ -147,22 +152,20 @@ const AdminArticlePage: React.FC = () => {
               <select
                 className="bg-black border border-zinc-700 rounded-full px-4 py-2 text-sm outline-none
                            focus:border-white cursor-pointer"
-                value={filterCategory}
-                onChange={(e) =>
-                  setFilterCategory(e.target.value as FilterCategory)
-                }
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
               >
-                {Object.entries(CATEGORY_LABEL).map(([value, label]) => (
+                {Object.entries(STATUS_LABEL).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
                 ))}
               </select>
             </div>
-            <div className="relative w-full md:w-72">
+            <div className="relative w-full md:w-80">
               <input
                 type="text"
-                placeholder="Cari judul artikel..."
+                placeholder="Cari tokoh / asal / slug..."
                 className="w-full bg-black border border-zinc-700 rounded-full pl-9 pr-3 py-2 text-sm outline-none
                            placeholder:text-zinc-500 focus:border-white"
                 value={search}
@@ -174,67 +177,67 @@ const AdminArticlePage: React.FC = () => {
             </div>
           </div>
 
+          {/* Isi list */}
           {loading ? (
-            <p className="text-sm text-neutral-400">Memuat artikel...</p>
+            <p className="text-sm text-neutral-400">Memuat ToT...</p>
           ) : error ? (
             <p className="text-sm text-red-400">{error}</p>
-          ) : filteredArticles.length === 0 ? (
+          ) : filteredRows.length === 0 ? (
             <p className="text-sm text-neutral-400">
-              Belum ada artikel yang sesuai filter.
+              Belum ada ToT yang sesuai filter.
             </p>
           ) : (
             <div className="border border-zinc-800 rounded-2xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-zinc-900/80 text-neutral-400">
                   <tr>
-                    <th className="text-center px-4 py-3 font-normal w-[24%]">
-                      Judul
+                    <th className="text-center px-4 py-3 font-normal w-[30%]">
+                      Tokoh
                     </th>
-                    <th className="text-center px-4 py-3 font-normal w-[18%]">
-                      Kategori
+                    <th className="text-center px-4 py-3 font-normal w-[20%]">
+                      Asal & Lokasi
                     </th>
-                    <th className="text-center px-4 py-3 font-normal w-[18%]">
-                      Tanggal
+                    <th className="text-center px-4 py-3 font-normal w-[15%]">
+                      Periode
                     </th>
-                    <th className="text-center px-4 py-3 font-normal w-[12%]">
+                    <th className="text-center px-4 py-3 font-normal w-[15%]">
                       Status
                     </th>
-                    <th className="text-center px-4 py-3 font-normal w-[14%]">
+                    <th className="text-center px-4 py-3 font-normal w-[20%]">
                       Aksi
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredArticles.map((raw: any, idx) => {
-                    const isPublished = Boolean(raw.is_published);
-                    const isSelected =
-                      selectedArticle &&
-                      (selectedArticle as any).id === raw.id;
+                  {filteredRows.map((t) => {
+                    const isPublished = Boolean(t.is_published);
+                    const isSelected = selected?.id === t.id;
                     return (
                       <tr
-                        key={raw.id ?? idx}
+                        key={t.id}
                         className={`border-t border-zinc-800/70 ${
                           isSelected ? "bg-white/5" : "bg-transparent"
                         } hover:bg-white/5 transition cursor-pointer`}
-                        onClick={() => setSelectedArticle(raw)}
+                        onClick={() => setSelected(t)}
                       >
                         <td className="px-4 py-3 align-top">
                           <div className="font-medium text-sm">
-                            {raw.title ?? "-"}
+                            {t.philosofer ?? "-"}
                           </div>
                           <div className="text-xs text-neutral-500 truncate max-w-[190px]">
-                            {raw.excerpt ?? raw.meta_description ?? ""}
+                            {t.meta_description ?? ""}
                           </div>
                         </td>
-                        <td className="px-4 py-3 align-top">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] border border-zinc-700">
-                            {raw.category ?? "-"}
-                          </span>
+                        <td className="px-4 py-3 align-top text-xs text-neutral-300">
+                          <div>{t.geoorigin ?? "-"}</div>
+                          <div className="text-[11px] text-neutral-500 truncate max-w-[150px]">
+                            {t.detail_location ?? ""}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 align-top text-neutral-400">
-                          {formatDateShort(raw.date)}
+                        <td className="px-4 py-3 align-top text-center text-xs text-neutral-300">
+                          {t.years ?? "-"}
                         </td>
-                        <td className="px-4 py-3 align-top">
+                        <td className="px-4 py-3 align-top text-center">
                           <span
                             className={`inline-flex px-2.5 py-1 rounded-full text-[11px] ${
                               isPublished
@@ -251,11 +254,7 @@ const AdminArticlePage: React.FC = () => {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(
-                                  ROUTES.ADMIN.ARTICLES_EDIT(
-                                    String(raw.id)
-                                  )
-                                );
+                                navigate(ROUTES.ADMIN.TOT_EDIT(t.id));
                               }}
                               className="text-xs px-3 py-1 rounded-full border border-zinc-700 hover:bg-white hover:text-black transition cursor-pointer"
                             >
@@ -265,7 +264,7 @@ const AdminArticlePage: React.FC = () => {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete(String(raw.id));
+                                handleDelete(t.id);
                               }}
                               className="text-xs px-3 py-1 rounded-full border border-red-500/60 text-red-300 hover:bg-red-500 hover:text-white transition cursor-pointer"
                             >
@@ -288,29 +287,33 @@ const AdminArticlePage: React.FC = () => {
             LIVE PREVIEW (ADMIN)
           </h2>
 
-          {!selectedArticle ? (
+          {!selected ? (
             <p className="text-sm text-neutral-500">
-              Pilih salah satu artikel di sebelah kiri untuk melihat preview HTML-nya.
+              Pilih salah satu ToT di sebelah kiri untuk melihat preview kartu
+              tokoh dan metadata-nya.
             </p>
           ) : (
             <div className="bg-black rounded-2xl border border-zinc-800/80 py-5 px-4 overflow-y-auto">
               {(() => {
-                const a: any = selectedArticle;
-                const isPublished = Boolean(a.is_published);
+                const t = selected;
+                const isPublished = Boolean(t.is_published);
 
                 return (
                   <>
-                    {/* Meta / heading */}
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
-                        {a.category ?? "UNCATEGORIZED"}
+                        {t.slug || "tanpa-slug"}
                       </span>
-                      <span className="text-[11px] text-neutral-500">
-                        {formatDateShort(a.date)}
-                      </span>
-                      <span className="text-[11px] text-neutral-500">
-                        • {a.author ?? "Author tidak di-set"}
-                      </span>
+                      {t.created_at && (
+                        <span className="text-[11px] text-neutral-500">
+                          Dibuat: {formatDateShort(t.created_at)}
+                        </span>
+                      )}
+                      {t.updated_at && (
+                        <span className="text-[11px] text-neutral-500">
+                          • Update {formatDateShort(t.updated_at)}
+                        </span>
+                      )}
                       <span
                         className={`ml-auto text-[11px] px-2 py-1 rounded-full ${
                           isPublished
@@ -322,35 +325,64 @@ const AdminArticlePage: React.FC = () => {
                       </span>
                     </div>
 
-                    <h1 className="text-2xl md:text-3xl font-semibold mb-4">
-                      {a.title ?? "Tanpa judul"}
+                    <h1 className="text-2xl md:text-3xl font-semibold mb-2">
+                      {t.philosofer ?? "Nama tokoh"}
                     </h1>
 
-                    {a.excerpt && (
+                    <div className="flex flex-wrap gap-2 text-[11px] text-neutral-300 mb-3">
+                      {t.geoorigin && (
+                        <span className="px-2 py-1 rounded-full border border-zinc-700">
+                          Origin: {t.geoorigin}
+                        </span>
+                      )}
+                      {t.detail_location && (
+                        <span className="px-2 py-1 rounded-full border border-zinc-700">
+                          Lokasi: {t.detail_location}
+                        </span>
+                      )}
+                      {t.years && (
+                        <span className="px-2 py-1 rounded-full border border-zinc-700">
+                          Years: {t.years}
+                        </span>
+                      )}
+                    </div>
+
+                    {t.meta_description && (
                       <p className="text-sm text-neutral-300 mb-4">
-                        {a.excerpt}
+                        {t.meta_description}
                       </p>
                     )}
 
-                    {/* Cover image (kalau URL sudah resolvable dari backend) */}
-                    {a.image && typeof a.image === "string" && (
-                      <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-800">
+                    {t.image && (
+                      <div className="mb-5 rounded-2xl overflow-hidden border border-zinc-800">
                         <img
-                          src={a.image}
-                          alt={a.title ?? ""}
+                          src={t.image}
+                          alt={t.philosofer ?? "ToT cover"}
                           className="w-full h-64 object-cover"
                         />
                       </div>
                     )}
 
-                    {/* Konten HTML utuh */}
-                    <div
-                      className="prose prose-invert prose-sm max-w-none"
-                      // NEW: backend kirim string HTML; di admin kita render sama seperti di user
-                      dangerouslySetInnerHTML={{
-                        __html: a.content ?? a.meta_description ?? "",
-                      }}
-                    />
+                    <div className="mt-2 text-[11px] text-neutral-500 space-y-1">
+                      {t.geoorigin && (
+                        <p>
+                          <span className="font-medium">Geo origin:</span>{" "}
+                          {t.geoorigin}
+                        </p>
+                      )}
+                      {t.detail_location && (
+                        <p>
+                          <span className="font-medium">Detail location:</span>{" "}
+                          {t.detail_location}
+                        </p>
+                      )}
+                      {t.years && (
+                        <p>
+                          <span className="font-medium">Years:</span>{" "}
+                          {t.years}
+                        </p>
+                      )}
+                    </div>
                   </>
                 );
               })()}
@@ -362,4 +394,4 @@ const AdminArticlePage: React.FC = () => {
   );
 };
 
-export default AdminArticlePage;
+export default AdminToTPage;

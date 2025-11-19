@@ -22,6 +22,9 @@ export type ToTMetaDTO = {
   epsimologi?: string | null;
   aksiologi?: string | null;
   conclusion?: string | null;
+  is_published?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   tot?: Partial<ToTDTO> | null;
 };
 
@@ -74,6 +77,7 @@ export type MagazineDTO = {
   pdf_uploaded_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  is_published?: boolean | null;
 };
 
 export type MagazineCardVM = {
@@ -158,6 +162,7 @@ export type ShopDTO = {
   is_available?: boolean | null;
   created_at?: string | null;
   updated_at?: string | null;
+  is_published?: boolean | null;
 };
 
 export type MonologueCardVM = {

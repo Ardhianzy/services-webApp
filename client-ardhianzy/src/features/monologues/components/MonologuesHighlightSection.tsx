@@ -106,7 +106,9 @@ export default function MonologuesHighlightSection({
           dateISO: r.pdf_uploaded_at || r.created_at || undefined,
           slug: r.slug,
         }));
-        setRemote(mapped);
+
+        const latestOnly = mapped.length ? [mapped[0]] : [];
+        setRemote(latestOnly);
       } finally {
         if (alive) setLoading(false);
       }
@@ -161,6 +163,18 @@ export default function MonologuesHighlightSection({
           backdrop-filter: blur(2px);
           border-radius: 0px !important;
           box-shadow: 0 12px 30px rgba(0,0,0,.18);
+        }
+
+        .mlg-head__section::before {
+          content: "" !important;
+          position: absolute !important;
+          inset: 0 !important;
+          background-image: url('/assets/magazine/highlightMagazine.png') !important;
+          background-position: start !important;
+          background-repeat: no-repeat !important;
+          background-size: cover !important;
+          pointer-events: none !important;
+          z-index: 0 !important;
         }
 
         .mlg-desc {
@@ -218,7 +232,7 @@ export default function MonologuesHighlightSection({
         </div>
       </section>
 
-      <section className="relative w-full bg-black py-5 overflow-hidden">
+      <section className="mlg-head__section relative w-full bg-black py-5 overflow-hidden">
 
         <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
           <div className="relative h-[417px] w-full overflow-visible">

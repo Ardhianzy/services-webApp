@@ -62,7 +62,6 @@ function formatDate(iso?: string) {
   return d.toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-/* ===== Inline CTA ===== */
 function ContinueReadInline() {
   return (
     <span
@@ -113,7 +112,9 @@ export default function ResearchHighlightSection({
           dateISO: r.research_date || r.pdf_uploaded_at || r.created_at || undefined,
           slug: r.slug,
         }));
-        setRemote(mapped);
+
+        const latestOnly = mapped.length ? [mapped[0]] : [];
+        setRemote(latestOnly);
       } finally {
         if (alive) setLoading(false);
       }

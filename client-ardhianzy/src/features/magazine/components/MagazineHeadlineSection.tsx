@@ -106,7 +106,7 @@ export default function MagazineHeadlineSection() {
       excerptPlain: "—",
       publishedAt: "",
       heroImage: "/assets/magazine/smdamdla.png",
-      image: "/assets/magazine/Rectangle 4528.png",
+      image: "/assets/icon/Ardhianzy_Logo_2.png",
       slug: "rise-of-the-soul",
     };
   }, [item]);
