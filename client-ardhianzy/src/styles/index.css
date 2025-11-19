@@ -53,6 +53,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --shop-card-w:170px;
+  --shop-gap:32px;
 }
 
 /* a {
@@ -236,3 +238,28 @@ button:focus-visible {
 .font-bebas { font-family: 'Bebas Neue', cursive !important; }
 .font-roboto { font-family: 'Roboto', sans-serif !important; }
 .text-shadow-article { text-shadow: 0px 4px 50px rgba(0,0,0,0.25) !important; }
+
+.x-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff80 #000000;
+}
+
+.x-scrollbar::-webkit-scrollbar-track {
+  background: linear-gradient(90deg, #000 0%, #fff 100%);
+  border-radius: 999px;
+}
+
+.x-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #111 0%, #eee 100%);
+  border-radius: 999px;
+}
+
+.scroll-drag { cursor: grab; }
+.scroll-drag.dragging { cursor: grabbing; }
+
+.shop-track{
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - (var(--shop-gap) * 4)) / 5);
+  gap: var(--shop-gap);
+}

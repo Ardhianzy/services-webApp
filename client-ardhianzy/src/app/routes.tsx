@@ -27,23 +27,13 @@ export const ROUTES = {
   READ_HISTORY: "/read-history",
 
   ADMIN: {
-    LOGIN: "/admin-ardhianzy/login",
     ROOT: "/admin",
+    LOGIN: "/admin-ardhianzy/login",
+
     DASHBOARD: "/admin/dashboard",
-    ARTICLES_LIST: "/admin/articles/list",
+    ARTICLES: "/admin/articles",
     ARTICLES_ADD: "/admin/articles/add",
-    SHOP_LIST: "/admin/shop/list",
-    SHOP_ADD: "/admin/shop/add",
-    ANALYTICS: "/admin/analytics",
-
-    // ToT
-    TOT_LIST: "/admin/tot/list",
-    TOT_ADD: "/admin/tot/add",
-    // ToT Meta
-    TOT_META_LIST: "/admin/tot-meta/list",
-    TOT_META_ADD: "/admin/tot-meta/add",
-
-    CONTENT: "/admin/content",
+    ARTICLES_EDIT: (id: string | number) => `/admin/articles/${id}`,
   },
 
   LEGACY: {

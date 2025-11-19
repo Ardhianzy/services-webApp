@@ -9,9 +9,12 @@ const LOGO_ARDHIANZY = "/assets/icon/Ardhianzy_Logo_1.png";
 const LOGO_YOUTUBE = "/assets/icon/youtube.png";
 const LOGO_DISCORD = "/assets/icon/discord.png";
 
+const SHOP_URL = "";
+
 export const Footer: React.FC = () => {
   const [showCourse, setShowCourse] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
+  const [showShop, setShowShop] = useState(false);
 
   return (
     <footer className="bg-black text-white pt-[3rem] pb-[2rem]">
@@ -66,8 +69,8 @@ export const Footer: React.FC = () => {
               INSIDE ARDHIANZY
             </h4>
             <ul className="list-none p-0 m-0">
-              <li className="mb-3 text-left"><Link to="/magazine"        className="footer-link">Magazine</Link></li>
-              <li className="mb-3 text-left"><Link to="/research"        className="footer-link">Research</Link></li>
+              <li className="mb-3 text-left"><Link to="/magazine"         className="footer-link">Magazine</Link></li>
+              <li className="mb-3 text-left"><Link to="/research"         className="footer-link">Research</Link></li>
               <li className="mb-3 text-left">
                 <a
                   href="/"
@@ -77,11 +80,19 @@ export const Footer: React.FC = () => {
                   Course
                 </a>
               </li>
-              <li className="mb-3 text-left"><Link to="/monologues"      className="footer-link">Monologues</Link></li>
-              <li className="mb-3 text-left"><Link to="/ReadingGuide"    className="footer-link">Reading Guide</Link></li>
-              <li className="mb-3 text-left"><Link to="/IdeasTradition"  className="footer-link">Ideas & Tradition</Link></li>
+              <li className="mb-3 text-left"><Link to="/monologues"       className="footer-link">Monologues</Link></li>
+              <li className="mb-3 text-left"><Link to="/ReadingGuide"     className="footer-link">Reading Guide</Link></li>
+              <li className="mb-3 text-left"><Link to="/IdeasTradition"   className="footer-link">Ideas & Tradition</Link></li>
               <li className="mb-3 text-left"><Link to="/PopCultureReview" className="footer-link">Pop-Culture Review</Link></li>
-              <li className="mb-3 text-left"><Link to="/shop"            className="footer-link">Shops</Link></li>
+              <li className="mb-3 text-left">
+                <a
+                  href="/"
+                  onClick={(e) => { e.preventDefault(); setShowShop(true); }}
+                  className="footer-link"
+                >
+                  Shops
+                </a>
+              </li>
               <li className="mb-3 text-left">
                 <a
                   href="/"
@@ -156,13 +167,38 @@ export const Footer: React.FC = () => {
           backgroundUrl={MODAL_BG}
           heading="JOIN THE ARDHIANZY COMMUNITY"
           subheading="Conversations for people who love ideas."
-          description="Join our Community to discuss episodes and texts, share notes, get feedback, and join reading circles, from Stoicism and dialectics to media critique and history. High-signal, welcoming, and learner-first."
+          description="Belajar filsafat dari nol! Filsafat berasal dari bahasa Yunani, yang melalui bahasa latin, philosophia, kalau diterjemahkan artinya cinta terhadap kebijaksanaan. Perjalanan 'dari nol' ini akan lebih seru jika dilakukan bersama. Bergabunglah dengan komunitas kami untuk bertukar pikiran!"
           ctaLabel="Enter the Community"
           onCta={() => window.location.assign(COMMUNITY_URL)}
           logos={[
             { src: LOGO_ARDHIANZY, alt: "Ardhianzy" },
             { src: LOGO_DISCORD, alt: "Discord" },
           ]}
+        />
+      )}
+
+      {showShop && (
+        <GenericCtaModal
+          onClose={() => setShowShop(false)}
+          backgroundUrl={MODAL_BG}
+          {...(!SHOP_URL
+            ? {
+                heading: "The Official Ardhianzy Store is Launching Soon.",
+                subheading: "We look forward to welcoming you soon.",
+                description:
+                  "Our official online store is currently under construction. We are carefully preparing our products to ensure the best quality and experience.",
+                showCta: false,
+              }
+            : {
+                heading: "Shop the Official Ardhianzy Collection",
+                subheading: "Explore our exclusive collection, curated just for you.",
+                description:
+                  "We are pleased to offer our complete range of products online. Browse our categories and find your new favorites today.",
+                ctaLabel: "Shop Now!",
+                onCta: () => window.location.assign(SHOP_URL),
+                showCta: true,
+              })}
+          logos={[{ src: LOGO_ARDHIANZY, alt: "Ardhianzy" }]}
         />
       )}
     </footer>
@@ -175,8 +211,9 @@ type CtaModalProps = {
   heading: string;
   subheading?: string;
   description: string;
-  ctaLabel: string;
-  onCta: () => void;
+  showCta?: boolean;
+  ctaLabel?: string;
+  onCta?: () => void;
   logos?: { src: string; alt: string }[];
 };
 
@@ -186,6 +223,7 @@ function GenericCtaModal({
   heading,
   subheading,
   description,
+  showCta = true,
   ctaLabel,
   onCta,
   logos = [],
@@ -216,7 +254,7 @@ function GenericCtaModal({
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="absolute top-4 right-8 inline-flex !h-9 !w-9 !items-center !justify-center !rounded-full border !border-white/40 hover:!border-transparent !bg-transparent text-xl leading-none transition hover:!bg-white/10"
+          className="absolute top-4 right-8 inline-flex !h-9 !w-9 !items-center !justify-center !rounded-full border !border-white/40 hover:!border-transparent !bg-transparent text-xl leading-none transition hover:bg-[#151515] cursor-pointer"
         >
           <span className="block translate-x-[-0.5px] !text-white">×</span>
         </button>
@@ -259,16 +297,18 @@ function GenericCtaModal({
             {description}
           </p>
 
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={onCta}
-              className="inline-flex items-center justify-center gap-[8px] !rounded-[30px] border !border-[#F5F5F5] px-[26px] py-[14px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black"
-              style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", lineHeight: "22px", letterSpacing: "0.02em" }}
-            >
-              {ctaLabel} <span>&rarr;</span>
-            </button>
-          </div>
+          {showCta && ctaLabel && onCta ? (
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={onCta}
+                className="inline-flex items-center justify-center gap-[8px] !rounded-[30px] border !border-[#F5F5F5] px-[26px] py-[14px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black"
+                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", lineHeight: "22px", letterSpacing: "0.02em" }}
+              >
+                {ctaLabel} <span>&rarr;</span>
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 

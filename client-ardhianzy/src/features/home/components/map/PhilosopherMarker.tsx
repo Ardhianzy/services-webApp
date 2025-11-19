@@ -131,7 +131,7 @@ export default function PhilosopherMarker({ philosopher, onMarkerClick }: Props)
       html,
       iconSize: [64, 88],
       iconAnchor: [32, 44],
-      tooltipAnchor: [0, -44],
+      tooltipAnchor: [0, -4],
     });
   }, [portraitSrc, flagSrc, name, years]);
 

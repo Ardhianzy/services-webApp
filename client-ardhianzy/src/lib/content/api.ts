@@ -9,7 +9,96 @@ import type {
   ArticleCategory,
   ShopDTO,
   ToTDTO, 
+  LatestYoutubeDTO,
 } from "./types";
+import { http, authHeader } from "@/lib/http";
+
+const ADMIN_API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ||
+  "";
+
+function unwrapAdminDetail<T>(payload: T | { data?: T }): T {
+  if ((payload as any)?.data !== undefined) {
+    return (payload as any).data as T;
+  }
+  return payload as T;
+}
+
+export async function adminFetchArticles(): Promise<ArticleDTO[]> {
+  const res = await http<ArticleDTO[] | { data?: ArticleDTO[] }>(
+    `${ADMIN_API_BASE}/api/articel`,
+    {
+      method: "GET",
+      headers: {
+        ...authHeader(),
+      },
+    }
+  );
+
+  if (Array.isArray(res)) return res;
+  if (Array.isArray((res as any).data)) {
+    return (res as any).data as ArticleDTO[];
+  }
+  return [];
+}
+
+export async function adminGetArticleById(id: string): Promise<ArticleDTO> {
+  const res = await http<ArticleDTO | { data?: ArticleDTO }>(
+    `${ADMIN_API_BASE}/api/articel/${id}`,
+    {
+      method: "GET",
+      headers: {
+        ...authHeader(),
+      },
+    }
+  );
+  return unwrapAdminDetail<ArticleDTO>(res);
+}
+
+export async function adminCreateArticle(
+  formData: FormData
+): Promise<ArticleDTO> {
+  const res = await http<ArticleDTO | { data?: ArticleDTO }>(
+    `${ADMIN_API_BASE}/api/articel`,
+    {
+      method: "POST",
+      body: formData,
+      headers: {
+        ...authHeader(),
+      },
+    }
+  );
+  return unwrapAdminDetail<ArticleDTO>(res);
+}
+
+export async function adminUpdateArticle(
+  id: string,
+  formData: FormData
+): Promise<ArticleDTO> {
+  const res = await http<ArticleDTO | { data?: ArticleDTO }>(
+    `${ADMIN_API_BASE}/api/articel/${id}`,
+    {
+      method: "PUT",
+      body: formData,
+      headers: {
+        ...authHeader(),
+      },
+    }
+  );
+  return unwrapAdminDetail<ArticleDTO>(res);
+}
+
+export async function adminDeleteArticle(id: string): Promise<void> {
+  await http<void | { data?: unknown }>(
+    `${ADMIN_API_BASE}/api/articel/${id}`,
+    {
+      method: "DELETE",
+      headers: {
+        ...authHeader(),
+      },
+    }
+  );
+}
 
 const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ?? "";
@@ -140,6 +229,14 @@ export const contentApi = {
       if (any?.data && !Array.isArray(any.data)) return any.data as ToTMetaDTO;
       if (Array.isArray(any?.data)) return (any.data as ToTMetaDTO[])[0] ?? null;
       return (any as ToTMetaDTO) ?? null;
+    },
+  },
+
+  youtube: {
+    async latest(signal?: AbortSignal): Promise<LatestYoutubeDTO[]> {
+      const url = `${import.meta.env.VITE_API_URL}/api/youtube/latest`;
+      const res = await getJSON<{ data?: LatestYoutubeDTO[] }>(url, signal);
+      return Array.isArray(res?.data) ? res.data : [];
     },
   },
 };

@@ -312,6 +312,85 @@ export default function TimelineOfThoughtSection({
     });
   };
 
+  const [showGuide, setShowGuide] = useState(false);
+
+  const topTimerRef = useRef<number | null>(null);
+  const isAtTopRef = useRef(false);
+  const dismissedSinceTopRef = useRef(false);
+
+  useEffect(() => {
+    if (showGuide) {
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.setAttribute("data-lock-scroll", String(y));
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${y}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.width = "100%";
+    } else {
+      const y = Number(document.body.getAttribute("data-lock-scroll") || "0");
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.width = "";
+      if (!Number.isNaN(y)) window.scrollTo(0, y);
+      document.body.removeAttribute("data-lock-scroll");
+    }
+  }, [showGuide]);
+
+  useEffect(() => {
+    const getY = () =>
+      window.scrollY ||
+      document.documentElement.scrollTop ||
+      (document.scrollingElement as any)?.scrollTop ||
+      0;
+    const isTop = () => getY() <= 1;
+
+    const startTimer = () => {
+      if (topTimerRef.current != null || showGuide || dismissedSinceTopRef.current) return;
+      topTimerRef.current = window.setTimeout(() => {
+        topTimerRef.current = null;
+        setShowGuide(true);
+      }, 15_000);
+    };
+
+    const clearTimer = () => {
+      if (topTimerRef.current != null) {
+        window.clearTimeout(topTimerRef.current);
+        topTimerRef.current = null;
+      }
+    };
+
+    const onScroll = () => {
+      if (isTop()) {
+        if (!isAtTopRef.current) {
+          isAtTopRef.current = true;
+          dismissedSinceTopRef.current = false;
+        }
+        startTimer();
+      } else {
+        isAtTopRef.current = false;
+        clearTimer();
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    isAtTopRef.current = isTop();
+    if (isAtTopRef.current) startTimer();
+
+    return () => {
+      clearTimer();
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [showGuide]);
+
+  const dismissGuide = () => {
+    setShowGuide(false);
+    dismissedSinceTopRef.current = true;
+  };
+
   useEffect(() => {
     centerToYear(year, false);
   }, []);
@@ -504,7 +583,10 @@ export default function TimelineOfThoughtSection({
             <ZoomButtons />
           </MapContainer>
 
-          <div className="pointer-events-auto absolute bottom-40 right-4 z-[1101] cursor-pointer">
+          <div
+            id="tot-down-cta"
+            className={`pointer-events-auto absolute bottom-40 right-4 ${showGuide ? "z-[3002]" : "z-[1101]"} cursor-pointer`}
+          >
             <button
               type="button"
               aria-label="Scroll ke bagian berikutnya"
@@ -512,7 +594,9 @@ export default function TimelineOfThoughtSection({
               onClick={() => {
                 document.getElementById("below-map")?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="rounded-lg border border-white/50 bg-black/60 backdrop-blur-sm p-3 hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-white/60"
+              className={`cursor-pointer rounded-lg border border-white/50 bg-black/60 backdrop-blur-sm p-3 hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-white/60 ${
+                showGuide ? "ring-4 ring-white/70 animate-pulse" : ""
+              }`}
               style={{ fontFamily: "'Bebas Neue', sans-serif" }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -527,6 +611,29 @@ export default function TimelineOfThoughtSection({
           >
             {fmtYear(year)}
           </div>
+
+          {showGuide && (
+            <>
+              <div className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-[2px]" />
+              <div
+                id="tot-guide-callout"
+                className="fixed z-[3001] text-left right-4 bottom-[15rem] max-w-[420px] rounded-xl border border-white/70 bg-black/85 p-4 shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
+              >
+                <p className="font-roboto text-[0.98rem] leading-relaxed">
+                  Masih banyak yang bisa digali. Klik panah bawah untuk menemukan wawasan lebih dalam!
+                </p>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={dismissGuide}
+                    className="rounded-md cursor-pointer border border-white px-4 py-1 text-white hover:bg-white hover:text-black transition"
+                    aria-label="Tutup panduan"
+                  >
+                    OK
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="absolute bottom-0 left-0 z-[1001] flex h-[120px] md:h-[150px] w-full items-center border-t border-white/10 bg-[rgba(40,40,40,0.3)] backdrop-blur-[10px]">
@@ -608,6 +715,32 @@ export default function TimelineOfThoughtSection({
         }
         .tol-fade-right {
           background: linear-gradient(to left, #1a1a1a 30%, transparent 100%);
+        }
+
+        #tot-guide-callout {
+          position: fixed;
+        }
+          
+        #tot-guide-callout::before {
+          content: "";
+          position: absolute;
+          right: 2.25rem;
+          bottom: -12px;
+          width: 0; height: 0;
+          border-left: 12px solid transparent;
+          border-right: 12px solid transparent;
+          border-top: 12px solid rgba(255,255,255,0.7);
+        }
+
+        #tot-guide-callout::after {
+          content: "";
+          position: absolute;
+          right: 2.25rem;
+          bottom: -10px;
+          width: 0; height: 0;
+          border-left: 10px solid transparent;
+          border-right: 10px solid transparent;
+          border-top: 10px solid rgba(0,0,0,0.85);
         }
 
         @media (max-width: 768px) {

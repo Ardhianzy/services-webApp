@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/features/admin/pages/AdminLoginPage.tsx
+import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/store";
 import { ROUTES } from "@/app/routes";
@@ -7,20 +8,24 @@ const AdminLoginPage: React.FC = () => {
   const [adminUsername, setAdminUsername] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  const navigate = useNavigate();
+  const { login, loading } = useAuth();
+
+  const handleAdminLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setAuthError("");
+    setAuthError(null);
+
     if (!adminUsername || !adminPassword) {
       setAuthError("Username dan password harus diisi.");
       return;
     }
+
     try {
       await login({ username: adminUsername, password: adminPassword });
-      navigate(ROUTES.ADMIN.DASHBOARD);
+
+      navigate(ROUTES.ADMIN.ROOT);
     } catch (err: any) {
       setAuthError(err?.message || "Username atau password admin salah.");
     }
@@ -48,19 +53,15 @@ const AdminLoginPage: React.FC = () => {
       `}</style>
 
       <div
-        className="absolute left-[150px] top-0 w-[700px] h-screen z-[1]
-                   bg-[url('/assets/jack-hunter-1L4E_lsIb9Q-unsplash_1.png')] bg-cover bg-no-repeat bg-center
-                   [filter:grayscale(80%)_hue-rotate(180deg)]"
-      />
-
-      <div
-        className="absolute left-0 top-0 w-[30%] h-full z-[2]
-                   bg-[linear-gradient(to_right,rgba(0,0,0,1)_30%,rgba(0,0,0,0)_100%)]"
-      />
-
-      <div
-        className="absolute right-[55rem] top-0 w-[30%] h-full z-[2]
-                   bg-[linear-gradient(to_left,rgba(0,0,0,1)_30%,rgba(0,0,0,0)_100%)]"
+        className="absolute inset-0 z-[1]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,.92) 10%, rgba(0,0,0,.75) 20%, rgba(0,0,0,.45) 35%, rgba(0,0,0,0) 60%), url('/assets/admin/geoMap.png')",
+          backgroundPosition: "left top, right bottom",
+          backgroundSize: "330% 100%, auto 100%",
+          backgroundRepeat: "no-repeat, no-repeat",
+        }}
+        aria-hidden="true"
       />
 
       <div
@@ -76,7 +77,7 @@ const AdminLoginPage: React.FC = () => {
             ADMIN LOG IN
           </h1>
           <p className="text-[14px] text-[#B1B1B1] mt-2 mb-[30px] self-start">
-            Masuk untuk mengelola dasbor
+            Hallo Ardhianzy! Silahkan masuk untuk mengelola dasbor
           </p>
 
           <div className="admin-form-group">
@@ -129,12 +130,16 @@ const AdminLoginPage: React.FC = () => {
 
           <button
             type="submit"
+            disabled={loading}
             className="h-[45px] rounded-[30px] text-[18px] cursor-pointer
                        transition-opacity duration-300 flex justify-center items-center gap-3 mt-[10px]
-                       bg-transparent border border-[#F5F5F5] text-[#F5F5F5] hover:opacity-80"
+                       bg-transparent border border-[#F5F5F5] text-[#F5F5F5]
+                       focus:outline-none focus:ring-2 focus:ring-white/60
+                       hover:text-black hover:bg-white hover:border-black
+                       disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
-            LOG IN
+            {loading ? "LOGGING IN..." : "LOG IN"}
           </button>
         </form>
       </div>

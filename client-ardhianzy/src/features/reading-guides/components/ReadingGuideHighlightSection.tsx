@@ -1,4 +1,4 @@
-// src/features/reading-guide/components/ReadingGuideHighlightSection.tsx
+// src/features/reading-guides/components/ReadingGuideHighlightSection.tsx
 import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { contentApi } from "@/lib/content/api";
@@ -28,22 +28,22 @@ function normalizeBackendHtml(payload?: string | null): string {
   if (!/<[a-z][\s\S]*>/i.test(s)) s = s ? `<p>${s}</p>` : "";
   return s.trim();
 }
-
 function stripHtml(html?: string | null) {
   if (!html) return "";
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function truncateWords(text: string, maxWords: number) {
-  const words = (text ?? "").trim().split(/\s+/);
-  if (words.length <= maxWords) return text ?? "";
-  return words.slice(0, maxWords).join(" ").replace(/[,\.;:!?\-—]+$/, "");
+function makePreviewByWords(text: string, maxWords: number) {
+  const words = (text ?? "").trim().split(/\s+/).filter(Boolean);
+  const truncated = words.length > maxWords;
+  const preview = truncated ? words.slice(0, maxWords).join(" ") : words.join(" ");
+  return { preview, truncated };
 }
 
 function ContinueReadInline() {
   return (
     <span className="ml-2 inline-flex items-center underline underline-offset-4 decoration-white/60 hover:decoration-white">
-      Continue Read&nbsp;→
+      Continue to Read&nbsp;→
     </span>
   );
 }
@@ -63,7 +63,6 @@ type Props = {
   title?: string;
   heroImageUrl?: string;
   initialIndex?: number;
-  descriptionMaxWords?: number;
 };
 
 export default function ReadingGuideHighlightSection({
@@ -71,7 +70,6 @@ export default function ReadingGuideHighlightSection({
   title = "READING GUIDE",
   heroImageUrl = "/assets/readingGuide/belajar2.png",
   initialIndex = 0,
-  descriptionMaxWords = 40,
 }: Props) {
   const [remote, setRemote] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,15 +83,19 @@ export default function ReadingGuideHighlightSection({
           setRemote(guides);
           return;
         }
+
         const list = await contentApi.articles.list();
         if (!alive) return;
-        const filtered = (list ?? []).filter((a: ArticleDTO) => (a.category ?? "").toUpperCase() === "READING_GUIDE");
+
+        const filtered = (list ?? []).filter(
+          (a: ArticleDTO) => (a.category ?? "").toUpperCase() === "READING_GUIDLINE"
+        );
+
         const mapped: Card[] = filtered.map((a: ArticleDTO) => {
           const html =
             normalizeBackendHtml(a.meta_description) ||
             normalizeBackendHtml(a.excerpt) ||
             normalizeBackendHtml(a.content);
-          const desc = stripHtml(html);
           return {
             id: a.id,
             title: a.title ?? "Untitled",
@@ -101,27 +103,38 @@ export default function ReadingGuideHighlightSection({
             slug: a.slug,
             author: "Ardhianzy",
             dateISO: a.date || a.created_at || undefined,
-            desc,
+            desc: stripHtml(html),
           };
         });
+
+        const sortedDesc = mapped.slice().sort((a, b) => {
+          const ta = new Date(a.dateISO ?? "").getTime();
+          const tb = new Date(b.dateISO ?? "").getTime();
+          return (tb || 0) - (ta || 0);
+        });
+
         setRemote(
-          mapped.length
-            ? mapped
-            : [{
-                id: "rg-coming-soon",
-                title: "NEXT: COMING SOON",
-                image: "/assets/research/Desain tanpa judul.png",
-                slug: undefined,
-                author: "Ardhianzy",
-                dateISO: undefined,
-                desc: "SOON",
-              }]
+          sortedDesc.length
+            ? sortedDesc
+            : [
+                {
+                  id: "rg-coming-soon",
+                  title: "NEXT: COMING SOON",
+                  image: "/assets/icon/Ardhianzy_Logo_2.png",
+                  // slug: undefined,
+                  author: "Ardhianzy",
+                  dateISO: undefined,
+                  desc: "Reading Guide in Progress",
+                },
+              ]
         );
       } finally {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [guides]);
 
   const items: Card[] = guides?.length ? guides : remote;
@@ -134,10 +147,9 @@ export default function ReadingGuideHighlightSection({
   }, [items.length]);
 
   const sliderVars: CSSProperties = { ["--current-index" as any]: currentIndex };
-  const isNavDisabled = items.length <= 1;
 
-  const goPrev = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === 0 ? items.length - 1 : p - 1)); };
-  const goNext = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === items.length - 1 ? 0 : p + 1)); };
+  const LEDE =
+    "Panduan membaca karya-karya filsuf secara langsung dan kritis. Bukan daftar bacaan, melainkan cara membaca: bagaimana mendekati teks Plato, memahami gaya penulisan Nietzsche, menafsirkan fenomenologi Husserl, atau mengikuti struktur argumentatif Kant. Halaman ini membantu pembaca memahami bukan hanya apa yang dikatakan filsuf, tapi bagaimana cara mereka mengatakan dan memikirkan sesuatu. Tujuannya adalah membentuk pembaca yang reflektif, bukan sekadar informatif.";
 
   return (
     <div className="rg-highlight-wrapper text-white">
@@ -149,20 +161,62 @@ export default function ReadingGuideHighlightSection({
         .rg__roboto { font-family: 'Roboto', sans-serif !important; }
         .rg__heroTitle { font-size: 5rem !important; }
 
-        .rgh__nav{
-          position:absolute !important; top:50% !important; transform:translateY(-50%) !important; z-index:10 !important;
-          display:flex !important; align-items:center !important; justify-content:center !important;
-          width:60px !important; height:60px !important; border-radius:9999px !important;
-          border:2px solid rgba(255,255,255,0.3) !important; background:rgba(255,255,255,0.1) !important;
-          color:#ffffff !important; font-size:1.5rem !important; line-height:1 !important;
-          transition:transform .2s ease, background-color .2s ease, opacity .2s ease, filter .2s ease !important;
+        .rg-head__dekWrap{
+          position: absolute !important;
+          z-index: 2 !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          bottom: clamp(18px, 6vh, 0px) !important;
+          width: min(160ch, 110vw) !important;
+          max-width: min(250ch, 100vw) !important;
+          pointer-events: none !important;
+          text-align: center !important;
         }
-        .rgh__nav:hover{ transform:translateY(-50%) scale(1.10) !important; background:rgba(255,255,255,0.2) !important; }
-        .rgh__nav--left{ left:40px !important; }
-        .rgh__nav--right{ right:40px !important; }
-        .rgh__nav[disabled],
-        .rgh__nav[aria-disabled="true"]{
-          opacity:.4 !important; cursor:not-allowed !important; filter:grayscale(40%) !important;
+        .rg-head__dek{
+          position: relative !important;
+          pointer-events: auto !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+          font-family: Roboto, ui-sans-serif, system-ui !important;
+          font-size: clamp(0.95rem, 1.2vw, 1.05rem) !important;
+          line-height: 1.7 !important;
+          color: #ECECEC !important;
+          text-align: center !important;
+          letter-spacing: .1px !important;
+
+          border-top: 2px solid rgba(255,255,255,.22) !important;
+          border-left: 0 !important;
+          border-right: 0 !important;
+
+          padding: 0.85rem 1.15rem !important;
+          background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.28)) !important;
+          backdrop-filter: blur(2px);
+          border-radius: 0px !important;
+          box-shadow: 0 12px 30px rgba(0,0,0,.18);
+        }
+
+        .rg-head__section::before {
+          content: "" !important;
+          position: absolute !important;
+          inset: 0 !important;
+          background-image: url('/assets/magazine/highlightMagazine.png') !important;
+          background-position: start !important;
+          background-repeat: no-repeat !important;
+          background-size: cover !important;
+          pointer-events: none !important;
+          z-index: 0 !important;
+        }
+
+        .rg-desc {
+          font-size: 1rem !important;
+          line-height: 1.5 !important;
+          opacity: 0.9 !important;
+          max-width: 450px !important;
+          display: -webkit-box !important;
+          -webkit-line-clamp: 7 !important;
+          -webkit-box-orient: vertical !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
         }
 
         .rg-slider {
@@ -177,51 +231,36 @@ export default function ReadingGuideHighlightSection({
         }
         @media (max-width: 768px) {
           .rg-slider { --card-w: 95vw; --card-gap: 15px; }
-          .rgh__nav{ width:45px !important; height:45px !important; font-size:1.2rem !important; }
-          .rgh__nav--left{ left:0.5rem !important; }
-          .rgh__nav--right{ right:0.5rem !important; }
         }
       `}</style>
 
       <section
         aria-label="Reading guide highlight hero"
         className="relative w-screen h-[60vh] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-black bg-cover bg-center flex items-center justify-center"
-        style={{ backgroundImage: `url('${heroImageUrl}')`, filter: "grayscale(100%)", mixBlendMode: "luminosity" }}
+        style={{
+          backgroundImage: `url('${heroImageUrl}')`,
+          backgroundPosition: "start",
+          height: "58vh",
+          filter: "grayscale(100%)",
+          mixBlendMode: "luminosity",
+        }}
       >
         <div
           aria-hidden
           className="absolute inset-0 z-[1]"
           style={{ background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)" }}
         />
-        <h1 className="rg__bebas rg__heroTitle relative z-[2] uppercase text-center text-white">
+        <h1 className="rg__bebas rg__heroTitle relative z-[2] uppercase text-center text-white pb-20">
           {title}
         </h1>
+
+        <div className="rg-head__dekWrap">
+          <p className="rg-head__dek">{LEDE}</p>
+        </div>
       </section>
 
-      <section className="relative w-full py-5 bg-black overflow-hidden mt-38">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]"
-          style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to right, #000 30%, transparent 100%)" }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute right-0 top-0 bottom-0 z-[3]"
-          style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to left, #000 30%, transparent 100%)" }}
-        />
-
+      <section className="rg-head__section relative w-full py-5 bg-black overflow-hidden mt-8">
         <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
-          <button
-            type="button"
-            aria-label="Previous guide"
-            onClick={goPrev}
-            disabled={isNavDisabled}
-            aria-disabled={isNavDisabled}
-            className="rgh__nav rgh__nav--left"
-          >
-            &#8249;
-          </button>
-
           <div className="relative h-[417px] w-full overflow-visible">
             <div
               className="rg-slider flex h-full items-center gap-[30px] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
@@ -230,34 +269,23 @@ export default function ReadingGuideHighlightSection({
               {(items.length ? items : loading ? [{ id: "skeleton", title: "", image: "", author: "Ardhianzy", desc: "" }] : []).map(
                 (g: any, idx: number) => {
                   const isActive = idx === currentIndex;
-                  const preview = truncateWords(g.desc ?? "", descriptionMaxWords);
-                  const showDots = (g.desc ?? "").trim().length > preview.trim().length;
+
+                  const { preview, truncated } = makePreviewByWords(g.desc ?? "", 45);
                   const dateHuman = formatPrettyDate(g.dateISO);
 
-                  const href = g.slug
-                    ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug)
-                    : ROUTES.READING_GUIDE_COMING_SOON;
+                  const isComingSoon = g.id === "rg-coming-soon";
 
-                  return (
-                    <Link
-                      key={g.id}
-                      to={href}
-                      className={[
-                        "relative shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
-                        "!w-[1029px] !h-[417px]",
-                        "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
-                        "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
-                        isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
-                        "hover:!scale-[1.02] hover:!opacity-100 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
-                      ].join(" ")}
-                      style={{ textDecoration: "none" }}
-                      aria-label={g.title}
-                    >
+                  // const href = g.slug
+                  //   ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug)
+                  //   : ROUTES.READING_GUIDE_COMING_SOON;
+
+                  const ArticleInner = (
+                    <>
                       <img
                         src={g.image}
                         alt={g.title}
                         loading="lazy"
-                        className="h-full w-full object-cover transition-[filter] duration-300 filter grayscale hover:grayscale-0"
+                        className="h-full w-full p-24 object-contain transition-[filter] duration-300 filter grayscale hover:grayscale-0"
                       />
 
                       <div
@@ -279,28 +307,54 @@ export default function ReadingGuideHighlightSection({
                           </p>
                         ) : null}
 
-                        <p className="rg__roboto text-left !text-[1rem] leading-[1.6] opacity-90 max-w-[450px]">
+                        <p className="rg-desc">
                           {preview}
-                          {showDots ? "..." : ""} <ContinueReadInline />
+                          {truncated && (
+                            <>
+                              {"…"} <ContinueReadInline />
+                            </>
+                          )}
                         </p>
                       </div>
+                    </>
+                  );
+
+                  return isComingSoon ? (
+                    <article
+                      key={g.id}
+                      className={[
+                        "relative shrink-0 cursor-default overflow-hidden bg-[#111] transition-all duration-300",
+                        "!w-[1029px] !h-[417px]",
+                        "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
+                        "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
+                        isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
+                      ].join(" ")}
+                      aria-label={g.title}
+                    >
+                      {ArticleInner}
+                    </article>
+                  ) : (
+                    <Link
+                      key={g.id}
+                      to={g.slug ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug) : ROUTES.READING_GUIDE}
+                      className={[
+                        "relative shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
+                        "!w-[1029px] !h-[417px]",
+                        "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
+                        "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
+                        isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
+                        "hover:!scale-[1.02] hover:!opacity-100 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
+                      ].join(" ")}
+                      style={{ textDecoration: "none" }}
+                      aria-label={g.title}
+                    >
+                      {ArticleInner}
                     </Link>
                   );
                 }
               )}
             </div>
           </div>
-
-          <button
-            type="button"
-            aria-label="Next guide"
-            onClick={goNext}
-            disabled={isNavDisabled}
-            aria-disabled={isNavDisabled}
-            className="rgh__nav rgh__nav--right"
-          >
-            &#8250;
-          </button>
         </div>
       </section>
     </div>
