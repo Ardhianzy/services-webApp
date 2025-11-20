@@ -77,6 +77,7 @@ export class MegazineHandler {
         meta_title: req.body.meta_title,
         meta_description: req.body.meta_description,
         keywords: req.body.keywords,
+        is_published: req.body.is_published,
         admin_id: adminId,
       };
 
@@ -122,6 +123,7 @@ export class MegazineHandler {
         meta_description: req.body.meta_description,
         keywords: req.body.keywords,
         remove_pdf: parseBool(req.body.remove_pdf),
+        is_published: parseBool(req.body.is_published),
       };
 
       const updatedMegazine = await this.megazineService.updateById(

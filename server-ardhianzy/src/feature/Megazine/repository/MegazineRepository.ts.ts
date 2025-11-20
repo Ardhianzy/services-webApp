@@ -38,6 +38,7 @@ export interface CreateMegazineData {
   meta_title?: string;
   meta_description?: string;
   keywords?: string;
+  is_published?: boolean;
 
   // PDF (opsional)
   pdf_file_id?: string;
@@ -57,6 +58,7 @@ export interface UpdateMegazineData {
   meta_title?: string;
   meta_description?: string;
   keywords?: string;
+  is_published?: boolean;
 
   // PDF (opsional, bisa di-clear dengan null)
   pdf_file_id?: string | null;

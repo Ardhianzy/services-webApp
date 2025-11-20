@@ -8,6 +8,7 @@ interface CreateToTMetaData {
   epsimologi: string;
   aksiologi: string;
   conclusion: string;
+  is_published?: boolean;
 }
 
 // Interface untuk Update ToT Meta
@@ -17,6 +18,7 @@ interface UpdateToTMetaData {
   epsimologi?: string;
   aksiologi?: string;
   conclusion?: string;
+  is_published?: boolean;
 }
 
 // Interface untuk Pagination

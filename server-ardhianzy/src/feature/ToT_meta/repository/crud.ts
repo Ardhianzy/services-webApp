@@ -20,39 +20,30 @@ interface PaginatedResult<T> {
     hasPreviousPage: boolean;
   };
 }
-
-// --- INTERFACE DIUBAH ---
 export interface CreateToTMetaData {
-  // CHANGED: ToT_id diubah dari number menjadi string agar sesuai schema
   ToT_id: string;
   metafisika: string;
   epsimologi: string;
   aksiologi: string;
   conclusion: string;
+  is_published?: boolean;
 }
 
 export interface UpdateToTMetaData {
-  // CHANGED: ToT_id diubah dari number menjadi string agar sesuai schema
   ToT_id?: string;
   metafisika?: string;
   epsimologi?: string;
   aksiologi?: string;
   conclusion?: string;
+  is_published?: boolean;
 }
 
 export class ToTMetaRepository {
-  /**
-   * Create a new ToT Meta record (Admin only)
-   * @param dataToTMeta - Data untuk membuat ToT Meta baru
-   * @returns Promise<ToT_meta> - Record ToT Meta yang baru dibuat
-   */
   async createByAdmin(dataToTMeta: CreateToTMetaData): Promise<ToT_meta> {
     try {
-      // Cek apakah ToT dengan ID string tersebut ada
       const totExists = await prisma.toT.findUnique({
         where: { id: dataToTMeta.ToT_id },
       });
-
       if (!totExists) {
         throw new Error(
           "ToT not found. Cannot create ToT Meta for non-existent ToT."
@@ -82,19 +73,11 @@ export class ToTMetaRepository {
     }
   }
 
-  /**
-   * Update ToT Meta by ID (Admin only)
-   * @param id - ID dari ToT Meta yang akan diupdate
-   * @param dataToTMeta - Data yang akan diupdate
-   * @returns Promise<ToT_meta> - Record ToT Meta yang telah diupdate
-   */
   async updateById(
-    // CHANGED: Tipe 'id' diubah dari number menjadi string
     id: string,
     dataToTMeta: UpdateToTMetaData
   ): Promise<ToT_meta> {
     try {
-      // Jika ToT_id diupdate, verifikasi ToT baru ada
       if (dataToTMeta.ToT_id) {
         const totExists = await prisma.toT.findUnique({
           where: { id: dataToTMeta.ToT_id },
