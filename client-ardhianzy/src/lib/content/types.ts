@@ -22,13 +22,16 @@ export type ToTMetaDTO = {
   epsimologi?: string | null;
   aksiologi?: string | null;
   conclusion?: string | null;
+  is_published?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   tot?: Partial<ToTDTO> | null;
 };
 
 export type ArticleCategory =
   | "POP_CULTURE"
   | "IDEAS_AND_TRADITIONS"
-  | "READING_GUIDE"
+  | "READING_GUIDLINE"
   | string;
 
 export interface ArticleDTO {
@@ -74,6 +77,7 @@ export type MagazineDTO = {
   pdf_uploaded_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  is_published?: boolean | null;
 };
 
 export type MagazineCardVM = {
@@ -158,6 +162,7 @@ export type ShopDTO = {
   is_available?: boolean | null;
   created_at?: string | null;
   updated_at?: string | null;
+  is_published?: boolean | null;
 };
 
 export type MonologueCardVM = {
@@ -169,6 +174,14 @@ export type MonologueCardVM = {
   dateISO?: string;
   slug: string;
   href: string;
+};
+
+export type LatestYoutubeDTO = {
+  id: string;
+  title: string;
+  url: string;
+  description?: string | null;
+  created_at: string;
 };
 
 export type Pagination = {

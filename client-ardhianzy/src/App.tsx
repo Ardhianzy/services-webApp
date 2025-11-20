@@ -8,7 +8,7 @@ import { Navbar } from "@/components/common/Navbar";
 import { Footer } from "@/components/common/Footer";
 import SectionNavLinks from "@/features/layout/components/SectionNavLinks";
 import AppHeader from "@/features/layout/components/AppHeader";
-
+// 
 import TimelineOfThoughtSection from "@/features/home/components/TimelineOfThoughtSection";
 // import HighlightSection from "@/features/home/components/HighlightSection";
 import MagazineSection from "@/features/home/components/MagazineSection";
@@ -41,27 +41,38 @@ import MonologuesPage from "@/features/monologues/pages/MonologuesPage";
 import IdeasTraditionPage from "@/features/ideas-tradition/pages/IdeasTraditionPage";
 import PopCultureReviewPage from "@/features/pop-cultures/pages/PopCultureReviewPage";
 import ReadingGuidePage from "@/features/reading-guides/pages/ReadingGuidePage";
-import ReadPage from "@/features/articles/pages/ReadPage";
+// import ReadPage from "@/features/articles/pages/ReadPage";
 // import LoginPage from "@/features/auth/pages/LoginPage";
 // import SignUpPage from "@/features/auth/pages/SignUpPage";
 // import ProfilePage from "@/features/user/pages/ProfilePage";
 // import ReadHistoryPage from "@/features/user/pages/ReadHistoryPage";
 
-// import ProtectedRoute from "@/routes/ProtectedRoute";
 import AdminRoute from "@/routes/AdminRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminLoginPage from "@/features/admin/pages/AdminLoginPage";
-import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
+// import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
 import AdminArticlePage from "@/features/admin/pages/AdminArticlePage";
 import AdminAddArticlePage from "@/features/admin/pages/AdminAddArticlePage";
 import AdminEditArticlePage from "@/features/admin/pages/AdminEditArticlePage";
-import AdminAddItemPage from "@/features/admin/pages/AdminAddItemPage";
-import AdminListItemPage from "@/features/admin/pages/AdminListItemPage";
-import AdminAnalyticsPage from "@/features/admin/pages/AdminAnalyticsPage";
-import AdminToTListPage from "@/features/admin/pages/AdminToTListPage";
-import AdminToTAddPage from "@/features/admin/pages/AdminToTAddPage";
-import AdminToTMetaListPage from "@/features/admin/pages/AdminToTMetaListPage";
-import AdminToTMetaAddPage from "@/features/admin/pages/AdminToTMetaAddPage";
+import AdminMagazinePage from "@/features/admin/pages/AdminMagazinePage";
+import AdminAddMagazinePage from "@/features/admin/pages/AdminAddMagazinePage";
+import AdminEditMagazinePage from "@/features/admin/pages/AdminEditMagazinePage";
+import AdminResearchPage from "@/features/admin/pages/AdminResearchPage";
+import AdminAddResearchPage from "@/features/admin/pages/AdminAddResearchPage";
+import AdminEditResearchPage from "@/features/admin/pages/AdminEditResearchPage";
+import AdminMonologuePage from "@/features/admin/pages/AdminMonologuePage";
+import AdminAddMonologuePage from "@/features/admin/pages/AdminAddMonologuePage";
+import AdminEditMonologuePage from "@/features/admin/pages/AdminEditMonologuePage";
+import AdminShopPage from "@/features/admin/pages/AdminShopPage";
+import AdminAddShopPage from "@/features/admin/pages/AdminAddShopPage";
+import AdminEditShopPage from "@/features/admin/pages/AdminEditShopPage";
+import AdminToTPage from "@/features/admin/pages/AdminToTPage";
+import AdminAddToTPage from "@/features/admin/pages/AdminAddToTPage";
+import AdminEditToTPage from "@/features/admin/pages/AdminEditToTPage";
+import AdminToTMetaPage from "@/features/admin/pages/AdminToTMetaPage";
+import AdminAddToTMetaPage from "@/features/admin/pages/AdminAddToTMetaPage";
+import AdminEditToTMetaPage from "@/features/admin/pages/AdminEditToTMetaPage";
+// import AdminAnalyticsPage from "@/features/admin/pages/AdminAnalyticsPage";
 // import AdminResearchShopCollectedPage from "@/features/admin/pages/AdminResearchShopCollectedPage";
 
 import { ROUTES } from "@/app/routes";
@@ -238,7 +249,7 @@ function AppRoutes() {
         path={ROUTES.READING_GUIDE_COMING_SOON}
         element={<ReadingGuideComingSoonPage />}
       />
-      <Route
+      {/* <Route
         path={ROUTES.READ}
         element={
           <>
@@ -247,7 +258,7 @@ function AppRoutes() {
             <Footer />
           </>
         }
-      />
+      /> */}
 
       {/* <Route
         path={ROUTES.PROFILE}
@@ -282,26 +293,49 @@ function AppRoutes() {
       <Route path={ROUTES.LEGACY.POP_CULTURE_REVIEW} element={<Navigate to={ROUTES.POP_CULTURE_REVIEW} replace />} />
       <Route path={ROUTES.LEGACY.READING_GUIDE} element={<Navigate to={ROUTES.READING_GUIDE} replace />} />
 
-
       <Route path={`${ROUTES.ADMIN.ROOT}/*`} element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
-          <Route index element={<Navigate to={ROUTES.ADMIN.DASHBOARD} replace />} />
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="articles/list" element={<AdminArticlePage />} />
+          {/* /admin -> default ke list artikel */}
+          <Route index element={<Navigate to="articles" replace />} />
+
+          {/* Nanti: /admin/dashboard */}
+          {/* <Route path="dashboard" element={<AdminDashboardPage />} /> */}
+
+          {/* Sudah aktif: manajemen artikel */}
+          <Route path="articles" element={<AdminArticlePage />} />
           <Route path="articles/add" element={<AdminAddArticlePage />} />
-          <Route path="articles/edit/:id" element={<AdminEditArticlePage />} />
-          <Route path="shop/list" element={<AdminListItemPage />} />
-          <Route path="shop/add" element={<AdminAddItemPage />} />
-          <Route path="analytics" element={<AdminAnalyticsPage />} />
-          <Route path="tot/list" element={<AdminToTListPage />} />
-          <Route path="tot/add" element={<AdminToTAddPage />} />
-          <Route path="tot-meta/list" element={<AdminToTMetaListPage />} />
-          <Route path="tot-meta/add" element={<AdminToTMetaAddPage />} />
-          {/* <Route path="content" element={<AdminResearchShopCollectedPage />} /> */}
+          <Route path="articles/:id" element={<AdminEditArticlePage />} />
+
+          <Route path="magazines" element={<AdminMagazinePage />} />
+          <Route path="magazines/add" element={<AdminAddMagazinePage />} />
+          <Route path="magazines/:id" element={<AdminEditMagazinePage />} />
+
+          <Route path="research" element={<AdminResearchPage />} />
+          <Route path="research/add" element={<AdminAddResearchPage />} />
+          <Route path="research/:id" element={<AdminEditResearchPage />} />
+
+          <Route path="monologues" element={<AdminMonologuePage />} />
+          <Route path="monologues/add" element={<AdminAddMonologuePage />} />
+          <Route path="monologues/:id" element={<AdminEditMonologuePage />} />
+
+          <Route path="shop" element={<AdminShopPage />} />
+          <Route path="shop/add" element={<AdminAddShopPage />} />
+          <Route path="shop/:id" element={<AdminEditShopPage />} />
+
+          <Route path="tot/list" element={<AdminToTPage />} />
+          <Route path="tot/add" element={<AdminAddToTPage />} />
+          <Route path="tot/:id" element={<AdminEditToTPage />} />
+
+          <Route path="meta-tot/list" element={<AdminToTMetaPage />} />
+          <Route path="meta-tot/add" element={<AdminAddToTMetaPage />} />
+          <Route path="meta-tot/:id" element={<AdminEditToTMetaPage />} />
         </Route>
       </Route>
 
+      {/* ====== ADMIN LOGIN (PUBLIC) ====== */}
       <Route path={ROUTES.ADMIN.LOGIN} element={<AdminLoginPage />} />
+
+      {/* ====== FALLBACK ====== */}
       <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
     </Routes>
   );

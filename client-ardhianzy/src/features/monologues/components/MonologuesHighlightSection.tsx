@@ -1,3 +1,4 @@
+// src/features/monologues/components/MonologuesHighlightSection.tsx
 import { useState, useEffect, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { contentApi } from "@/lib/content/api";
@@ -20,16 +21,47 @@ type Props = {
   initialIndex?: number;
 };
 
-function truncateByPhraseOrWords(text: string, phrase: string, maxWords: number) {
-  const safe = (text ?? "").trim();
-  if (!safe) return "";
-  const idx = safe.toLowerCase().indexOf(phrase.toLowerCase());
-  if (idx !== -1) return safe.slice(0, idx + phrase.length).trim().replace(/\s+$/, "");
-  const words = safe.split(/\s+/);
-  if (words.length <= maxWords) return safe;
-  const cut = words.slice(0, maxWords).join(" ");
-  return cut.replace(/[,\.;:!?\-—]+$/, "");
+function normalizeBackendHtml(payload?: string | null): string {
+  if (!payload) return "";
+  let s = String(payload).trim();
+  s = s.replace(/\\u003C/gi, "<").replace(/\\u003E/gi, ">").replace(/\\u0026/gi, "&");
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
+  return s;
 }
+function sanitizeBasicHtml(html: string): string {
+  let out = html;
+  out = out.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+  out = out.replace(/\son[a-z]+\s*=\s*"(?:[^"]*)"/gi, "");
+  out = out.replace(/\son[a-z]+\s*=\s*'(?:[^']*)'/gi, "");
+  out = out.replace(/\son[a-z]+\s*=\s*[^>\s]+/gi, "");
+  out = out.replace(/(href|src)\s*=\s*"(?:\s*javascript:[^"]*)"/gi, '$1="#"');
+  out = out.replace(/(href|src)\s*=\s*'(?:\s*javascript:[^']*)'/gi, '$1="#"');
+  return out;
+}
+function htmlToPlainText(html?: string): string {
+  const s = sanitizeBasicHtml(normalizeBackendHtml(html || ""));
+  return s
+    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/\s*p\s*>/gi, "\n\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function makePreviewByWords(text: string, maxWords: number) {
+  const words = (text ?? "").split(/\s+/).filter(Boolean);
+  const truncated = words.length > maxWords;
+  const preview = truncated ? words.slice(0, maxWords).join(" ") : words.join(" ");
+  return { preview, truncated };
+}
+
+function ContinueReadInline() {
+  return (
+    <span className="ml-2 inline-flex items-center underline underline-offset-4 decoration-white/60 hover:decoration-white">
+      Continue to Read&nbsp;→
+    </span>
+  );
+}
+
 function formatDate(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -58,7 +90,14 @@ export default function MonologuesHighlightSection({
         setLoading(true);
         const list = await contentApi.monologues.list();
         if (!alive) return;
-        const mapped: Card[] = (list ?? []).map((r: MonologueDTO) => ({
+
+        const sorted = (list ?? []).slice().sort((a, b) => {
+          const ta = new Date((a.pdf_uploaded_at || a.created_at || "") as string).getTime();
+          const tb = new Date((b.pdf_uploaded_at || b.created_at || "") as string).getTime();
+          return (tb || 0) - (ta || 0);
+        });
+
+        const mapped: Card[] = sorted.map((r: MonologueDTO) => ({
           id: r.id,
           title: r.title,
           description: r.dialog,
@@ -67,7 +106,9 @@ export default function MonologuesHighlightSection({
           dateISO: r.pdf_uploaded_at || r.created_at || undefined,
           slug: r.slug,
         }));
-        setRemote(mapped);
+
+        const latestOnly = mapped.length ? [mapped[0]] : [];
+        setRemote(latestOnly);
       } finally {
         if (alive) setLoading(false);
       }
@@ -76,25 +117,100 @@ export default function MonologuesHighlightSection({
   }, [articles]);
 
   const items = articles?.length ? (articles as Card[]) : remote;
-  const [currentIndex, setCurrentIndex] = useState(
-    Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0))
-  );
+
+  const [currentIndex, setCurrentIndex] = useState(0);
   useEffect(() => {
-    setCurrentIndex((prev) => (items.length ? Math.min(prev, items.length - 1) : 0));
-  }, [items.length]);
+    setCurrentIndex(items.length ? Math.min(Math.max(initialIndex, 0), items.length - 1) : 0);
+  }, [items.length, initialIndex]);
 
   const sliderVars: CSSProperties = { ["--current-index" as any]: currentIndex };
-  const isNavDisabled = items.length <= 1;
 
-  const goPrev = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === 0 ? items.length - 1 : p - 1)); };
-  const goNext = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === items.length - 1 ? 0 : p + 1)); };
+  const LEDE =
+    "Ruang kontemplatif bagi audiens Ardhianzy untuk menyuarakan kegelisahan, pengalaman, dan pencarian makna mereka sendiri. Berisi refleksi pribadi yang lahir dari pertemuan antara diri dan dunia, antara pembaca dan ide. Monologues adalah bukti bahwa filsafat bukan hanya tentang para filsuf, tapi tentang manusia yang berpikir—siapa pun dia.";
 
   return (
     <>
+      <style>{`
+        .mlg-head__dekWrap{
+          position: absolute !important;
+          z-index: 2 !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          bottom: clamp(18px, 6vh, 0px) !important;
+          width: min(150ch, 100vw) !important;
+          max-width: min(250ch, 100vw) !important;
+          pointer-events: none !important;
+          text-align: center !important;
+        }
+        .mlg-head__dek{
+          position: relative !important;
+          pointer-events: auto !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+          font-family: Roboto, ui-sans-serif, system-ui !important;
+          font-size: clamp(0.95rem, 1.2vw, 1.05rem) !important;
+          line-height: 1.7 !important;
+          color: #ECECEC !important;
+          text-align: center !important;
+          letter-spacing: .1px !important;
+
+          border-top: 2px solid rgba(255,255,255,.22) !important;
+          border-left: 0 !important;
+          border-right: 0 !important;
+
+          padding: 0.85rem 1.15rem !important;
+          background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.28)) !important;
+          backdrop-filter: blur(2px);
+          border-radius: 0px !important;
+          box-shadow: 0 12px 30px rgba(0,0,0,.18);
+        }
+
+        .mlg-head__section::before {
+          content: "" !important;
+          position: absolute !important;
+          inset: 0 !important;
+          background-image: url('/assets/magazine/highlightMagazine.png') !important;
+          background-position: start !important;
+          background-repeat: no-repeat !important;
+          background-size: cover !important;
+          pointer-events: none !important;
+          z-index: 0 !important;
+        }
+
+        .mlg-desc {
+          font-size: 1rem !important;
+          line-height: 1.5 !important;
+          opacity: 0.9 !important;
+          max-width: 450px !important;
+          display: -webkit-box !important;
+          text-align: justify;
+          -webkit-line-clamp: 7 !important;
+          -webkit-box-orient: vertical !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+
+        .rs-article-slider {
+          --card-w: 1029px;
+          --card-gap: 30px;
+          transform: translateX(
+            calc(50% - (var(--card-w) / 2) - (var(--current-index) * (var(--card-w) + var(--card-gap))))
+          ) !important;
+        }
+        @media (max-width: 1200px) {
+          .rs-article-slider { --card-w: 90vw; --card-gap: 20px; }
+        }
+        @media (max-width: 768px) {
+          .rs-article-slider { --card-w: 95vw; --card-gap: 15px; }
+        }
+      `}</style>
+
       <section
         className="relative flex h-[60vh] w-screen items-center justify-center bg-cover bg-center"
         style={{
           backgroundImage: `url('${headingBackgroundUrl}')`,
+          backgroundPosition: "start",
+          height: "58vh",
           left: "50%",
           right: "50%",
           marginLeft: "-50vw",
@@ -107,30 +223,18 @@ export default function MonologuesHighlightSection({
           className="absolute inset-0 z-[1]"
           style={{ background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)" }}
         />
-        <h1 className="relative z-[2] font-bebas uppercase text-white text-center !text-[5rem]">
+        <h1 className="relative z-[2] font-bebas uppercase text-white text-center !text-[5rem] pb-20">
           {headingTitle}
         </h1>
+
+        <div className="mlg-head__dekWrap">
+          <p className="mlg-head__dek">{LEDE}</p>
+        </div>
       </section>
 
-      <section className="relative w-full bg-black py-5 overflow-hidden">
-        <div aria-hidden className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]"
-             style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to right, #000 30%, transparent 100%)" }} />
-        <div aria-hidden className="pointer-events-none absolute right-0 top-0 bottom-0 z-[3]"
-             style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to left, #000 30%, transparent 100%)" }} />
+      <section className="mlg-head__section relative w-full bg-black py-5 overflow-hidden">
 
         <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
-          <button type="button" aria-label="Previous article" onClick={goPrev} disabled={isNavDisabled}
-            aria-disabled={isNavDisabled}
-            className={[
-              "absolute left-10 z-10 flex h-[60px] w-[60px] items-center justify-center !rounded-full border-2 border-white/30 bg-white/10 text-white text-[1.5rem] transition-all",
-              "!hover:scale-110 !hover:bg-white/20",
-              "max-[768px]:left-2 max-[768px]:h-[45px] max-[768px]:w-[45px] max-[768px]:text-[1.2rem]",
-              isNavDisabled ? "opacity-40 cursor-not-allowed" : "",
-            ].join(" ")}
-          >
-            &#8249;
-          </button>
-
           <div className="relative h-[417px] w-full overflow-visible">
             <div
               className="rs-article-slider flex h-full items-center gap-[30px] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
@@ -139,8 +243,9 @@ export default function MonologuesHighlightSection({
               {(items.length ? items : loading ? [{ id: "skeleton", title: "", description: "", image: "" }] : []).map(
                 (article, idx) => {
                   const isActive = idx === currentIndex;
-                  const descPreview = truncateByPhraseOrWords(article.description ?? "", "berpartisipasi,serta rekan", 50);
-                  const showEllipsis = (article.description ?? "").trim().length > (descPreview ?? "").trim().length;
+
+                  const fullText = htmlToPlainText(article.description ?? "");
+                  const { preview, truncated } = makePreviewByWords(fullText, 47);
                   const dateHuman = formatDate(article.dateISO);
 
                   return (
@@ -165,7 +270,7 @@ export default function MonologuesHighlightSection({
                           src={article.image}
                           alt={article.title}
                           loading="lazy"
-                          className="h-full w-full object-cover transition-[filter] duration-300 filter grayscale hover:grayscale-0"
+                          className="h-full w-full object-cover object-top transition-[filter] duration-300 filter grayscale hover:grayscale-0"
                         />
 
                         <div
@@ -187,12 +292,13 @@ export default function MonologuesHighlightSection({
                             </p>
                           ) : null}
 
-                          <p className="font-roboto text-left !text-[1rem] leading-[1.6] opacity-90 max-w-[450px]">
-                            {descPreview}
-                            {showEllipsis ? "..." : ""}{" "}
-                            <span className="ml-2 inline-flex items-center underline underline-offset-4 decoration-white/60 hover:decoration-white">
-                              Continue Read&nbsp;→
-                            </span>
+                          <p className="mlg-desc">
+                            {preview}
+                            {truncated && (
+                              <>
+                                {"…"} <ContinueReadInline />
+                              </>
+                            )}
                           </p>
                         </div>
                       </article>
@@ -202,42 +308,8 @@ export default function MonologuesHighlightSection({
               )}
             </div>
           </div>
-
-          <button type="button" aria-label="Next article" onClick={goNext} disabled={isNavDisabled}
-            aria-disabled={isNavDisabled}
-            className={[
-              "absolute right-10 z-10 flex h-[60px] w-[60px] items-center justify-center !rounded-full border-2 border-white/30 bg-white/10 text-white text-[1.5rem] transition-all",
-              "!hover:scale-110 !hover:bg-white/20",
-              "max-[768px]:right-2 max-[768px]:h-[45px] max-[768px]:w-[45px] max-[768px]:text-[1.2rem]",
-              isNavDisabled ? "opacity-40 cursor-not-allowed" : "",
-            ].join(" ")}
-          >
-            &#8250;
-          </button>
         </div>
       </section>
-
-      <style>{`
-        .rs-article-slider {
-          --card-w: 1029px;
-          --card-gap: 30px;
-          transform: translateX(
-            calc(50% - (var(--card-w) / 2) - (var(--current-index) * (var(--card-w) + var(--card-gap))))
-          ) !important;
-        }
-        @media (max-width: 1200px) {
-          .rs-article-slider {
-            --card-w: 90vw;
-            --card-gap: 20px;
-          }
-        }
-        @media (max-width: 768px) {
-          .rs-article-slider {
-            --card-w: 95vw;
-            --card-gap: 15px;
-          }
-        }
-      `}</style>
     </>
   );
 }

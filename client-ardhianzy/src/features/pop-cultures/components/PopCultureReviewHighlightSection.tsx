@@ -15,7 +15,6 @@ function stripHtml(html?: string | null) {
   if (!html) return "";
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
-
 function normalizeMetaText(input?: string | null): string {
   if (!input) return "";
   let s = String(input).trim();
@@ -24,16 +23,16 @@ function normalizeMetaText(input?: string | null): string {
   s = /<[^>]+>/.test(s) ? stripHtml(s) : s;
   return s.replace(/\s+/g, " ").trim();
 }
-
-function truncateWords(text: string, maxWords: number) {
-  const words = (text ?? "").trim().split(/\s+/);
-  if (words.length <= maxWords) return text ?? "";
-  return words.slice(0, maxWords).join(" ").replace(/[,\.;:!?\-—]+$/, "");
+function makePreviewByWords(text: string, maxWords: number) {
+  const words = (text ?? "").trim().split(/\s+/).filter(Boolean);
+  const truncated = words.length > maxWords;
+  const preview = truncated ? words.slice(0, maxWords).join(" ") : words.join(" ");
+  return { preview, truncated };
 }
 function ContinueReadInline() {
   return (
     <span className="ml-2 inline-flex items-center underline underline-offset-4 decoration-white/60 hover:decoration-white">
-      Continue Read&nbsp;→
+      Continue to Read&nbsp;→
     </span>
   );
 }
@@ -47,21 +46,18 @@ type Card = {
   dateISO?: string;
   desc: string;
 };
-
 type Props = {
   articles?: Card[];
   title?: string;
   heroImageUrl?: string;
   initialIndex?: number;
-  descriptionMaxWords?: number;
 };
 
 export default function PopCultureReviewHighlightSection({
   articles,
-  title = "POP-CULTURE REVIEW",
+  title = "POPSOPHIA",
   heroImageUrl = "/assets/popCulture/dadasdfe.png",
   initialIndex = 0,
-  descriptionMaxWords = 40,
 }: Props) {
   const [remote, setRemote] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +72,9 @@ export default function PopCultureReviewHighlightSection({
           return;
         }
         const list = await contentApi.articles.list({ category: "POP_CULTURE" });
+
         if (!alive) return;
+
         const mapped: Card[] = (list ?? []).map((a: ArticleDTO) => {
           const desc =
             normalizeMetaText(a.meta_description) ||
@@ -92,12 +90,37 @@ export default function PopCultureReviewHighlightSection({
             desc,
           };
         });
-        setRemote(mapped);
+
+        const sortedDesc = mapped.slice().sort((a, b) => {
+          const ta = new Date(a.dateISO ?? "").getTime();
+          const tb = new Date(b.dateISO ?? "").getTime();
+          return (tb || 0) - (ta || 0);
+        });
+
+        const latest = sortedDesc[0];
+
+        setRemote(
+          latest
+            ? [latest]
+            : [
+                {
+                  id: "pcr-coming-soon",
+                  title: "NEXT: COMING SOON",
+                  image: "/assets/icon/Ardhianzy_Logo_2.png",
+                  // slug: undefined,
+                  author: "Ardhianzy",
+                  dateISO: undefined,
+                  desc: "SOON",
+                },
+              ]
+        );
       } finally {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [articles]);
 
   const items: Card[] = articles?.length ? articles : remote;
@@ -110,16 +133,9 @@ export default function PopCultureReviewHighlightSection({
   }, [items.length]);
 
   const sliderVars: CSSProperties = { ["--current-index" as any]: currentIndex };
-  const isNavDisabled = items.length <= 1;
 
-  const goPrev = () => {
-    if (isNavDisabled) return;
-    setCurrentIndex((p) => (p === 0 ? items.length - 1 : p - 1));
-  };
-  const goNext = () => {
-    if (isNavDisabled) return;
-    setCurrentIndex((p) => (p === items.length - 1 ? 0 : p + 1));
-  };
+  const LEDE =
+    "Di sinilah filsafat bertemu dengan budaya populer. Rubrik ini mengeksplorasi film, anime, musik, dan media kontemporer lainnya—bukan sebagai hiburan semata, melainkan sebagai ruang simbolik yang mencerminkan nilai, krisis, dan mitologi dunia modern. PCR adalah jembatan antara kedalaman dan arus, antara refleksi dan fenomena.";
 
   return (
     <div className="pc-review-highlight-wrapper">
@@ -130,6 +146,64 @@ export default function PopCultureReviewHighlightSection({
         .pc__bebas { font-family: 'Bebas Neue', cursive !important; }
         .pc__roboto { font-family: 'Roboto', sans-serif !important; }
         .pc__heroTitle { font-size: 5rem !important; }
+
+        .pcr-head__dekWrap{
+          position: absolute !important;
+          z-index: 2 !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          bottom: clamp(18px, 6vh, 0px) !important;
+          width: min(150ch, 100vw) !important;
+          max-width: min(250ch, 100vw) !important;
+          pointer-events: none !important;
+          text-align: center !important;
+        }
+        .pcr-head__dek{
+          position: relative !important;
+          pointer-events: auto !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+          font-family: Roboto, ui-sans-serif, system-ui !important;
+          font-size: clamp(0.95rem, 1.2vw, 1.05rem) !important;
+          line-height: 1.7 !important;
+          color: #ECECEC !important;
+          text-align: center !important;
+          letter-spacing: .1px !important;
+
+          border-top: 2px solid rgba(255,255,255,.22) !important;
+          border-left: 0 !important;
+          border-right: 0 !important;
+
+          padding: 0.85rem 1.15rem !important;
+          background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.28)) !important;
+          backdrop-filter: blur(2px);
+          border-radius: 0px !important;
+          box-shadow: 0 12px 30px rgba(0,0,0,.18);
+        }
+
+        .pcr-head__section::before {
+          content: "" !important;
+          position: absolute !important;
+          inset: 0 !important;
+          background-image: url('/assets/magazine/highlightMagazine.png') !important;
+          background-position: start !important;
+          background-repeat: no-repeat !important;
+          background-size: cover !important;
+          pointer-events: none !important;
+          z-index: 0 !important;
+        }
+
+        .pcr-desc {
+          font-size: 1rem !important;
+          line-height: 1.5 !important;
+          opacity: 0.9 !important;
+          max-width: 450px !important;
+          display: -webkit-box !important;
+          -webkit-line-clamp: 7 !important;
+          -webkit-box-orient: vertical !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
 
         .pcr__nav{
           position:absolute !important; top:50% !important; transform:translateY(-50%) !important; z-index:10 !important;
@@ -168,42 +242,30 @@ export default function PopCultureReviewHighlightSection({
       <section
         aria-label="Pop-culture highlight hero"
         className="relative w-screen h-[60vh] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-black bg-cover bg-center flex items-center justify-center"
-        style={{ backgroundImage: `url('${heroImageUrl}')`, filter: "grayscale(100%)", mixBlendMode: "luminosity" }}
+        style={{
+          backgroundImage: `url('${heroImageUrl}')`,
+          backgroundPosition: "start",
+          height: "58vh",
+          filter: "grayscale(100%)",
+          mixBlendMode: "luminosity",
+        }}
       >
         <div
           aria-hidden
           className="absolute inset-0 z-[1]"
           style={{ background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)" }}
         />
-        <h1 className="pc__bebas pc__heroTitle relative z-[2] uppercase text-center text-white">
+        <h1 className="pc__bebas pc__heroTitle relative z-[2] uppercase text-center text-white pb-20">
           {title}
         </h1>
+
+        <div className="pcr-head__dekWrap">
+          <p className="pcr-head__dek">{LEDE}</p>
+        </div>
       </section>
 
-      <section className="relative w-full py-5 bg-black overflow-hidden mt-38">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]"
-          style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to right, #000 30%, transparent 100%)" }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute right-0 top-0 bottom-0 z-[3]"
-          style={{ width: "15%", maxWidth: 200, background: "linear-gradient(to left, #000 30%, transparent 100%)" }}
-        />
-
+      <section className="pcr-head__section relative w-full py-5 bg-black overflow-hidden mt-8">
         <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
-          <button
-            type="button"
-            aria-label="Previous article"
-            onClick={goPrev}
-            disabled={isNavDisabled}
-            aria-disabled={isNavDisabled}
-            className="pcr__nav pcr__nav--left"
-          >
-            &#8249;
-          </button>
-
           <div className="relative h-[417px] w-full overflow-visible">
             <div
               className="pc-review-slider flex h-full items-center gap-[30px] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
@@ -212,34 +274,23 @@ export default function PopCultureReviewHighlightSection({
               {(items.length ? items : loading ? [{ id: "skeleton", title: "", image: "", author: "Ardhianzy", desc: "" }] : []).map(
                 (article: any, idx: number) => {
                   const isActive = idx === currentIndex;
-                  const preview = truncateWords(article.desc ?? "", descriptionMaxWords);
-                  const showDots = (article.desc ?? "").trim().length > preview.trim().length;
+
+                  const { preview, truncated } = makePreviewByWords(article.desc ?? "", 45);
                   const dateHuman = formatPrettyDate(article.dateISO);
 
-                  const href = article.slug
-                    ? ROUTES.POP_CULTURE_REVIEW_DETAIL.replace(":slug", article.slug)
-                    : ROUTES.POP_CULTURE_REVIEW;
+                  const isComingSoon = article.id === "pcr-coming-soon";
 
-                  return (
-                    <Link
-                      key={article.id}
-                      to={href}
-                      className={[
-                        "relative shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
-                        "!w-[1029px] !h-[417px]",
-                        "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
-                        "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
-                        isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
-                        "hover:!scale-[1.02] hover:!opacity-100 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
-                      ].join(" ")}
-                      style={{ textDecoration: "none" }}
-                      aria-label={article.title}
-                    >
+                  // const href = article.slug
+                  //   ? ROUTES.POP_CULTURE_REVIEW_DETAIL.replace(":slug", article.slug)
+                  //   : ROUTES.POP_CULTURE_REVIEW;
+
+                  const CardInner = (
+                    <>
                       <img
                         src={article.image}
                         alt={article.title}
                         loading="lazy"
-                        className="h-full w-full object-cover transition-[filter] duration-300 filter grayscale hover:grayscale-0"
+                        className="h-full w-full object-cover object-top transition-[filter] duration-300 filter grayscale hover:grayscale-0"
                       />
 
                       <div
@@ -261,28 +312,54 @@ export default function PopCultureReviewHighlightSection({
                           </p>
                         ) : null}
 
-                        <p className="pc__roboto text-left !text-[1rem] leading-[1.6] opacity-90 max-w-[450px]">
+                        <p className="pc__roboto pcr-desc text-left">
                           {preview}
-                          {showDots ? "..." : ""} <ContinueReadInline />
+                          {truncated && (
+                            <>
+                              {"…"} <ContinueReadInline />
+                            </>
+                          )}
                         </p>
                       </div>
+                    </>
+                  );
+
+                  return isComingSoon ? (
+                    <article
+                      key={article.id}
+                      className={[
+                        "relative shrink-0 cursor-default overflow-hidden bg-[#111] transition-all duration-300",
+                        "!w-[1029px] !h-[417px]",
+                        "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
+                        "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
+                        isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
+                      ].join(" ")}
+                      aria-label={article.title}
+                    >
+                      {CardInner}
+                    </article>
+                  ) : (
+                    <Link
+                      key={article.id}
+                      to={article.slug ? ROUTES.POP_CULTURE_REVIEW_DETAIL.replace(":slug", article.slug) : ROUTES.POP_CULTURE_REVIEW}
+                      className={[
+                        "relative shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
+                        "!w-[1029px] !h-[417px]",
+                        "max-[1200px]:!w-[90vw] max-[1200px]:!h-[350px]",
+                        "max-[768px]:!w-[95vw] max-[768px]:!h-[300px]",
+                        isActive ? "!opacity-100 !scale-100" : "!opacity-50 !scale-95",
+                        "hover:!scale-[1.02] hover:!opacity-100 hover:!shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
+                      ].join(" ")}
+                      style={{ textDecoration: "none" }}
+                      aria-label={article.title}
+                    >
+                      {CardInner}
                     </Link>
                   );
                 }
               )}
             </div>
           </div>
-
-          <button
-            type="button"
-            aria-label="Next article"
-            onClick={goNext}
-            disabled={isNavDisabled}
-            aria-disabled={isNavDisabled}
-            className="pcr__nav pcr__nav--right"
-          >
-            &#8250;
-          </button>
         </div>
       </section>
     </div>

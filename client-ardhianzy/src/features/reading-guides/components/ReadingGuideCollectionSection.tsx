@@ -1,4 +1,4 @@
-// src/features/reading-guide/components/ReadingGuideCollectionSection.tsx
+// src/features/reading-guides/components/ReadingGuideCollectionSection.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { contentApi } from "@/lib/content/api";
@@ -44,7 +44,7 @@ function truncateWords(text: string, maxWords: number) {
 function ContinueReadInline() {
   return (
     <span className="ml-2 inline-flex items-center underline underline-offset-4 decoration-white/60 hover:decoration-white">
-      Continue Read&nbsp;→
+      Continue to Read&nbsp;→
     </span>
   );
 }
@@ -64,6 +64,7 @@ type Props = {
 
 export default function ReadingGuideCollectionSection({ guides }: Props) {
   const [remote, setRemote] = useState<GuideCard[]>([]);
+  const [onlyOne, setOnlyOne] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,12 +74,14 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
         setLoading(true);
         if (guides?.length) {
           setRemote(guides);
+          setOnlyOne(guides.length <= 1);
           return;
         }
         const list = await contentApi.articles.list();
         if (!alive) return;
-        const mapped: GuideCard[] = (list ?? [])
-          .filter((a: ArticleDTO) => (a.category ?? "").toUpperCase() === "READING_GUIDE")
+
+        const mapped = (list ?? [])
+          .filter((a: ArticleDTO) => (a.category ?? "").toUpperCase() === "READING_GUIDLINE")
           .map((a: ArticleDTO) => {
             const html =
               normalizeBackendHtml(a.meta_description) ||
@@ -92,17 +95,30 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
               image: a.image ?? "",
               slug: a.slug,
               desc,
-            };
+              _dateISO: a.date || a.created_at || "",
+            } as GuideCard & { _dateISO?: string | null };
           });
-        setRemote(mapped);
+
+        const sortedDesc = mapped.slice().sort((a, b) => {
+          const ta = new Date((a as any)._dateISO ?? "").getTime();
+          const tb = new Date((b as any)._dateISO ?? "").getTime();
+          return (tb || 0) - (ta || 0);
+        });
+
+        setOnlyOne(sortedDesc.length <= 1);
+        const rest = sortedDesc.slice(1);
+        setRemote(rest);
       } finally {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [guides]);
 
   const items: GuideCard[] = useMemo(() => (guides?.length ? guides : remote), [guides, remote]);
+  const showEmpty = !loading && onlyOne;
 
   return (
     <section className="w-full bg-black text-white !py-[60px]">
@@ -122,20 +138,51 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
         }
       `}</style>
 
-      <div className="max-w-[1275px] mx-auto px-5">
+      <div className="max-w-[1275px] mx-auto px-5 pb-40">
         <header className="border-t border-white !pt-5 !mb-[30px]">
           <h2 className="rgc__bebas !font-normal !text-[48px] !leading-[58px] text-left m-0">
-            COLLECTED BOOKS
+            OTHER READING GUIDE
           </h2>
         </header>
 
-        {!loading && items.length === 0 ? (
-          <p className="rgc__roboto text-white/80 text-center mt-6">
-            No collections available yet. Stay tuned!
-          </p>
+        {showEmpty ? (
+          <div className="rgc-grid grid">
+            <article className="rgc-card text-center cursor-default mt-5">
+              <div
+                className="w-full h-[470px] bg-black mb-[10px]"
+                style={{
+                  backgroundImage: `url('/assets/icon/Ardhianzy_Logo_2.png')`,
+                  backgroundBlendMode: "luminosity",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "center",
+                  backgroundSize: "contain",
+                }}
+                aria-label="Coming Soon"
+              />
+              <div className="flex flex-col items-center">
+                <p
+                  className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4"
+                  style={{ fontWeight: 300, fontSize: 17, lineHeight: "18px" }}
+                >
+                </p>
+                <h3
+                  className="rgc__bebas rgc-title mt-10"
+                  style={{ fontWeight: 400, fontSize: 40, lineHeight: 1.1, textShadow: "0 4px 50px rgba(0,0,0,.25)" }}
+                >
+                  COMING SOON
+                </h3>
+                <p
+                  className="rgc__roboto text-white/90 max-w-[90%] mx-auto"
+                  style={{ fontSize: 16, lineHeight: 1.5, marginTop: 10 }}
+                >
+                  Our next reading guide is currently in preparation. Stay tuned!
+                </p>
+              </div>
+            </article>
+          </div>
         ) : null}
 
-        {items.length > 0 && (
+        {!showEmpty && items.length > 0 && (
           <>
             <div className="rgc-grid grid">
               {items.slice(0, 9).map((g) => {
@@ -154,13 +201,22 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                         aria-label={g.title}
                       />
                       <div className="flex flex-col items-center">
-                        <p className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4" style={{ fontWeight: 300, fontSize: 17, lineHeight: "18px" }}>
+                        <p
+                          className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4"
+                          style={{ fontWeight: 300, fontSize: 17, lineHeight: "18px" }}
+                        >
                           {g.date}
                         </p>
-                        <h3 className="rgc__bebas rgc-title mt-10" style={{ fontWeight: 400, fontSize: 40, lineHeight: 1.1, textShadow: "0 4px 50px rgba(0,0,0,.25)" }}>
+                        <h3
+                          className="rgc__bebas rgc-title mt-10"
+                          style={{ fontWeight: 400, fontSize: 40, lineHeight: 1.1, textShadow: "0 4px 50px rgba(0,0,0,.25)" }}
+                        >
                           {g.title}
                         </h3>
-                        <p className="rgc__roboto text-white/90 max-w-[90%] mx-auto" style={{ fontSize: 16, lineHeight: 1.5, marginTop: 10 }}>
+                        <p
+                          className="rgc__roboto text-white/90 max-w-[90%] mx-auto"
+                          style={{ fontSize: 16, lineHeight: 1.5, marginTop: 10 }}
+                        >
                           {preview}
                           {showDots ? "..." : ""} <ContinueReadInline />
                         </p>
@@ -189,13 +245,22 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                           aria-label={g.title}
                         />
                         <div className="flex flex-col items-center">
-                          <p className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4" style={{ fontWeight: 300, fontSize: 15, lineHeight: "18px" }}>
+                          <p
+                            className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4"
+                            style={{ fontWeight: 300, fontSize: 15, lineHeight: "18px" }}
+                          >
                             {g.date}
                           </p>
-                          <h3 className="rgc__bebas rgc-title mt-10" style={{ fontWeight: 400, fontSize: 48, lineHeight: 1.1, textShadow: "0 4px 50px rgba(0,0,0,.25)" }}>
+                          <h3
+                            className="rgc__bebas rgc-title mt-10"
+                            style={{ fontWeight: 400, fontSize: 48, lineHeight: 1.1, textShadow: "0 4px 50px rgba(0,0,0,.25)" }}
+                          >
                             {g.title}
                           </h3>
-                          <p className="rgc__roboto text-white/90 max-w-[90%] mx-auto" style={{ fontSize: 18, lineHeight: 1.5, marginTop: 10 }}>
+                          <p
+                            className="rgc__roboto text-white/90 max-w-[90%] mx-auto"
+                            style={{ fontSize: 18, lineHeight: 1.5, marginTop: 10 }}
+                          >
                             {preview}
                             {showDots ? "..." : ""} <ContinueReadInline />
                           </p>

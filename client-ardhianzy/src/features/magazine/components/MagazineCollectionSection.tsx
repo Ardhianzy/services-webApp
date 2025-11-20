@@ -7,7 +7,26 @@ import type { MagazineDTO } from "@/lib/content/types";
 
 type UIMag = Pick<MagazineDTO, "id" | "slug" | "title" | "description" | "image"> & {
   created_at?: string | null;
+  pdf_uploaded_at?: string | null;
 };
+
+function normalizeBackendHtml(payload?: string | null): string {
+  if (!payload) return "";
+  let s = String(payload).trim();
+  s = s.replace(/\\u003C/gi, "<").replace(/\\u003E/gi, ">").replace(/\\u0026/gi, "&");
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
+  return s;
+}
+function sanitizeBasicHtml(html: string): string {
+  let out = html;
+  out = out.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+  out = out.replace(/\son[a-z]+\s*=\s*"(?:[^"]*)"/gi, "");
+  out = out.replace(/\son[a-z]+\s*=\s*'(?:[^']*)'/gi, "");
+  out = out.replace(/\son[a-z]+\s*=\s*[^>\s]+/gi, "");
+  out = out.replace(/(href|src)\s*=\s*"(?:\s*javascript:[^"]*)"/gi, '$1="#"');
+  out = out.replace(/(href|src)\s*=\s*'(?:\s*javascript:[^']*)'/gi, '$1="#"');
+  return out;
+}
 
 type Props = {
   items?: Pick<MagazineDTO, "id" | "slug" | "title" | "description" | "image">[];
@@ -35,6 +54,7 @@ export default function MagazineCollectionSection({ items }: Props) {
             description: m.description,
             image: m.image,
             created_at: (m as any).created_at ?? null,
+            pdf_uploaded_at: (m as any).pdf_uploaded_at ?? null,
           }));
 
           setList(mapped);
@@ -51,18 +71,17 @@ export default function MagazineCollectionSection({ items }: Props) {
     };
   }, [items]);
 
-  const chosen: UIMag | null = useMemo(() => {
-    const fromBackend = list;
-    if (!fromBackend || fromBackend.length < 2) return null;
-
-    const sorted = [...fromBackend].sort((a, b) => {
-      const ta = a.created_at ? new Date(a.created_at).getTime() : Number.POSITIVE_INFINITY;
-      const tb = b.created_at ? new Date(b.created_at).getTime() : Number.POSITIVE_INFINITY;
-      return ta - tb;
+  const rest: UIMag[] = useMemo(() => {
+    const fromBackend = list ?? [];
+    const sortedDesc = [...fromBackend].sort((a, b) => {
+      const ta = new Date((a.pdf_uploaded_at || a.created_at || "") as string).getTime();
+      const tb = new Date((b.pdf_uploaded_at || b.created_at || "") as string).getTime();
+      return (tb || 0) - (ta || 0);
     });
-
-    return sorted[0] ?? null;
+    return sortedDesc.slice(1);
   }, [list]);
+
+  const showComingSoonCard = !loading && list.length <= 1;
 
   return (
     <section className="magcol">
@@ -71,13 +90,16 @@ export default function MagazineCollectionSection({ items }: Props) {
 
         .magcol { width: 100% !important; background: #000 !important; padding: 4rem 2rem !important; overflow: hidden !important; }
         .magcol__container { max-width: 1307px !important; margin: 0 auto !important; position: relative !important; padding-bottom: 120px !important; }
-        .magcol__title { font-family: 'Bebas Neue', sans-serif !important; font-weight: 400 !important; font-size: 68px !important; color: #fff !important; margin-bottom: 4rem !important; text-align: left !important; }
+        .magcol__title { font-family: 'Bebas Neue', sans-serif !important; font-weight: 400 !important; font-size: 48px !important; color: #fff !important; margin-bottom: 4rem !important; text-align: left !important; border-top-width: 1px !important; border-color: #ffffff !important; padding-top: 20px !important; }
         .magcol__list { display: flex !important; flex-direction: column !important; gap: 5rem !important; }
 
         .magcol__article { display: flex !important; position: relative !important; height: 425px !important; align-items: center !important; flex-direction: row !important; border-left-style: var(--tw-border-style); border-left-width: 2px; border-color: #444444; border-radius: 16px; }
         .magcol__imgwrap { height: 100% !important; width: 60% !important; border-radius: 20px !important; overflow: hidden !important; position: relative !important; }
         .magcol__imgwrap::after { content: '' !important; position: absolute !important; inset: 0 !important; background-color: rgba(0,0,0,0.38) !important; border-radius: 20px !important; }
         .magcol__img { width: 100% !important; height: 100% !important; object-position: top center !important; object-fit: cover !important; filter: grayscale(1) !important; border-radius: 20px !important; display: block !important; }
+
+        .magcol__img__soon { width: 100% !important; height: 100% !important; padding: 56px !important; object-position: center !important; object-fit: contain !important; filter: grayscale(1) !important; border-radius: 20px !important; display: block !important; }
+
         .magcol__content { position: absolute !important; width: 65% !important; height: 60% !important; padding: 2rem 4rem !important; display: flex !important; flex-direction: column !important; justify-content: center !important; color: #fff !important; top: 50% !important; transform: translateY(-50%) !important; border-radius: 20px !important; }
         .magcol__article:nth-child(odd)   { justify-content: flex-start !important; }
         .magcol__article:nth-child(odd) .magcol__content { right: 0 !important; align-items: flex-start !important; text-align: left !important; background: linear-gradient(to left, #171717 75.85%, rgba(23,23,23,0) 99.96%) !important; }
@@ -85,17 +107,6 @@ export default function MagazineCollectionSection({ items }: Props) {
         .magcol__article:nth-child(even) .magcol__content { left: 0 !important; align-items: flex-start !important; text-align: left !important; background: linear-gradient(to right, #171717 75.85%, rgba(23,23,23,0) 99.96%) !important; }
         .magcol__h3 { font-family: 'Bebas Neue', sans-serif !important; font-weight: 400 !important; font-size: 42px !important; line-height: 1.1 !important; color: #fff !important; margin: 0 0 .5rem 0 !important; text-shadow: 0 4px 50px rgba(0,0,0,0.25) !important; }
         .magcol__desc { font-family: 'Roboto', sans-serif !important; font-weight: 400 !important; font-size: 16px !important; line-height: 1.5 !important; text-align: justify !important; color: #fff !important; margin: 0 !important; }
-
-        .fx-curtainDown { position: relative !important; overflow: hidden !important; }
-        .fx-curtainDown::before {
-          content: '' !important; position: absolute !important; inset: 0 !important; z-index: 2 !important;
-          background: #000 !important;
-          transform-origin: bottom !important;
-          transform: scaleY(1) !important;
-          transition: transform .6s cubic-bezier(.25,.8,.3,1) !important;
-          pointer-events: none !important;
-        }
-        .fx-curtainDown.is-open::before { transform: scaleY(0) !important; }
 
         @media (max-width: 1350px) { .magcol__container { padding: 0 2rem !important; } }
         @media (max-width: 968px) {
@@ -109,34 +120,53 @@ export default function MagazineCollectionSection({ items }: Props) {
       <div className="magcol__container">
         <h2 className="magcol__title">PREVIOUS MAGAZINE</h2>
 
-        {(!chosen || loading) ? (
-          <p
-            className="text-white/80 text-center"
-            style={{ fontFamily: "Roboto, sans-serif", fontSize: 16, lineHeight: 1.6 }}
-          >
-            No magazines available yet. Stay tuned!
-          </p>
-        ) : (
+        {showComingSoonCard ? (
           <div className="magcol__list">
-            <Link
-              key={chosen.id}
-              to={chosen.slug ? `/magazine/${chosen.slug}` : ROUTES.MAGAZINE}
-              className="magcol__article group"
-            >
+            <div className="magcol__article group">
               <div className="magcol__imgwrap">
                 <img
-                  src={chosen.image ?? "/assets/magazine/placeholder.png"}
-                  alt={chosen.title}
-                  className="magcol__img"
+                  src={"/assets/magazine/placeholder.png"}
+                  alt="Coming Soon"
+                  className="magcol__img__soon"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/assets/icon/Ardhianzy_Logo_2.png"; }}
                 />
               </div>
               <div className="magcol__content">
-                <h3 className="magcol__h3">{chosen.title}</h3>
-                {chosen.description ? (
-                  <p className="magcol__desc">{chosen.description}</p>
-                ) : null}
+                <h3 className="magcol__h3">COMING SOON</h3>
+                <p className="magcol__desc">
+                  Our next magazine edition is currently in preparation. Stay tuned!
+                </p>
               </div>
-            </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="magcol__list">
+            {rest.map((m) => (
+              <Link
+                key={m.id}
+                to={m.slug ? `/magazine/${m.slug}` : ROUTES.MAGAZINE}
+                className="magcol__article group"
+              >
+                <div className="magcol__imgwrap">
+                  <img
+                    src={m.image ?? "/assets/magazine/placeholder.png"}
+                    alt={m.title}
+                    className="magcol__img"
+                  />
+                </div>
+                <div className="magcol__content">
+                  <h3 className="magcol__h3">{m.title}</h3>
+                  {m.description ? (
+                    <p
+                      className="magcol__desc"
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeBasicHtml(normalizeBackendHtml(m.description)),
+                      }}
+                    />
+                  ) : null}
+                </div>
+              </Link>
+            ))}
           </div>
         )}
       </div>

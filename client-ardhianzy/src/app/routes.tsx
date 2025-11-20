@@ -27,23 +27,37 @@ export const ROUTES = {
   READ_HISTORY: "/read-history",
 
   ADMIN: {
-    LOGIN: "/admin-ardhianzy/login",
     ROOT: "/admin",
+    LOGIN: "/admin-ardhianzy/login",
     DASHBOARD: "/admin/dashboard",
-    ARTICLES_LIST: "/admin/articles/list",
-    ARTICLES_ADD: "/admin/articles/add",
-    SHOP_LIST: "/admin/shop/list",
-    SHOP_ADD: "/admin/shop/add",
-    ANALYTICS: "/admin/analytics",
 
-    // ToT
+    ARTICLES: "/admin/articles",
+    ARTICLES_ADD: "/admin/articles/add",
+    ARTICLES_EDIT: (id: string) => `/admin/articles/${id}`,
+
+    MAGAZINES: "/admin/magazines",
+    MAGAZINES_ADD: "/admin/magazines/add",
+    MAGAZINES_EDIT: (id: string) => `/admin/magazines/${id}`,
+
+    RESEARCH: "/admin/research",
+    RESEARCH_ADD: "/admin/research/add",
+    RESEARCH_EDIT: (id: string) => `/admin/research/${id}`,
+
+    MONOLOGUES: "/admin/monologues",
+    MONOLOGUES_ADD: "/admin/monologues/add",
+    MONOLOGUES_EDIT: (id: string) => `/admin/monologues/${id}`,
+
+    SHOP: "/admin/shop",
+    SHOP_ADD: "/admin/shop/add",
+    SHOP_EDIT: (id: string) => `/admin/shop/${id}`,
+
     TOT_LIST: "/admin/tot/list",
     TOT_ADD: "/admin/tot/add",
-    // ToT Meta
-    TOT_META_LIST: "/admin/tot-meta/list",
-    TOT_META_ADD: "/admin/tot-meta/add",
+    TOT_EDIT: (id: string) => `/admin/tot/${id}`,
 
-    CONTENT: "/admin/content",
+    TOT_META_LIST: "/admin/meta-tot/list",
+    TOT_META_ADD: "/admin/meta-tot/add",
+    TOT_META_EDIT: (id: string) => `/admin/meta-tot/${id}`,
   },
 
   LEGACY: {

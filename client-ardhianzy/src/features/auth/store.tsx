@@ -28,22 +28,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(profile);
   }, []);
 
-  const doLogin = React.useCallback(async (payload: LoginPayload) => {
-    setError(null);
-    setLoading(true);
-    try {
-      await AuthAPI.login(payload);
-      // hanya panggil profile jika memang sudah ada token (admin login)
-      if (getAuthToken()) {
-        await refreshProfile();
+  const doLogin = React.useCallback(
+    async (payload: LoginPayload) => {
+      setError(null);
+      setLoading(true);
+      try {
+        await AuthAPI.login(payload);
+
+        // hanya panggil profile jika token berhasil diset
+        if (getAuthToken()) {
+          await refreshProfile();
+        }
+      } catch (e: any) {
+        setError(e?.message || "Gagal login");
+        throw e;
+      } finally {
+        setLoading(false);
       }
-    } catch (e: any) {
-      setError(e?.message || "Gagal login");
-      throw e;
-    } finally {
-      setLoading(false);
-    }
-  }, [refreshProfile]);
+    },
+    [refreshProfile]
+  );
 
   const doLogout = React.useCallback(() => {
     AuthAPI.logout();
@@ -59,12 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             await refreshProfile();
           } catch (e: any) {
-            // Kalau token invalid/expired (401), biarkan user tetap dianggap logged out.
             if (e?.status !== 401) throw e;
           }
         }
-      } catch {
-        /* no-op */
       } finally {
         setLoading(false);
       }

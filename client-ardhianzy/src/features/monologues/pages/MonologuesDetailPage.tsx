@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+// src/features/monologues/pages/MonologuesDetailPage.tsx
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 import { Navbar } from "@/components/common/Navbar";
@@ -6,6 +7,95 @@ import SectionNavLinks from "@/features/layout/components/SectionNavLinks";
 import { contentApi } from "@/lib/content/api";
 import type { MonologueDTO } from "@/lib/content/types";
 import MonologuesArticleGridSection from "../components/MonologuesArticleGridSection";
+
+declare global {
+  interface Window {
+    pdfjsLib?: any;
+  }
+}
+async function ensurePdfJsLoaded(): Promise<void> {
+  if (window.pdfjsLib) return;
+  await new Promise<void>((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Failed to load pdf.js"));
+    document.head.appendChild(s);
+  });
+  if (window.pdfjsLib?.GlobalWorkerOptions) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+}
+
+function PdfInlineViewer({ url, title }: { url: string; title: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let canceled = false;
+
+    async function run() {
+      try {
+        setErr(null);
+        await ensurePdfJsLoaded();
+        if (!window.pdfjsLib) throw new Error("pdf.js not available");
+
+        const container = ref.current;
+        if (!container) return;
+        container.innerHTML = "";
+
+        const loadingTask = window.pdfjsLib.getDocument({ url });
+        const pdf = await loadingTask.promise;
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          if (canceled) return;
+          const page = await pdf.getPage(i);
+
+          const baseViewport = page.getViewport({ scale: 1 });
+          const cssWidth = container.clientWidth || baseViewport.width;
+          const scale = (cssWidth / baseViewport.width) * 1.5;
+          const viewport = page.getViewport({ scale });
+
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          canvas.style.width = "100%";
+          canvas.style.height = "auto";
+          canvas.style.display = "block";
+          canvas.style.margin = i === pdf.numPages ? "0 auto 0" : "0 auto 24px";
+          canvas.style.backgroundColor = "#fff";
+          canvas.style.boxShadow = "0 10px 40px rgba(0,0,0,0.35)";
+          canvas.setAttribute("role", "img");
+          canvas.setAttribute("aria-label", `${title} — Page ${i}`);
+
+          container.appendChild(canvas);
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
+        }
+      } catch (e) {
+        setErr("Gagal merender PDF.");
+      }
+    }
+
+    if (url) run();
+    return () => {
+      canceled = true;
+    };
+  }, [url, title]);
+
+  return (
+    <div className="w-full rounded-xl border border-white/10 bg-black py-6">
+      <div ref={ref} className="w-[90%] mx-auto" />
+      {err ? (
+        <div className="w-[90%] mx-auto mt-4 text-white/80">{err}</div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function MonologuesDetailPage() {
   const { slug = "" } = useParams();
@@ -38,7 +128,7 @@ export default function MonologuesDetailPage() {
       <SectionNavLinks />
 
       <main className="bg-black text-white min-h-screen pt-[70px] pb-[80px]">
-        <section
+        {/* <section
           className="relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden"
           aria-label="Monologues hero"
         >
@@ -55,9 +145,9 @@ export default function MonologuesDetailPage() {
           >
             {title}
           </h1>
-        </section>
+        </section> */}
 
-        <section className="container-fluid mt-[32px]">
+        <section className="w-[95%] mx-auto mt-[32px]">
           <button
             onClick={() => navigate(-1)}
             className="
@@ -81,12 +171,12 @@ export default function MonologuesDetailPage() {
           {loading ? (
             <div className="w-full h-[80vh] rounded-xl bg-white/10 animate-pulse" />
           ) : pdfUrl ? (
-            <iframe title={title} src={pdfUrl} className="w-full h-[85vh] rounded-xl border border-white/10 bg-black" />
+            <PdfInlineViewer url={pdfUrl} title={title} />
           ) : (
             <div className="text-white/80">PDF tidak tersedia.</div>
           )}
 
-          <div className="mt-[60px]">
+          <div className="mt-1">
             <MonologuesArticleGridSection />
           </div>
         </section>

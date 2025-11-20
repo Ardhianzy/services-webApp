@@ -16,6 +16,7 @@ export type DetailPhilosopher = {
 type Props = { philosopher?: DetailPhilosopher | null; onClose?: () => void; };
 
 const DEFAULT_HERO = "/assets/Group 5117.png";
+const MEA_ICON = "/assets/icon/MEA_icon.png";
 
 export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,10 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         setLoading(true);
         const res = await contentApi.totMeta.byTotId(String(philosopher.id));
         if (!alive) return;
+        if (!res) {
+          setMeta(null);
+          return;
+        }
         setMeta({
           metafisika: normalizeBackendHtml(res?.metafisika),
           epsimologi: normalizeBackendHtml(res?.epsimologi),
@@ -51,7 +56,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
   const hero = philosopher.cardImage || philosopher.hero || DEFAULT_HERO;
   const dateText = philosopher.fullDates || philosopher.years || "";
   const locationText = [philosopher.geoorigin, philosopher.detail_location].filter(Boolean).join(", ");
-  const infoLine = [dateText, locationText].filter(Boolean).join(" — ");
+  const infoLine = [dateText, locationText].filter(Boolean).join(" | ");
 
   return (
     <aside
@@ -65,11 +70,13 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         "text-white",
       ].join(" ")}
       style={{
-        width: "min(590px, 46vw)",
+        width: "min(720px, 48vw)",
         bottom: "150px",
         background: "linear-gradient(to top, #000 30%, #1a1a1a 70%, #2a2a2a 100%)",
         padding: "16px 16px 12px",
         gap: "14px",
+        overflowY: "auto",
+        scrollbarGutter: "stable both-edges" as any,
       }}
     >
       <button
@@ -77,7 +84,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         aria-label="Close"
         onClick={onClose}
         className={[
-          "absolute right-2 top-2 z-[3] inline-flex h-9 w-9 items-center justify-center",
+          "absolute right-2 top-2 z-[3] inline-flex h-9 w-9 items-center justify-center cursor-pointer",
           "rounded-full border border-[#666] bg-[#111] text-white",
           "shadow-[0_4px_10px_rgba(0,0,0,4)] hover:bg-[#151515]",
         ].join(" ")}
@@ -85,110 +92,143 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         ×
       </button>
 
-      <div className="mt-10 w-full overflow-hidden rounded-[16px] border border-white/10 bg-[#0c0c0c] relative z-[2]">
-        <img
-          src={hero}
-          alt={philosopher.name || "philosopher"}
-          draggable={false}
-          className="block w-full h-[240px] md:h-[280px] object-contain select-none"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_HERO; }}
-        />
-      </div>
+      <div className="mt-13 grid grid-cols-2 gap-4">
+        <div className="relative">
+          <img
+            src={hero}
+            alt={philosopher.name || "philosopher"}
+            draggable={false}
+            className="block w-full h-[260px] md:h-[300px] object-cover select-none rounded-br-[16px]"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_HERO; }}
+          />
+        </div>
 
-      <h3
-        className="mb-1 mt-2 text-left text-[36px] md:text-[40px] text-white relative z-[2]"
-        style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: ".3px" }}
-      >
-        {philosopher.name ?? "Unknown"}
-      </h3>
+        <div className="flex flex-col">
+          <h3
+            className="text-center text-[36px] md:text-[40px] text-white"
+            style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: ".3px" }}
+          >
+            {philosopher.name ?? "Unknown"}
+          </h3>
+
+          <div className="mt-2 flex-1 grid place-items-center">
+            <img
+              src={MEA_ICON}
+              alt="MEA icon"
+              draggable={false}
+              className="block w-full max-w-[320px] h-auto object-contain select-none"
+            />
+          </div>
+        </div>
+      </div>
 
       {infoLine && (
         <p
-          className="mt-0 mb-1 text-left text-white/80 text-[18px] relative z-[2]"
+          className="mt-1 mb-0 text-left text-white/80 text-[26px]"
           style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         >
           {infoLine}
         </p>
       )}
 
-      <div
-        className="mt-1 max-h-[25vh] overflow-auto px-[6px] pb-3 text-left"
-        style={{ scrollbarGutter: "stable both-edges" as any }}
-      >
-        <style>{`
+      <style>{`
+        .card-typography{
+          font-family: Roboto, ui-sans-serif, system-ui;
+          font-size: 1.02rem;
+          line-height: 1.85;
+          color: #fff;
+          text-align: justify;
+          text-justify: inter-word;
+          hyphens: auto;
+          word-break: break-word;
+        }
+        .card-typography h1,.card-typography h2,.card-typography h3,.card-typography h4{
+          font-family: Roboto, ui-sans-serif, system-ui;
+          font-weight: 700;
+          line-height: 1.25;
+          margin: .85em 0 .45em;
+          letter-spacing: .2px;
+        }
+        .card-typography h1{font-size:1.15rem}
+        .card-typography h2{font-size:1.08rem}
+        .card-typography h3{font-size:1.04rem}
+        .card-typography h4{font-size:1.02rem}
+        .card-typography p{margin:0 0 1em}
+        .card-typography blockquote{margin:1em 0;padding:.75em 1em;border-left:3px solid rgba(255,255,255,.35);background:rgba(255,255,255,.04);border-radius:8px}
+        .card-typography blockquote p{margin:.4em 0}
+        .card-typography blockquote footer{margin-top:.55em;opacity:.85;font-size:.92em}
+        .card-typography ul,.card-typography ol{margin:.6em 0 1.1em;padding-left:1.3em}
+        .card-typography ul{list-style:disc}
+        .card-typography ol{list-style:decimal}
+        .card-typography img,.card-typography video,.card-typography iframe{max-width:100%;height:auto}
+        .card-typography a{color:#fff;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.6)}
+
+        .card-typography table{
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1.1em 0;
+          font-size: 0.98rem;
+          text-align: left;
+        }
+        .card-typography thead th{
+          background: rgba(255,255,255,.06);
+          font-weight: 700;
+        }
+        .card-typography th,
+        .card-typography td{
+          border: 1px solid rgba(255,255,255,.28);
+          padding: .55em .8em;
+          vertical-align: top;
+          text-align: left;
+          text-justify: auto;
+          hyphens: auto;
+          word-break: break-word;
+        }
+        .card-typography tbody tr:nth-child(even){
+          background: rgba(255,255,255,.02);
+        }
+
+        @media (max-width: 768px){
           .card-typography{
-            font-family: Roboto, ui-sans-serif, system-ui;
-            font-size: 1.02rem;
-            line-height: 1.85;
-            color: #fff;
-            text-align: justify;
-            text-justify: inter-word;
-            hyphens: auto;
-            word-break: break-word;
+            font-size:1rem;
+            line-height:1.8;
           }
-          .card-typography h1,.card-typography h2,.card-typography h3,.card-typography h4{
-            font-family: Roboto, ui-sans-serif, system-ui; /* pakai body font agar kalem */
-            font-weight: 700;
-            line-height: 1.25;
-            margin: .85em 0 .45em;
-            letter-spacing: .2px;
+          .card-typography table{
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
           }
-          .card-typography h1{font-size:1.15rem}
-          .card-typography h2{font-size:1.08rem}
-          .card-typography h3{font-size:1.04rem}
-          .card-typography h4{font-size:1.02rem}
-          .card-typography p{margin:0 0 1em}
-          .card-typography blockquote{margin:1em 0;padding:.75em 1em;border-left:3px solid rgba(255,255,255,.35);background:rgba(255,255,255,.04);border-radius:8px}
-          .card-typography blockquote p{margin:.4em 0}
-          .card-typography blockquote footer{margin-top:.55em;opacity:.85;font-size:.92em}
-          .card-typography ul,.card-typography ol{margin:.6em 0 1.1em;padding-left:1.3em}
-          .card-typography ul{list-style:disc}
-          .card-typography ol{list-style:decimal}
-          .card-typography img,.card-typography video,.card-typography iframe{max-width:100%;height:auto}
-          .card-typography a{color:#fff;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.6)}
-          @media (max-width:768px){.card-typography{font-size:1rem;line-height:1.8}}
-        `}</style>
+        }
+      `}</style>
 
-        <section className="mb-3">
-          <h4
-            className="text-[22px] font-semibold mb-1"
-            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-          >
-            Metafisika
-          </h4>
-          <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.metafisika || (loading ? "Loading..." : "—") }} />
-        </section>
+      <section className="mt-2 mb-3">
+        <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+          Metafisika
+        </h4>
+        <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.metafisika || (loading ? "Loading..." : "—") }} />
+      </section>
 
-        <section className="mb-3">
-          <h4
-            className="text-[22px] font-semibold mb-1"
-            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-          >
-            Epistemologi
-          </h4>
-          <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.epsimologi || (loading ? "Loading..." : "—") }} />
-        </section>
+      <section className="mb-3">
+        <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+          Epistemologi
+        </h4>
+        <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.epsimologi || (loading ? "Loading..." : "—") }} />
+      </section>
 
-        <section className="mb-3">
-          <h4
-            className="text-[22px] font-semibold mb-1"
-            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-          >
-            Aksiologi
-          </h4>
-          <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.aksiologi || (loading ? "Loading..." : "—") }} />
-        </section>
+      <section className="mb-3">
+        <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+          Aksiologi
+        </h4>
+        <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.aksiologi || (loading ? "Loading..." : "—") }} />
+      </section>
 
-        <section>
-          <h4
-            className="text-[22px] font-semibold mb-1"
-            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-          >
-            Kesimpulan
-          </h4>
-          <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.conclusion || (loading ? "Loading..." : "—") }} />
-        </section>
-      </div>
+      <section className="mb-1 pb-2">
+        <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+          Kesimpulan
+        </h4>
+        <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.conclusion || (loading ? "Loading..." : "—") }} />
+      </section>
     </aside>
   );
 }
