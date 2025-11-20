@@ -113,9 +113,11 @@ export default function ReadingGuideHighlightSection({
           return (tb || 0) - (ta || 0);
         });
 
+        const latest = sortedDesc[0];
+
         setRemote(
-          sortedDesc.length
-            ? sortedDesc
+          latest
+            ? [latest]
             : [
                 {
                   id: "rg-coming-soon",
@@ -285,7 +287,7 @@ export default function ReadingGuideHighlightSection({
                         src={g.image}
                         alt={g.title}
                         loading="lazy"
-                        className="h-full w-full p-24 object-contain transition-[filter] duration-300 filter grayscale hover:grayscale-0"
+                        className="h-full w-full object-cover object-top transition-[filter] duration-300 filter grayscale hover:grayscale-0"
                       />
 
                       <div

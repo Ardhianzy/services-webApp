@@ -50,17 +50,29 @@ import ReadingGuidePage from "@/features/reading-guides/pages/ReadingGuidePage";
 import AdminRoute from "@/routes/AdminRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminLoginPage from "@/features/admin/pages/AdminLoginPage";
-import AdminAddItemPage from "@/features/admin/pages/AdminAddItemPage";
-import AdminListItemPage from "@/features/admin/pages/AdminListItemPage";
 // import AdminDashboardPage from "@/features/admin/pages/AdminDashboardPage";
 import AdminArticlePage from "@/features/admin/pages/AdminArticlePage";
 import AdminAddArticlePage from "@/features/admin/pages/AdminAddArticlePage";
 import AdminEditArticlePage from "@/features/admin/pages/AdminEditArticlePage";
+import AdminMagazinePage from "@/features/admin/pages/AdminMagazinePage";
+import AdminAddMagazinePage from "@/features/admin/pages/AdminAddMagazinePage";
+import AdminEditMagazinePage from "@/features/admin/pages/AdminEditMagazinePage";
+import AdminResearchPage from "@/features/admin/pages/AdminResearchPage";
+import AdminAddResearchPage from "@/features/admin/pages/AdminAddResearchPage";
+import AdminEditResearchPage from "@/features/admin/pages/AdminEditResearchPage";
+import AdminMonologuePage from "@/features/admin/pages/AdminMonologuePage";
+import AdminAddMonologuePage from "@/features/admin/pages/AdminAddMonologuePage";
+import AdminEditMonologuePage from "@/features/admin/pages/AdminEditMonologuePage";
+import AdminShopPage from "@/features/admin/pages/AdminShopPage";
+import AdminAddShopPage from "@/features/admin/pages/AdminAddShopPage";
+import AdminEditShopPage from "@/features/admin/pages/AdminEditShopPage";
+import AdminToTPage from "@/features/admin/pages/AdminToTPage";
+import AdminAddToTPage from "@/features/admin/pages/AdminAddToTPage";
+import AdminEditToTPage from "@/features/admin/pages/AdminEditToTPage";
+import AdminToTMetaPage from "@/features/admin/pages/AdminToTMetaPage";
+import AdminAddToTMetaPage from "@/features/admin/pages/AdminAddToTMetaPage";
+import AdminEditToTMetaPage from "@/features/admin/pages/AdminEditToTMetaPage";
 // import AdminAnalyticsPage from "@/features/admin/pages/AdminAnalyticsPage";
-// import AdminToTListPage from "@/features/admin/pages/AdminToTListPage";
-// import AdminToTAddPage from "@/features/admin/pages/AdminToTAddPage";
-// import AdminToTMetaListPage from "@/features/admin/pages/AdminToTMetaListPage";
-// import AdminToTMetaAddPage from "@/features/admin/pages/AdminToTMetaAddPage";
 // import AdminResearchShopCollectedPage from "@/features/admin/pages/AdminResearchShopCollectedPage";
 
 import { ROUTES } from "@/app/routes";
@@ -294,9 +306,29 @@ function AppRoutes() {
           <Route path="articles/add" element={<AdminAddArticlePage />} />
           <Route path="articles/:id" element={<AdminEditArticlePage />} />
 
-          {/* Sudah aktif sekarang: shop list & add */}
-          <Route path="shop/list" element={<AdminListItemPage />} />
-          <Route path="shop/add" element={<AdminAddItemPage />} />
+          <Route path="magazines" element={<AdminMagazinePage />} />
+          <Route path="magazines/add" element={<AdminAddMagazinePage />} />
+          <Route path="magazines/:id" element={<AdminEditMagazinePage />} />
+
+          <Route path="research" element={<AdminResearchPage />} />
+          <Route path="research/add" element={<AdminAddResearchPage />} />
+          <Route path="research/:id" element={<AdminEditResearchPage />} />
+
+          <Route path="monologues" element={<AdminMonologuePage />} />
+          <Route path="monologues/add" element={<AdminAddMonologuePage />} />
+          <Route path="monologues/:id" element={<AdminEditMonologuePage />} />
+
+          <Route path="shop" element={<AdminShopPage />} />
+          <Route path="shop/add" element={<AdminAddShopPage />} />
+          <Route path="shop/:id" element={<AdminEditShopPage />} />
+
+          <Route path="tot/list" element={<AdminToTPage />} />
+          <Route path="tot/add" element={<AdminAddToTPage />} />
+          <Route path="tot/:id" element={<AdminEditToTPage />} />
+
+          <Route path="meta-tot/list" element={<AdminToTMetaPage />} />
+          <Route path="meta-tot/add" element={<AdminAddToTMetaPage />} />
+          <Route path="meta-tot/:id" element={<AdminEditToTMetaPage />} />
         </Route>
       </Route>
 

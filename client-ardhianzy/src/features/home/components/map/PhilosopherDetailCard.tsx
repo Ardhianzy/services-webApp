@@ -36,6 +36,10 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         setLoading(true);
         const res = await contentApi.totMeta.byTotId(String(philosopher.id));
         if (!alive) return;
+        if (!res) {
+          setMeta(null);
+          return;
+        }
         setMeta({
           metafisika: normalizeBackendHtml(res?.metafisika),
           epsimologi: normalizeBackendHtml(res?.epsimologi),
@@ -66,7 +70,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         "text-white",
       ].join(" ")}
       style={{
-        width: "min(650px, 46vw)",
+        width: "min(720px, 48vw)",
         bottom: "150px",
         background: "linear-gradient(to top, #000 30%, #1a1a1a 70%, #2a2a2a 100%)",
         padding: "16px 16px 12px",
@@ -158,7 +162,44 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         .card-typography ol{list-style:decimal}
         .card-typography img,.card-typography video,.card-typography iframe{max-width:100%;height:auto}
         .card-typography a{color:#fff;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.6)}
-        @media (max-width:768px){.card-typography{font-size:1rem;line-height:1.8}}
+
+        .card-typography table{
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1.1em 0;
+          font-size: 0.98rem;
+          text-align: left;
+        }
+        .card-typography thead th{
+          background: rgba(255,255,255,.06);
+          font-weight: 700;
+        }
+        .card-typography th,
+        .card-typography td{
+          border: 1px solid rgba(255,255,255,.28);
+          padding: .55em .8em;
+          vertical-align: top;
+          text-align: left;
+          text-justify: auto;
+          hyphens: auto;
+          word-break: break-word;
+        }
+        .card-typography tbody tr:nth-child(even){
+          background: rgba(255,255,255,.02);
+        }
+
+        @media (max-width: 768px){
+          .card-typography{
+            font-size:1rem;
+            line-height:1.8;
+          }
+          .card-typography table{
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+        }
       `}</style>
 
       <section className="mt-2 mb-3">

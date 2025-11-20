@@ -1,25 +1,28 @@
-// src/features/admin/pages/AdminArticlePage.tsx
+// src/features/admin/pages/AdminMagazinePage.tsx
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import {
-  adminFetchArticles,
-  adminDeleteArticle,
+  adminFetchMagazines,
+  adminDeleteMagazine,
   normalizeBackendHtml,
 } from "@/lib/content/api";
-import type { ArticleDTO } from "@/lib/content/types";
+import type { MagazineDTO } from "@/lib/content/types";
 
-type FilterCategory = "ALL" | "READING_GUIDLINE" | "IDEAS_AND_TRADITIONS" | "POP_CULTURE";
+type StatusFilter = "ALL" | "PUBLISHED" | "DRAFT";
 
-const CATEGORY_LABEL: Record<FilterCategory, string> = {
-  ALL: "Semua Kategori",
-  READING_GUIDLINE: "Reading Guide",
-  IDEAS_AND_TRADITIONS: "Ideas & Tradition",
-  POP_CULTURE: "Popsophia / Pop Culture",
+const STATUS_LABEL: Record<StatusFilter, string> = {
+  ALL: "Semua Status",
+  PUBLISHED: "Published",
+  DRAFT: "Draft / Preview",
 };
 
-function formatDateShort(value?: string) {
+type MagazineRow = MagazineDTO & {
+  is_published?: boolean | null;
+};
+
+function formatDateShort(value?: string | null) {
   if (!value) return "-";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
@@ -30,14 +33,17 @@ function formatDateShort(value?: string) {
   });
 }
 
-const AdminArticlePage: React.FC = () => {
+const AdminMagazinePage: React.FC = () => {
   const navigate = useNavigate();
-  const [articles, setArticles] = useState<ArticleDTO[]>([]);
+  const [rows, setRows] = useState<MagazineRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState<FilterCategory>("ALL");
   const [search, setSearch] = useState("");
-  const [selectedArticle, setSelectedArticle] = useState<ArticleDTO | null>(null);
+  const [statusFilter, setStatusFilter] =
+    useState<StatusFilter>("ALL");
+  const [selected, setSelected] = useState<MagazineRow | null>(
+    null
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -46,14 +52,16 @@ const AdminArticlePage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await adminFetchArticles();
-        if (!cancelled) {
-          setArticles(data);
-          setSelectedArticle(data[0] ?? null);
-        }
+        const data = await adminFetchMagazines();
+        if (cancelled) return;
+        const casted = (data ?? []) as MagazineRow[];
+        setRows(casted);
+        setSelected(casted[0] ?? null);
       } catch (e: any) {
         if (!cancelled) {
-          setError(e?.message || "Gagal memuat daftar artikel.");
+          setError(
+            e?.message || "Gagal memuat daftar magazines."
+          );
         }
       } finally {
         if (!cancelled) {
@@ -67,68 +75,71 @@ const AdminArticlePage: React.FC = () => {
     };
   }, []);
 
-  const filteredArticles = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return articles.filter((raw: any) => {
-      const title: string = raw.title ?? "";
-      const category: string | undefined = raw.category;
-      const matchSearch = !q || title.toLowerCase().includes(q);
-      const matchCategory =
-        filterCategory === "ALL" || category === filterCategory;
-      return matchSearch && matchCategory;
-    });
-  }, [articles, filterCategory, search]);
-
-  const handleDelete = async (id: string) => {
-    const sure = window.confirm(
-      "Yakin ingin menghapus artikel ini? Tindakan ini tidak bisa dibatalkan."
-    );
-    if (!sure) return;
-
-    try {
-      await adminDeleteArticle(id);
-      setArticles((prev) => prev.filter((a: any) => a.id !== id));
-      setSelectedArticle((prev: any) =>
-        prev && prev.id === id ? null : prev
+    return rows.filter((m) => {
+      const title = (m.title ?? "").toLowerCase();
+      const slug = (m.slug ?? "").toLowerCase();
+      const desc = (m.meta_description ?? "").toLowerCase();
+      const matchSearch =
+        !q || title.includes(q) || slug.includes(q) || desc.includes(q);
+      const isPublished = Boolean(
+        (m as MagazineRow).is_published
       );
-    } catch (e: any) {
-      alert(e?.message || "Gagal menghapus artikel.");
-    }
-  };
+      const matchStatus =
+        statusFilter === "ALL"
+          ? true
+          : statusFilter === "PUBLISHED"
+          ? isPublished
+          : !isPublished;
+      return matchSearch && matchStatus;
+    });
+  }, [rows, search, statusFilter]);
 
   useEffect(() => {
-    if (!selectedArticle) return;
-    const stillExists = filteredArticles.some(
-      (a: any) => a.id === (selectedArticle as any).id
+    if (!selected) return;
+    const stillExists = filteredRows.some(
+      (m) => m.id === selected.id
     );
     if (!stillExists) {
-      setSelectedArticle(filteredArticles[0] ?? null);
+      setSelected(filteredRows[0] ?? null);
     }
-  }, [filteredArticles, selectedArticle]);
+  }, [filteredRows, selected]);
+
+  const handleDelete = async (id: string) => {
+    const ok = window.confirm(
+      "Yakin ingin menghapus magazine ini? Tindakan ini tidak bisa dibatalkan."
+    );
+    if (!ok) return;
+
+    try {
+      await adminDeleteMagazine(id);
+      setRows((prev) => prev.filter((m) => m.id !== id));
+      setSelected((prev) => (prev && prev.id === id ? null : prev));
+    } catch (e: any) {
+      alert(e?.message || "Gagal menghapus magazine.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white px-7 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
-            ADMIN ARTICLES
+            ADMIN MAGAZINES
           </h1>
           <p className="text-sm text-neutral-400 mt-3 max-w-xl">
-            Kelola artikel untuk Reading Guide, Ideas &amp; Tradition,
-            dan Popsophia. Data di sini terhubung langsung dengan API
-            <span className="ml-1 text-neutral-500">
-              (/api/articel)
-            </span>
-            .
+            Kelola magazines yang tampil di halaman Magazine. Setiap
+            entri terhubung dengan deskripsi HTML dan satu file PDF.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => navigate(ROUTES.ADMIN.ARTICLES_ADD)}
+          onClick={() => navigate(ROUTES.ADMIN.MAGAZINES_ADD)}
           className="px-5 py-2 rounded-full border border-white text-sm font-medium tracking-[0.15em]
                      hover:bg-white hover:text-black transition cursor-pointer"
         >
-          + ARTICLE BARU
+          + MAGAZINE BARU
         </button>
       </div>
 
@@ -139,22 +150,24 @@ const AdminArticlePage: React.FC = () => {
               <select
                 className="bg-black border border-zinc-700 rounded-full px-4 py-2 text-sm outline-none
                            focus:border-white cursor-pointer"
-                value={filterCategory}
+                value={statusFilter}
                 onChange={(e) =>
-                  setFilterCategory(e.target.value as FilterCategory)
+                  setStatusFilter(e.target.value as StatusFilter)
                 }
               >
-                {Object.entries(CATEGORY_LABEL).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
+                {Object.entries(STATUS_LABEL).map(
+                  ([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  )
+                )}
               </select>
             </div>
             <div className="relative w-full md:w-72">
               <input
                 type="text"
-                placeholder="Cari judul artikel..."
+                placeholder="Cari judul / slug..."
                 className="w-full bg-black border border-zinc-700 rounded-full pl-9 pr-3 py-2 text-sm outline-none
                            placeholder:text-zinc-500 focus:border-white"
                 value={search}
@@ -167,64 +180,68 @@ const AdminArticlePage: React.FC = () => {
           </div>
 
           {loading ? (
-            <p className="text-sm text-neutral-400">Memuat artikel...</p>
+            <p className="text-sm text-neutral-400">
+              Memuat magazines...
+            </p>
           ) : error ? (
             <p className="text-sm text-red-400">{error}</p>
-          ) : filteredArticles.length === 0 ? (
+          ) : filteredRows.length === 0 ? (
             <p className="text-sm text-neutral-400">
-              Belum ada artikel yang sesuai filter.
+              Belum ada magazine yang sesuai filter.
             </p>
           ) : (
             <div className="border border-zinc-800 rounded-2xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-zinc-900/80 text-neutral-400">
                   <tr>
-                    <th className="text-center px-4 py-3 font-normal w-[24%]">
+                    <th className="text-center px-4 py-3 font-normal w-[40%]">
                       Judul
                     </th>
-                    <th className="text-center px-4 py-3 font-normal w-[18%]">
-                      Kategori
+                    <th className="text-center px-4 py-3 font-normal w-[20%]">
+                      PDF
                     </th>
-                    <th className="text-center px-4 py-3 font-normal w-[18%]">
-                      Tanggal
+                    <th className="text-center px-4 py-3 font-normal w-[20%]">
+                      Updated
                     </th>
-                    <th className="text-center px-4 py-3 font-normal w-[12%]">
+                    <th className="text-center px-4 py-3 font-normal w-[10%]">
                       Status
                     </th>
-                    <th className="text-center px-4 py-3 font-normal w-[14%]">
+                    <th className="text-center px-4 py-3 font-normal w-[10%]">
                       Aksi
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredArticles.map((raw: any, idx) => {
-                    const isPublished = Boolean(raw.is_published);
-                    const isSelected =
-                      selectedArticle &&
-                      (selectedArticle as any).id === raw.id;
+                  {filteredRows.map((m) => {
+                    const isPublished = Boolean(
+                      (m as MagazineRow).is_published
+                    );
+                    const isSelected = selected?.id === m.id;
                     return (
                       <tr
-                        key={raw.id ?? idx}
+                        key={m.id}
                         className={`border-t border-zinc-800/70 ${
                           isSelected ? "bg-white/5" : "bg-transparent"
                         } hover:bg-white/5 transition cursor-pointer`}
-                        onClick={() => setSelectedArticle(raw)}
+                        onClick={() => setSelected(m)}
                       >
                         <td className="px-4 py-3 align-top">
                           <div className="font-medium text-sm">
-                            {raw.title ?? "-"}
+                            {m.title ?? "-"}
                           </div>
-                          <div className="text-xs text-neutral-500 truncate max-w-[190px]">
-                            {raw.excerpt ?? raw.meta_description ?? ""}
+                          <div className="text-xs text-neutral-500 truncate max-w-[210px]">
+                            {m.meta_description ?? ""}
                           </div>
                         </td>
-                        <td className="px-4 py-3 align-top">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] border border-zinc-700">
-                            {raw.category ?? "-"}
-                          </span>
+                        <td className="px-4 py-3 align-top text-xs text-neutral-400">
+                          {m.pdf_filename
+                            ? m.pdf_filename
+                            : m.pdf_url
+                            ? "PDF tersedia"
+                            : "Belum ada PDF"}
                         </td>
-                        <td className="px-4 py-3 align-top text-neutral-400">
-                          {formatDateShort(raw.date)}
+                        <td className="px-4 py-3 align-top text-neutral-400 text-xs text-center">
+                          {formatDateShort(m.updated_at ?? m.created_at)}
                         </td>
                         <td className="px-4 py-3 align-top">
                           <span
@@ -244,9 +261,7 @@ const AdminArticlePage: React.FC = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(
-                                  ROUTES.ADMIN.ARTICLES_EDIT(
-                                    String(raw.id)
-                                  )
+                                  ROUTES.ADMIN.MAGAZINES_EDIT(m.id)
                                 );
                               }}
                               className="text-xs px-3 py-1 rounded-full border border-zinc-700 hover:bg-white hover:text-black transition cursor-pointer"
@@ -257,7 +272,7 @@ const AdminArticlePage: React.FC = () => {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete(String(raw.id));
+                                handleDelete(m.id);
                               }}
                               className="text-xs px-3 py-1 rounded-full border border-red-500/60 text-red-300 hover:bg-red-500 hover:text-white transition cursor-pointer"
                             >
@@ -279,15 +294,21 @@ const AdminArticlePage: React.FC = () => {
             LIVE PREVIEW (ADMIN)
           </h2>
 
-          {!selectedArticle ? (
+          {!selected ? (
             <p className="text-sm text-neutral-500">
-              Pilih salah satu artikel di sebelah kiri untuk melihat preview HTML-nya.
+              Pilih salah satu magazine di sebelah kiri untuk melihat
+              preview deskripsi dan PDF-nya.
             </p>
           ) : (
             <div className="bg-black rounded-2xl border border-zinc-800/80 py-5 px-4 overflow-y-auto">
               {(() => {
-                const a: any = selectedArticle;
-                const isPublished = Boolean(a.is_published);
+                const m = selected;
+                const isPublished = Boolean(
+                  (m as MagazineRow).is_published
+                );
+                const htmlDescription = normalizeBackendHtml(
+                  m.description ?? ""
+                );
 
                 return (
                   <>
@@ -364,14 +385,18 @@ const AdminArticlePage: React.FC = () => {
 
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
-                        {a.category ?? "UNCATEGORIZED"}
+                        {m.slug}
                       </span>
-                      <span className="text-[11px] text-neutral-500">
-                        {formatDateShort(a.date)}
-                      </span>
-                      <span className="text-[11px] text-neutral-500">
-                        • {a.author ?? "Author tidak di-set"}
-                      </span>
+                      {m.created_at && (
+                        <span className="text-[11px] text-neutral-500">
+                          Dibuat {formatDateShort(m.created_at)}
+                        </span>
+                      )}
+                      {m.updated_at && (
+                        <span className="text-[11px] text-neutral-500">
+                          • Update {formatDateShort(m.updated_at)}
+                        </span>
+                      )}
                       <span
                         className={`ml-auto text-[11px] px-2 py-1 rounded-full ${
                           isPublished
@@ -383,35 +408,76 @@ const AdminArticlePage: React.FC = () => {
                       </span>
                     </div>
 
-                    <h1 className="text-2xl md:text-3xl font-semibold mb-4">
-                      {a.title ?? "Tanpa judul"}
+                    <h1 className="text-2xl md:text-3xl font-semibold mb-3">
+                      {m.title ?? "Tanpa judul"}
                     </h1>
 
-                    {a.excerpt && (
+                    {m.meta_description && (
                       <p className="text-sm text-neutral-300 mb-4">
-                        {a.excerpt}
+                        {m.meta_description}
                       </p>
                     )}
 
-                    {a.image && typeof a.image === "string" && (
-                      <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-800">
+                    {m.image && (
+                      <div className="mb-5 rounded-2xl overflow-hidden border border-zinc-800 max-h-64">
                         <img
-                          src={a.image}
-                          alt={a.title ?? ""}
+                          src={m.image}
+                          alt={m.title ?? "Magazine cover"}
                           className="w-full h-64 object-cover"
                         />
                       </div>
                     )}
 
-                    <div
-                      className="card-typography prose prose-invert prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{
-                        __html:
-                          normalizeBackendHtml(
-                            a.content ?? a.meta_description ?? ""
-                          ) || "—",
-                      }}
-                    />
+                    {htmlDescription && (
+                      <div
+                        className="card-typography prose prose-invert prose-sm max-w-none mb-4"
+                        dangerouslySetInnerHTML={{
+                          __html: htmlDescription || "—",
+                        }}
+                      />
+                    )}
+
+                    {m.megazine_isi && (
+                      <div className="mt-2 mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 text-xs text-neutral-300">
+                        <div className="font-medium mb-1">
+                          Isi singkat (megazine_isi)
+                        </div>
+                        <p className="leading-relaxed whitespace-pre-line">
+                          {m.megazine_isi}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mt-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-medium">
+                          PDF Magazine
+                        </p>
+                        <p className="text-xs text-neutral-400 truncate max-w-xs">
+                          {m.pdf_filename
+                            ? m.pdf_filename
+                            : m.pdf_url
+                            ? m.pdf_url
+                            : "Belum ada file PDF terunggah."}
+                        </p>
+                        {typeof m.pdf_size === "number" && (
+                          <p className="text-[11px] text-neutral-500 mt-1">
+                            ~{(m.pdf_size / (1024 * 1024)).toFixed(2)} MB
+                          </p>
+                        )}
+                      </div>
+                      {m.pdf_url && (
+                        <a
+                          href={m.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs px-4 py-2 rounded-full border border-white bg-white text-black tracking-[0.15em]
+                                     hover:bg-transparent hover:text-white hover:border-white transition text-center"
+                        >
+                          BUKA PDF
+                        </a>
+                      )}
+                    </div>
                   </>
                 );
               })()}
@@ -423,4 +489,4 @@ const AdminArticlePage: React.FC = () => {
   );
 };
 
-export default AdminArticlePage;
+export default AdminMagazinePage;

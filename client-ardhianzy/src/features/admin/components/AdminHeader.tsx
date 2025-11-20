@@ -41,7 +41,6 @@ const AdminHeader: FC = () => {
     <header
       className="flex items-center justify-between py-5 text-white font-['Roboto',sans-serif]"
     >
-      {/* left: welcome */}
       <div>
         <h1 className="m-0 font-medium text-[36px] leading-[42px]">
           Welcome back, Admin
@@ -64,18 +63,16 @@ const AdminHeader: FC = () => {
           />
         </label> */}
 
-        {/* profile */}
-        <div className="flex items-center gap-[10px]">
+        {/* <div className="flex items-center gap-[10px]">
           <img
-            src="/assets/default-profile-icon.png"
+            src="/assets/icon/Ardhianzy_Logo_2.png"
             alt="Admin avatar"
-            className="h-[28px] w-[28px] rounded-full bg-[#D9D9D9]"
+            className="h-[28px] w-[28px] object-cover rounded-full bg-[#D9D9D9]"
           />
           <span className="text-white text-[16px] leading-[19px] font-normal">
-            Admin Gacor
+            Admin Ardhianzy
           </span>
-          {/* <ArrowDownIcon /> */}
-        </div>
+        </div> */}
       </div>
     </header>
   );

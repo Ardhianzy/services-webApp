@@ -17,9 +17,151 @@ const ArticleIcon: FC<{ isActive: boolean }> = ({ isActive }) => (
   </svg>
 );
 
+const MagazineIcon: FC<{ isActive: boolean }> = ({ isActive }) => (
+  <svg
+    width="20"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <rect
+      x="4"
+      y="3"
+      width="11"
+      height="16"
+      rx="2"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+    />
+    <path
+      d="M9 3.5V6.5C9 7.05228 9.44772 7.5 10 7.5H17"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+    <path
+      d="M7.5 9H13.5"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+    <path
+      d="M7.5 12H12"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const MonologueIcon: FC<{ isActive: boolean }> = ({ isActive }) => (
+  <svg
+    width="20"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M4 5C3.44772 5 3 5.44772 3 6V15C3 15.5523 3.44772 16 4 16H8L11.5 19.5L15 16H20C20.5523 16 21 15.5523 21 15V6C21 5.44772 20.5523 5 20 5H4Z"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M7 9H17"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+    <path
+      d="M7 12H13"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const ResearchIcon: FC<{ isActive: boolean }> = ({ isActive }) => (
+  <svg
+    width="20"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <rect
+      x="4"
+      y="3"
+      width="10"
+      height="14"
+      rx="2"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+    />
+    <path
+      d="M7 7H11"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+    <path
+      d="M7 10H11"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+    <circle
+      cx="15.5"
+      cy="14.5"
+      r="3"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+    />
+    <path
+      d="M17.7 16.7L19.5 18.5"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 const ShopIcon: FC<{ isActive: boolean }> = ({ isActive }) => (
-  <svg width="19" height="18" viewBox="0 0 19 18" fill={isActive ? "#000000" : "currentColor"} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M0.5 0.5V2.75H2.3L5.45 9.425L4.25 11.5C4.08333 11.8167 4 12.1583 4 12.5C4 13.6 4.9 14.5 6 14.5H17V12.5H6.35C6.23333 12.5 6.15 12.4167 6.15 12.3C6.15 12.25 6.15833 12.2 6.175 12.15L7.1 10.5H14.075C14.75 10.5 15.3417 10.1417 15.65 9.575L18.8 3.65C18.9167 3.43333 19 3.19167 19 2.95C19 2.4 18.6 2 18.05 2H4.475L3.725 0.5H0.5ZM15.5 15.5C14.8333 15.5 14.2917 16.0417 14.2917 16.7083C14.2917 17.375 14.8333 17.9167 15.5 17.9167C16.1667 17.9167 16.7083 17.375 16.7083 16.7083C16.7083 16.0417 16.1667 15.5 15.5 15.5ZM6.5 15.5C5.83333 15.5 5.29167 16.0417 5.29167 16.7083C5.29167 17.375 5.83333 17.9167 6.5 17.9167C7.16667 17.9167 7.70833 16.7083 7.70833 16.0417 7.70833 15.5 7.16667 15.5 6.5 15.5Z"/>
+  <svg
+    width="20"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M4 9L5 5H19L20 9"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M6 9H18V18C18 18.5523 17.5523 19 17 19H7C6.44772 19 6 18.5523 6 18V9Z"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M9 11V7C9 5.89543 9.89543 5 11 5H13C14.1046 5 15 5.89543 15 7V11"
+      stroke={isActive ? "#000000" : "#FFFFFF"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
@@ -52,21 +194,27 @@ const ArrowIcon: FC<{ isOpen: boolean; isActive: boolean }> = ({ isOpen, isActiv
 /** ===== SIDEBAR ===== */
 const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
   const location = useLocation();
-  const isAnalyticsRoute = location.pathname.startsWith("/admin/analytics");
+  // const isAnalyticsRoute = location.pathname.startsWith("/admin/analytics");
   const isArticleRoute = location.pathname.startsWith("/admin/articles");
+  const isMagazineRoute = location.pathname.startsWith("/admin/magazines");
+  const isMonologueRoute = location.pathname.startsWith("/admin/monologues");
+  const isResearchRoute = location.pathname.startsWith("/admin/research");
   const isShopRoute = location.pathname.startsWith("/admin/shop");
   const isToTRoute = location.pathname.startsWith("/admin/tot");
-  const isToTMetaRoute = location.pathname.startsWith("/admin/tot-meta");
+  const isToTMetaRoute = location.pathname.startsWith("/admin/meta-tot");
 
-  const [isAnalyticsOpen, setAnalyticsOpen] = useState<boolean>(isAnalyticsRoute);
+  // const [isAnalyticsOpen, setAnalyticsOpen] = useState<boolean>(isAnalyticsRoute);
   const [isArticleOpen, setArticleOpen] = useState<boolean>(isArticleRoute);
+  const [isMagazineOpen, setMagazineOpen] = useState<boolean>(isMagazineRoute);
+  const [isMonologueOpen, setMonologueOpen] = useState<boolean>(isMonologueRoute);
+  const [isResearchOpen, setResearchOpen] = useState<boolean>(isResearchRoute);
   const [isShopOpen, setShopOpen] = useState<boolean>(isShopRoute);
   const [isToTOpen, setToTOpen] = useState<boolean>(isToTRoute);
   const [isToTMetaOpen, setToTMetaOpen] = useState<boolean>(isToTMetaRoute);
 
   return (
     <aside
-      className="fixed left-0 top-0 z-[1000] h-screen w-[270px] bg-black text-[#F5F5F5] flex flex-col justify-between py-[25px] overflow-y-auto"
+      className="fixed left-0 top-0 z-[1000] h-screen w-[15vw] bg-black text-[#F5F5F5] flex flex-col justify-between py-[25px] overflow-y-auto"
       style={{
         boxSizing: "border-box",
         // Border-right 0.5px sesuai CSS lama
@@ -75,22 +223,20 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
       }}
     >
       <div>
-        {/* Header */}
         <div className="px-[38px] mb-[25px]">
-          <img src="/assets/Ardhianzy_Logo.jpg" alt="Logo" className="h-[50px] w-auto" />
+          <img src="/assets/icon/Ardhianzy_Logo_2.png" alt="Logo" className="h-[50px] mx-auto w-auto" />
         </div>
 
         <div className="w-full" style={{ height: "0.5px", backgroundColor: "#333333" }} />
 
-        {/* Nav */}
-        <nav className="flex flex-col gap-[15px] px-[36px] py-[25px]">
+        <nav className="flex flex-col gap-[15px] px-[24px] py-[25px]">
           {/* Analytics */}
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <button
               type="button"
               onClick={() => setAnalyticsOpen(!isAnalyticsOpen)}
               className={[
-                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[20px] font-medium transition-colors duration-200",
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[18px] font-medium transition-colors duration-200",
                 isAnalyticsRoute ? "bg-[#F5F5F5] text-black" : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
               ].join(" ")}
             >
@@ -102,12 +248,12 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
             </button>
 
             {isAnalyticsOpen && (
-              <div className="flex flex-col pl-[25px] mt-[24px] mb-[10px]">
+              <div className="flex flex-col pl-[25px] mb-[10px]">
                 <NavLink
                   to="/admin/analytics#web-performance"
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
@@ -120,7 +266,7 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
                   to="/admin/analytics#article-analytics"
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
@@ -133,7 +279,7 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
                   to="/admin/analytics#shop-analytics"
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
@@ -144,7 +290,7 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
                 </NavLink>
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* Article */}
           <div className="flex flex-col">
@@ -152,7 +298,7 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
               type="button"
               onClick={() => setArticleOpen(!isArticleOpen)}
               className={[
-                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[20px] font-medium transition-colors duration-200",
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[18px] font-medium transition-colors duration-200",
                 isArticleRoute ? "bg-[#F5F5F5] text-black" : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
               ].join(" ")}
             >
@@ -164,12 +310,12 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
             </button>
 
             {isArticleOpen && (
-              <div className="flex flex-col pl-[25px] mt-[24px] mb-[10px]">
+              <div className="flex flex-col pl-[25px] mb-[10px]">
                 <NavLink
                   to="/admin/articles/add"
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
@@ -179,10 +325,10 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
                   Add Article
                 </NavLink>
                 <NavLink
-                  to="/admin/articles/list"
+                  to="/admin/articles"
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
@@ -195,13 +341,175 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
             )}
           </div>
 
+          {/* Magazines */}
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => setMagazineOpen(!isMagazineOpen)}
+              className={[
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[18px] font-medium transition-colors duration-200",
+                isMagazineRoute
+                  ? "bg-[#F5F5F5] text-black"
+                  : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
+              ].join(" ")}
+            >
+              <span className="flex items-center gap-[15px]">
+                <MagazineIcon isActive={isMagazineRoute} />
+                <span>Magazine</span>
+              </span>
+              <ArrowIcon
+                isOpen={isMagazineOpen}
+                isActive={isMagazineRoute}
+              />
+            </button>
+
+            {isMagazineOpen && (
+              <div className="flex flex-col pl-[25px] mb-[10px]">
+                <NavLink
+                  to="/admin/magazines/add"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  Add Magazine
+                </NavLink>
+                <NavLink
+                  to="/admin/magazines"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  List Magazine
+                </NavLink>
+              </div>
+            )}
+          </div>
+
+          {/* Monologues */}
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => setMonologueOpen(!isMonologueOpen)}
+              className={[
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[18px] font-medium transition-colors duration-200",
+                isMonologueRoute
+                  ? "bg-[#F5F5F5] text-black"
+                  : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
+              ].join(" ")}
+            >
+              <span className="flex items-center gap-[15px]">
+                <MonologueIcon isActive={isMonologueRoute} />
+                <span>Monologue</span>
+              </span>
+              <ArrowIcon
+                isOpen={isMonologueOpen}
+                isActive={isMonologueRoute}
+              />
+            </button>
+
+            {isMonologueOpen && (
+              <div className="flex flex-col pl-[25px] mb-[10px]">
+                <NavLink
+                  to="/admin/monologues/add"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  Add Monologue
+                </NavLink>
+                <NavLink
+                  to="/admin/monologues"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  List Monologue
+                </NavLink>
+              </div>
+            )}
+          </div>
+
+          {/* Research */}
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => setResearchOpen(!isResearchOpen)}
+              className={[
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[18px] font-medium transition-colors duration-200",
+                isResearchRoute
+                  ? "bg-[#F5F5F5] text-black"
+                  : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
+              ].join(" ")}
+            >
+              <span className="flex items-center gap-[15px]">
+                <ResearchIcon isActive={isResearchRoute} />
+                <span>Research</span>
+              </span>
+              <ArrowIcon
+                isOpen={isResearchOpen}
+                isActive={isResearchRoute}
+              />
+            </button>
+
+            {isResearchOpen && (
+              <div className="flex flex-col pl-[25px] mb-[10px]">
+                <NavLink
+                  to="/admin/research/add"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  Add Research
+                </NavLink>
+                <NavLink
+                  to="/admin/research"
+                  className={({ isActive }) =>
+                    [
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
+                      isActive
+                        ? "text-[#F5F5F5] border-b-[#F5F5F5]"
+                        : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
+                    ].join(" ")
+                  }
+                >
+                  List Research
+                </NavLink>
+              </div>
+            )}
+          </div>
+
           {/* Shop */}
           <div className="flex flex-col">
             <button
               type="button"
               onClick={() => setShopOpen(!isShopOpen)}
               className={[
-                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[20px] font-medium transition-colors duration-200",
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[18px] font-medium transition-colors duration-200",
                 isShopRoute ? "bg-[#F5F5F5] text-black" : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
               ].join(" ")}
             >
@@ -213,32 +521,32 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
             </button>
 
             {isShopOpen && (
-              <div className="flex flex-col pl-[25px] mt-[24px] mb-[10px]">
+              <div className="flex flex-col pl-[25px] mb-[10px]">
                 <NavLink
-                  to="/admin/shop/add"
+                  to={ROUTES.ADMIN.SHOP_ADD}
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
                     ].join(" ")
                   }
                 >
-                  Add Item
+                  Add Shop
                 </NavLink>
                 <NavLink
-                  to="/admin/shop/list"
+                  to={ROUTES.ADMIN.SHOP}
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
                     ].join(" ")
                   }
                 >
-                  List Item
+                  List Shop
                 </NavLink>
               </div>
             )}
@@ -250,24 +558,23 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
               type="button"
               onClick={() => setToTOpen(!isToTOpen)}
               className={[
-                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[20px] font-medium transition-colors duration-200",
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[18px] font-medium transition-colors duration-200",
                 isToTRoute ? "bg-[#F5F5F5] text-black" : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
               ].join(" ")}
             >
               <span className="flex items-center gap-[15px]">
-                {/* pakai icon Article/Analytics reuse saja */}
                 <AnalyticsIcon isActive={isToTRoute} />
                 <span>ToT</span>
               </span>
               <ArrowIcon isOpen={isToTOpen} isActive={isToTRoute} />
             </button>
             {isToTOpen && (
-              <div className="flex flex-col pl-[25px] mt-[24px] mb-[10px]">
+              <div className="flex flex-col pl-[25px] mb-[10px]">
                 <NavLink
-                  to="/admin/tot/add"
+                  to={ROUTES.ADMIN.TOT_ADD}
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
@@ -277,10 +584,10 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
                   Add ToT
                 </NavLink>
                 <NavLink
-                  to="/admin/tot/list"
+                  to={ROUTES.ADMIN.TOT_LIST}
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
@@ -299,7 +606,7 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
               type="button"
               onClick={() => setToTMetaOpen(!isToTMetaOpen)}
               className={[
-                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[20px] font-medium transition-colors duration-200",
+                "flex items-center justify-between rounded-[16px] px-[20px] py-[15px] text-[18px] font-medium transition-colors duration-200",
                 isToTMetaRoute ? "bg-[#F5F5F5] text-black" : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
               ].join(" ")}
             >
@@ -310,12 +617,12 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
               <ArrowIcon isOpen={isToTMetaOpen} isActive={isToTMetaRoute} />
             </button>
             {isToTMetaOpen && (
-              <div className="flex flex-col pl-[25px] mt-[24px] mb-[10px]">
+              <div className="flex flex-col pl-[25px] mb-[10px]">
                 <NavLink
-                  to="/admin/tot-meta/add"
+                  to={ROUTES.ADMIN.TOT_META_ADD}
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
@@ -325,10 +632,10 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
                   Add ToT Meta
                 </NavLink>
                 <NavLink
-                  to="/admin/tot-meta/list"
+                  to={ROUTES.ADMIN.TOT_META_LIST}
                   className={({ isActive }) =>
                     [
-                      "py-[16px] border-b text-[16px] font-normal leading-[19px] transition-colors",
+                      "py-[16px] border-b text-[15px] font-normal leading-[19px] transition-colors",
                       isActive
                         ? "text-[#F5F5F5] border-b-[#F5F5F5]"
                         : "text-[rgba(245,245,245,0.5)] border-b-[rgba(245,245,245,0.5)] hover:text-[#F5F5F5]",
@@ -342,28 +649,27 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
           </div>
 
           {/* Content (Research / Shop / Collected) */}
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <NavLink
               to="/admin/content"
               className={({ isActive }) =>
                 [
-                  "rounded-[16px] px-[20px] py-[15px] text-[20px] font-medium transition-colors duration-200",
+                  "rounded-[16px] px-[20px] py-[15px] text-[18px] font-medium transition-colors duration-200",
                   isActive ? "bg-[#F5F5F5] text-black" : "text-[#F5F5F5] hover:bg-[#1a1a1a]",
                 ].join(" ")
               }
             >
               Content
             </NavLink>
-          </div>
+          </div> */}
         </nav>
       </div>
 
-      {/* Footer */}
       <div className="px-[38px] pt-[20px] pb-0">
         <div className="w-full" style={{ height: "0.5px", backgroundColor: "#333333" }} />
         <button
           onClick={handleLogout}
-          className="w-full bg-transparent text-left text-[#F5F5F5] flex items-center gap-[15px] text-[20px] font-medium py-[10px]"
+          className="w-full bg-transparent text-left text-[#F5F5F5] flex items-center gap-[15px] text-[20px] font-medium py-[10px] cursor-pointer"
         >
           <LogoutIcon />
           <span>Log Out</span>
@@ -373,7 +679,6 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
   );
 };
 
-/** ===== LAYOUT ===== */
 const AdminLayout: FC = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -386,7 +691,7 @@ const AdminLayout: FC = () => {
   return (
     <div className="relative flex bg-[#1E1E1E]">
       <Sidebar handleLogout={handleLogout} />
-      <main className="flex-1 text-white px-[14px] py-[25px] ml-[280px]">
+      <main className="flex-1 text-white px-[14px] py-[25px] ml-[15vw]">
         <AdminHeader />
         <Outlet />
       </main>
