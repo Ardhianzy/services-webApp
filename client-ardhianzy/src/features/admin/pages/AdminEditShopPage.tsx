@@ -2,7 +2,11 @@
 
 import { type FC, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { adminGetShopById, adminUpdateShop } from "@/lib/content/api";
+import {
+  adminGetShopById,
+  adminUpdateShop,
+  normalizeBackendHtml,
+} from "@/lib/content/api";
 import { ROUTES } from "@/app/routes";
 
 const AdminEditShopPage: FC = () => {
@@ -26,7 +30,8 @@ const AdminEditShopPage: FC = () => {
   const [isPublished, setIsPublished] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] =
+    useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -53,7 +58,11 @@ const AdminEditShopPage: FC = () => {
             : String((data as any).stock)
         );
         setLink((data as any).link ?? "");
-        setDesc((data as any).desc ?? "");
+        setDesc(
+          normalizeBackendHtml(
+            ((data as any).desc as string | null | undefined) ?? ""
+          )
+        );
         setSlug((data as any).slug ?? "");
         setMetaTitle((data as any).meta_title ?? "");
         setMetaDescription((data as any).meta_description ?? "");
@@ -94,10 +103,6 @@ const AdminEditShopPage: FC = () => {
     if (slug) formData.append("slug", slug);
     if (metaTitle) formData.append("meta_title", metaTitle);
     if (metaDescription) formData.append("meta_description", metaDescription);
-
-    // Sama seperti di Add: untuk sementara JANGAN kirim is_available
-    // supaya tidak memicu error Prisma "Expected Boolean, provided String".
-    // formData.append("is_available", isAvailable ? "true" : "false");
 
     formData.append("is_published", isPublished ? "true" : "false");
 
@@ -163,7 +168,6 @@ const AdminEditShopPage: FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white px-10 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
@@ -184,9 +188,7 @@ const AdminEditShopPage: FC = () => {
         </button>
       </div>
 
-      {/* Layout */}
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
-        {/* KIRI: FORM */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
           {error && (
             <p className="text-sm text-red-400 -mt-1">{error}</p>
@@ -281,20 +283,19 @@ const AdminEditShopPage: FC = () => {
               />
             </div>
 
-            {/* Deskripsi singkat */}
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                SHORT DESCRIPTION
+                SHORT DESCRIPTION (HTML)
               </label>
               <textarea
-                className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-sm outline-none
-                           min-h-[100px] focus:border-white"
+                className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
+                           min-h-[100px] focus:border-white font-mono leading-relaxed"
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
+                placeholder="<p>Deskripsi singkat produk...</p>"
               />
             </div>
 
-            {/* Meta SEO */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-neutral-400 tracking-[0.15em]">
@@ -325,7 +326,6 @@ const AdminEditShopPage: FC = () => {
               </div>
             </div>
 
-            {/* Image + flags */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-neutral-400 tracking-[0.15em]">
@@ -379,7 +379,6 @@ const AdminEditShopPage: FC = () => {
               </div>
             </div>
 
-            {/* Bottom actions */}
             <div className="flex flex-wrap items-center gap-3 justify-between pt-3 border-t border-zinc-800 mt-2">
               <div className="text-[11px] text-neutral-500">
                 Pastikan title dan link eksternal sudah benar
@@ -407,13 +406,11 @@ const AdminEditShopPage: FC = () => {
           </form>
         </div>
 
-        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW
           </h2>
           <div className="bg-black rounded-2xl border border-zinc-800 p-6 h-full overflow-y-auto">
-            {/* Meta bar */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
               {slug && (
                 <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
@@ -446,7 +443,6 @@ const AdminEditShopPage: FC = () => {
               </span>
             </div>
 
-            {/* Title + meta desc */}
             <h1 className="text-2xl md:text-3xl font-semibold mb-3">
               {title || "Nama produk / bundling"}
             </h1>
@@ -457,7 +453,6 @@ const AdminEditShopPage: FC = () => {
               </p>
             )}
 
-            {/* Cover image besar */}
             {previewImageSrc && (
               <div className="mb-5 rounded-2xl overflow-hidden border border-zinc-800">
                 <img
@@ -468,13 +463,16 @@ const AdminEditShopPage: FC = () => {
               </div>
             )}
 
-            {/* Deskripsi singkat */}
-            <p className="text-sm text-neutral-300 mb-4">
-              {desc ||
-                "Deskripsi singkat produk akan tampil di sini sebagaimana terlihat oleh user."}
-            </p>
+            <div className="prose prose-invert prose-sm max-w-none mb-4">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html:
+                    desc ||
+                    "<p>Deskripsi singkat produk akan tampil di sini sebagaimana terlihat oleh user.</p>",
+                }}
+              />
+            </div>
 
-            {/* Kartu ringkas ala halaman Shop */}
             <div className="mt-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-neutral-300">
               <div className="flex items-center gap-3">
                 {previewImageSrc && (

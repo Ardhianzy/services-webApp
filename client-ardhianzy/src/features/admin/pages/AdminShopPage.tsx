@@ -7,7 +7,11 @@ import {
   useState,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { adminFetchShops, adminDeleteShop } from "@/lib/content/api";
+import {
+  adminFetchShops,
+  adminDeleteShop,
+  normalizeBackendHtml,
+} from "@/lib/content/api";
 import type { ShopDTO } from "@/lib/content/types";
 import { ROUTES } from "@/app/routes";
 
@@ -79,7 +83,6 @@ const AdminShopPage: FC = () => {
     });
   }, [shops, search, statusFilter]);
 
-  // Pastikan selected tetap valid setelah filter berubah
   useEffect(() => {
     if (!selected) return;
     const stillExists = filteredShops.some(
@@ -112,7 +115,6 @@ const AdminShopPage: FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white px-7 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
@@ -132,11 +134,8 @@ const AdminShopPage: FC = () => {
         </Link>
       </div>
 
-      {/* Layout: kiri = list, kanan = preview */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1.1fr)]">
-        {/* KIRI: LIST */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl py-4 px-3">
-          {/* Filter bar */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
             <div className="flex gap-3">
               <select
@@ -171,7 +170,6 @@ const AdminShopPage: FC = () => {
             </div>
           </div>
 
-          {/* Isi list */}
           {loading ? (
             <p className="text-sm text-neutral-400">
               Memuat shop items...
@@ -314,7 +312,6 @@ const AdminShopPage: FC = () => {
           )}
         </div>
 
-        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl py-6 px-4 overflow-hidden flex flex-col">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW (ADMIN)
@@ -331,6 +328,11 @@ const AdminShopPage: FC = () => {
                 const item = selected;
                 const isPublished = Boolean(item.is_published);
                 const isAvailable = Boolean(item.is_available);
+                const rawDesc = (item as any)?.desc ?? "";
+                const htmlDesc =
+                  typeof rawDesc === "string"
+                    ? normalizeBackendHtml(rawDesc)
+                    : "";
 
                 return (
                   <>
@@ -376,6 +378,16 @@ const AdminShopPage: FC = () => {
                           src={item.image}
                           alt={item.title}
                           className="w-full h-64 object-cover"
+                        />
+                      </div>
+                    )}
+
+                    {htmlDesc && (
+                      <div className="prose prose-invert prose-sm max-w-none mb-5">
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: htmlDesc,
+                          }}
                         />
                       </div>
                     )}

@@ -163,13 +163,12 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         .card-typography img,.card-typography video,.card-typography iframe{max-width:100%;height:auto}
         .card-typography a{color:#fff;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.6)}
 
-        /* NEW: styling tabel HTML dari backend agar lebih rapi */
         .card-typography table{
           width: 100%;
           border-collapse: collapse;
           margin: 1.1em 0;
           font-size: 0.98rem;
-          text-align: left; /* hindari justify di dalam sel tabel */
+          text-align: left;
         }
         .card-typography thead th{
           background: rgba(255,255,255,.06);
@@ -189,7 +188,6 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
           background: rgba(255,255,255,.02);
         }
 
-        /* NEW: jaga supaya tabel tidak “meledak” di mobile – bisa scroll horizontal */
         @media (max-width: 768px){
           .card-typography{
             font-size:1rem;

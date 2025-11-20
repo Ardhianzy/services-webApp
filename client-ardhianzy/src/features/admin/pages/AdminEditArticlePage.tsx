@@ -6,6 +6,7 @@ import { ROUTES } from "@/app/routes";
 import {
   adminFetchArticles,
   adminUpdateArticle,
+  normalizeBackendHtml,
 } from "@/lib/content/api";
 import type { ArticleDTO } from "@/lib/content/types";
 import type { ArticleCategory } from "./AdminAddArticlePage";
@@ -50,7 +51,6 @@ const AdminEditArticlePage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // NEW: helper update field
   const updateField = <K extends keyof AdminArticleForm>(
     key: K,
     value: AdminArticleForm[K]
@@ -58,7 +58,6 @@ const AdminEditArticlePage: React.FC = () => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
-  // NEW: load article by ID (via list, bukan endpoint detail)
   useEffect(() => {
     if (!id) {
       setError("ID artikel tidak ditemukan di URL.");
@@ -124,7 +123,6 @@ const AdminEditArticlePage: React.FC = () => {
     };
   }, [id]);
 
-  // NEW: image handler
   const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const file = e.target.files?.[0];
     setImageFile(file ?? null);
@@ -134,7 +132,6 @@ const AdminEditArticlePage: React.FC = () => {
     }
   };
 
-  // NEW: submit update
   const handleSubmit = async () => {
     if (!id || !form) return;
 
@@ -213,7 +210,6 @@ const AdminEditArticlePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white px-10 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
@@ -234,9 +230,7 @@ const AdminEditArticlePage: React.FC = () => {
         </button>
       </div>
 
-      {/* Layout form + preview */}
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
-        {/* KIRI: FORM */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
@@ -386,7 +380,6 @@ const AdminEditArticlePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Upload image cover */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               COVER IMAGE
@@ -410,7 +403,6 @@ const AdminEditArticlePage: React.FC = () => {
             )}
           </div>
 
-          {/* Konten HTML */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               CONTENT (HTML)
@@ -456,7 +448,6 @@ const AdminEditArticlePage: React.FC = () => {
           </div>
         </div>
 
-        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW (HTML)
@@ -487,6 +478,77 @@ const AdminEditArticlePage: React.FC = () => {
               </span>
             </div>
 
+            <style>{`
+              .card-typography{
+                font-family: Roboto, ui-sans-serif, system-ui;
+                font-size: 1.02rem;
+                line-height: 1.85;
+                color: #fff;
+                text-align: justify;
+                text-justify: inter-word;
+                hyphens: auto;
+                word-break: break-word;
+              }
+              .card-typography h1,.card-typography h2,.card-typography h3,.card-typography h4{
+                font-family: Roboto, ui-sans-serif, system-ui;
+                font-weight: 700;
+                line-height: 1.25;
+                margin: .85em 0 .45em;
+                letter-spacing: .2px;
+              }
+              .card-typography h1{font-size:1.15rem}
+              .card-typography h2{font-size:1.08rem}
+              .card-typography h3{font-size:1.04rem}
+              .card-typography h4{font-size:1.02rem}
+              .card-typography p{margin:0 0 1em}
+              .card-typography blockquote{margin:1em 0;padding:.75em 1em;border-left:3px solid rgba(255,255,255,.35);background:rgba(255,255,255,.04);border-radius:8px}
+              .card-typography blockquote p{margin:.4em 0}
+              .card-typography blockquote footer{margin-top:.55em;opacity:.85;font-size:.92em}
+              .card-typography ul,.card-typography ol{margin:.6em 0 1.1em;padding-left:1.3em}
+              .card-typography ul{list-style:disc}
+              .card-typography ol{list-style:decimal}
+              .card-typography img,.card-typography video,.card-typography iframe{max-width:100%;height:auto}
+              .card-typography a{color:#fff;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.6)}
+
+              .card-typography table{
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1.1em 0;
+                font-size: 0.98rem;
+                text-align: left;
+              }
+              .card-typography thead th{
+                background: rgba(255,255,255,.06);
+                font-weight: 700;
+              }
+              .card-typography th,
+              .card-typography td{
+                border: 1px solid rgba(255,255,255,.28);
+                padding: .55em .8em;
+                vertical-align: top;
+                text-align: left;
+                text-justify: auto;
+                hyphens: auto;
+                word-break: break-word;
+              }
+              .card-typography tbody tr:nth-child(even){
+                background: rgba(255,255,255,.02);
+              }
+
+              @media (max-width: 768px){
+                .card-typography{
+                  font-size:1rem;
+                  line-height:1.8;
+                }
+                .card-typography table{
+                  display: block;
+                  width: 100%;
+                  overflow-x: auto;
+                  -webkit-overflow-scrolling: touch;
+                }
+              }
+            `}</style>
+
             <h1 className="text-2xl md:text-3xl font-semibold mb-4">
               {form.title || "Judul artikel"}
             </h1>
@@ -508,9 +570,11 @@ const AdminEditArticlePage: React.FC = () => {
             )}
 
             <div
-              className="prose prose-invert prose-sm max-w-none"
+              className="card-typography prose prose-invert prose-sm max-w-none"
               dangerouslySetInnerHTML={{
-                __html: form.content || "<p>Konten HTML akan tampil di sini...</p>",
+                __html: form.content
+                  ? normalizeBackendHtml(form.content)
+                  : "Konten HTML akan tampil di sini...",
               }}
             />
           </div>

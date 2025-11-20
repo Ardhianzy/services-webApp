@@ -25,7 +25,7 @@ const EMPTY_FORM: ToTMetaFormState = {
   epsimologi: "",
   aksiologi: "",
   conclusion: "",
-  is_published: false, // default draft
+  is_published: false,
 };
 
 const AdminAddToTMetaPage: React.FC = () => {
@@ -54,7 +54,6 @@ const AdminAddToTMetaPage: React.FC = () => {
     };
 
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (
@@ -108,7 +107,6 @@ const AdminAddToTMetaPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white px-10 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
@@ -130,14 +128,11 @@ const AdminAddToTMetaPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Layout: kiri form, kanan preview */}
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1.1fr)]">
-        {/* KIRI: FORM */}
         <form
           onSubmit={handleSubmit}
           className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-6"
         >
-          {/* Pilih ToT */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               PILIH TIMELINE OF THOUGHT (ToT)
@@ -172,7 +167,6 @@ const AdminAddToTMetaPage: React.FC = () => {
             )}
           </div>
 
-          {/* Status publish / draft */}
           <div className="flex flex-col gap-2 pt-1 border-t border-zinc-800 mt-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               STATUS PUBLIKASI
@@ -195,7 +189,6 @@ const AdminAddToTMetaPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Metafisika */}
           <div className="space-y-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               METAFISIKA (HTML)
@@ -214,7 +207,6 @@ const AdminAddToTMetaPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Epistemologi */}
           <div className="space-y-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               EPISTEMOLOGI (HTML)
@@ -228,7 +220,6 @@ const AdminAddToTMetaPage: React.FC = () => {
             />
           </div>
 
-          {/* Aksiologi */}
           <div className="space-y-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               AKSIOLOGI (HTML)
@@ -242,7 +233,6 @@ const AdminAddToTMetaPage: React.FC = () => {
             />
           </div>
 
-          {/* Conclusion */}
           <div className="space-y-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               CONCLUSION (HTML)
@@ -256,11 +246,8 @@ const AdminAddToTMetaPage: React.FC = () => {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-400 mt-1">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
 
-          {/* Tombol aksi */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-zinc-800 mt-2">
             <button
               type="button"
@@ -281,14 +268,12 @@ const AdminAddToTMetaPage: React.FC = () => {
           </div>
         </form>
 
-        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden flex flex-col">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW ToT META
           </h2>
 
           <div className="bg-black rounded-2xl border border-zinc-800 p-6 h-full overflow-y-auto space-y-5">
-            {/* Header preview */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <div className="min-w-0">
                 <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-400">
@@ -320,59 +305,54 @@ const AdminAddToTMetaPage: React.FC = () => {
               </span>
             </div>
 
-            {/* Metafisika */}
             {form.metafisika && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-[0.18em]">
                   Metafisika
                 </p>
                 <div
-                  className="prose prose-invert max-w-none text-sm"
+                  className="admin-totmeta-html"
                   dangerouslySetInnerHTML={renderHtml(form.metafisika)}
                 />
               </div>
             )}
 
-            {/* Epistemologi */}
             {form.epsimologi && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-[0.18em]">
                   Epistemologi
                 </p>
                 <div
-                  className="prose prose-invert max-w-none text-sm"
+                  className="admin-totmeta-html"
                   dangerouslySetInnerHTML={renderHtml(form.epsimologi)}
                 />
               </div>
             )}
 
-            {/* Aksiologi */}
             {form.aksiologi && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-[0.18em]">
                   Aksiologi
                 </p>
                 <div
-                  className="prose prose-invert max-w-none text-sm"
+                  className="admin-totmeta-html"
                   dangerouslySetInnerHTML={renderHtml(form.aksiologi)}
                 />
               </div>
             )}
 
-            {/* Conclusion */}
             {form.conclusion && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-[0.18em]">
                   Conclusion
                 </p>
                 <div
-                  className="prose prose-invert max-w-none text-sm"
+                  className="admin-totmeta-html"
                   dangerouslySetInnerHTML={renderHtml(form.conclusion)}
                 />
               </div>
             )}
 
-            {/* Jika kosong semua */}
             {!form.metafisika &&
               !form.epsimologi &&
               !form.aksiologi &&
@@ -386,6 +366,104 @@ const AdminAddToTMetaPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <style>{`
+        .admin-totmeta-html{
+          font-family: Roboto, ui-sans-serif, system-ui;
+          font-size: 1.02rem;
+          line-height: 1.85;
+          color: #fff;
+          text-align: justify;
+          text-justify: inter-word;
+          hyphens: auto;
+          word-break: break-word;
+        }
+        .admin-totmeta-html h1,
+        .admin-totmeta-html h2,
+        .admin-totmeta-html h3,
+        .admin-totmeta-html h4{
+          font-family: Roboto, ui-sans-serif, system-ui;
+          font-weight: 700;
+          line-height: 1.25;
+          margin: .85em 0 .45em;
+          letter-spacing: .2px;
+        }
+        .admin-totmeta-html h1{font-size:1.15rem}
+        .admin-totmeta-html h2{font-size:1.08rem}
+        .admin-totmeta-html h3{font-size:1.04rem}
+        .admin-totmeta-html h4{font-size:1.02rem}
+        .admin-totmeta-html p{margin:0 0 1em}
+        .admin-totmeta-html blockquote{
+          margin:1em 0;
+          padding:.75em 1em;
+          border-left:3px solid rgba(255,255,255,.35);
+          background:rgba(255,255,255,.04);
+          border-radius:8px;
+        }
+        .admin-totmeta-html blockquote p{margin:.4em 0}
+        .admin-totmeta-html blockquote footer{
+          margin-top:.55em;
+          opacity:.85;
+          font-size:.92em;
+        }
+        .admin-totmeta-html ul,
+        .admin-totmeta-html ol{
+          margin:.6em 0 1.1em;
+          padding-left:1.3em;
+        }
+        .admin-totmeta-html ul{list-style:disc}
+        .admin-totmeta-html ol{list-style:decimal}
+        .admin-totmeta-html img,
+        .admin-totmeta-html video,
+        .admin-totmeta-html iframe{
+          max-width:100%;
+          height:auto;
+        }
+        .admin-totmeta-html a{
+          color:#fff;
+          text-decoration:underline;
+          text-underline-offset:2px;
+          text-decoration-color:rgba(255,255,255,.6);
+        }
+
+        .admin-totmeta-html table{
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1.1em 0;
+          font-size: 0.98rem;
+          text-align: left;
+        }
+        .admin-totmeta-html thead th{
+          background: rgba(255,255,255,.06);
+          font-weight: 700;
+        }
+        .admin-totmeta-html th,
+        .admin-totmeta-html td{
+          border: 1px solid rgba(255,255,255,.28);
+          padding: .55em .8em;
+          vertical-align: top;
+          text-align: left;
+          text-justify: auto;
+          hyphens: auto;
+          word-break: break-word;
+        }
+        .admin-totmeta-html tbody tr:nth-child(even){
+          background: rgba(255,255,255,.02);
+        }
+
+        @media (max-width: 768px){
+          .admin-totmeta-html{
+            font-size:1rem;
+            line-height:1.8;
+          }
+          .admin-totmeta-html table{
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+        }
+      `}</style>
     </div>
   );
 };

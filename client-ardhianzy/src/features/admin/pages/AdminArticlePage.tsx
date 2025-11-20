@@ -6,6 +6,7 @@ import { ROUTES } from "@/app/routes";
 import {
   adminFetchArticles,
   adminDeleteArticle,
+  normalizeBackendHtml,
 } from "@/lib/content/api";
 import type { ArticleDTO } from "@/lib/content/types";
 
@@ -18,7 +19,6 @@ const CATEGORY_LABEL: Record<FilterCategory, string> = {
   POP_CULTURE: "Popsophia / Pop Culture",
 };
 
-// Helper kecil untuk format tanggal di list
 function formatDateShort(value?: string) {
   if (!value) return "-";
   const d = new Date(value);
@@ -39,7 +39,6 @@ const AdminArticlePage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [selectedArticle, setSelectedArticle] = useState<ArticleDTO | null>(null);
 
-  // NEW: load data artikel admin
   useEffect(() => {
     let cancelled = false;
 
@@ -68,7 +67,6 @@ const AdminArticlePage: React.FC = () => {
     };
   }, []);
 
-  // NEW: filter berdasarkan kategori + search
   const filteredArticles = useMemo(() => {
     const q = search.trim().toLowerCase();
     return articles.filter((raw: any) => {
@@ -81,7 +79,6 @@ const AdminArticlePage: React.FC = () => {
     });
   }, [articles, filterCategory, search]);
 
-  // NEW: delete artikel
   const handleDelete = async (id: string) => {
     const sure = window.confirm(
       "Yakin ingin menghapus artikel ini? Tindakan ini tidak bisa dibatalkan."
@@ -99,7 +96,6 @@ const AdminArticlePage: React.FC = () => {
     }
   };
 
-  // NEW: jika artikel yang sedang terpilih hilang dari filtered list, reset
   useEffect(() => {
     if (!selectedArticle) return;
     const stillExists = filteredArticles.some(
@@ -112,7 +108,6 @@ const AdminArticlePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white px-7 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
@@ -137,11 +132,8 @@ const AdminArticlePage: React.FC = () => {
         </button>
       </div>
 
-      {/* Layout: kiri = list, kanan = preview */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1.1fr)]">
-        {/* KIRI: LIST */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl py-4 px-3">
-          {/* Filter bar */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
             <div className="flex gap-3">
               <select
@@ -282,7 +274,6 @@ const AdminArticlePage: React.FC = () => {
           )}
         </div>
 
-        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl py-6 px-4 overflow-hidden flex flex-col">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW (ADMIN)
@@ -300,7 +291,77 @@ const AdminArticlePage: React.FC = () => {
 
                 return (
                   <>
-                    {/* Meta / heading */}
+                    <style>{`
+                      .card-typography{
+                        font-family: Roboto, ui-sans-serif, system-ui;
+                        font-size: 1.02rem;
+                        line-height: 1.85;
+                        color: #fff;
+                        text-align: justify;
+                        text-justify: inter-word;
+                        hyphens: auto;
+                        word-break: break-word;
+                      }
+                      .card-typography h1,.card-typography h2,.card-typography h3,.card-typography h4{
+                        font-family: Roboto, ui-sans-serif, system-ui;
+                        font-weight: 700;
+                        line-height: 1.25;
+                        margin: .85em 0 .45em;
+                        letter-spacing: .2px;
+                      }
+                      .card-typography h1{font-size:1.15rem}
+                      .card-typography h2{font-size:1.08rem}
+                      .card-typography h3{font-size:1.04rem}
+                      .card-typography h4{font-size:1.02rem}
+                      .card-typography p{margin:0 0 1em}
+                      .card-typography blockquote{margin:1em 0;padding:.75em 1em;border-left:3px solid rgba(255,255,255,.35);background:rgba(255,255,255,.04);border-radius:8px}
+                      .card-typography blockquote p{margin:.4em 0}
+                      .card-typography blockquote footer{margin-top:.55em;opacity:.85;font-size:.92em}
+                      .card-typography ul,.card-typography ol{margin:.6em 0 1.1em;padding-left:1.3em}
+                      .card-typography ul{list-style:disc}
+                      .card-typography ol{list-style:decimal}
+                      .card-typography img,.card-typography video,.card-typography iframe{max-width:100%;height:auto}
+                      .card-typography a{color:#fff;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.6)}
+
+                      .card-typography table{
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 1.1em 0;
+                        font-size: 0.98rem;
+                        text-align: left;
+                      }
+                      .card-typography thead th{
+                        background: rgba(255,255,255,.06);
+                        font-weight: 700;
+                      }
+                      .card-typography th,
+                      .card-typography td{
+                        border: 1px solid rgba(255,255,255,.28);
+                        padding: .55em .8em;
+                        vertical-align: top;
+                        text-align: left;
+                        text-justify: auto;
+                        hyphens: auto;
+                        word-break: break-word;
+                      }
+                      .card-typography tbody tr:nth-child(even){
+                        background: rgba(255,255,255,.02);
+                      }
+
+                      @media (max-width: 768px){
+                        .card-typography{
+                          font-size:1rem;
+                          line-height:1.8;
+                        }
+                        .card-typography table{
+                          display: block;
+                          width: 100%;
+                          overflow-x: auto;
+                          -webkit-overflow-scrolling: touch;
+                        }
+                      }
+                    `}</style>
+
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
                         {a.category ?? "UNCATEGORIZED"}
@@ -332,7 +393,6 @@ const AdminArticlePage: React.FC = () => {
                       </p>
                     )}
 
-                    {/* Cover image (kalau URL sudah resolvable dari backend) */}
                     {a.image && typeof a.image === "string" && (
                       <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-800">
                         <img
@@ -343,12 +403,13 @@ const AdminArticlePage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Konten HTML utuh */}
                     <div
-                      className="prose prose-invert prose-sm max-w-none"
-                      // NEW: backend kirim string HTML; di admin kita render sama seperti di user
+                      className="card-typography prose prose-invert prose-sm max-w-none"
                       dangerouslySetInnerHTML={{
-                        __html: a.content ?? a.meta_description ?? "",
+                        __html:
+                          normalizeBackendHtml(
+                            a.content ?? a.meta_description ?? ""
+                          ) || "—",
                       }}
                     />
                   </>

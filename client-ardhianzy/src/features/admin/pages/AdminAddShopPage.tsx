@@ -74,12 +74,6 @@ const AdminAddShopPage = () => {
       if (metaDescription.trim())
         fd.set("meta_description", metaDescription.trim());
 
-      // BACKEND saat ini error kalau is_available dikirim sebagai string.
-      // Untuk sementara, JANGAN kirim field ini supaya Prisma pakai default.
-      // Nanti kalau backend sudah siap nge-cast boolean, cukup aktifkan lagi:
-      // fd.set("is_available", isAvailable ? "true" : "false");
-
-      // PREPARE FIELD is_published untuk backend nanti
       fd.set("is_published", isPublished ? "true" : "false");
 
       if (imageFile) {
@@ -109,7 +103,6 @@ const AdminAddShopPage = () => {
 
   return (
     <div className="min-h-screen bg-black text-white px-10 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
@@ -130,9 +123,7 @@ const AdminAddShopPage = () => {
         </button>
       </div>
 
-      {/* Layout */}
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
-        {/* KIRI: FORM */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
@@ -232,21 +223,24 @@ const AdminAddShopPage = () => {
               </div>
             </div>
 
-            {/* Deskripsi singkat */}
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                SHORT DESCRIPTION
+                SHORT DESCRIPTION (HTML)
               </label>
               <textarea
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
                 className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-sm outline-none
-                           min-h-[80px] resize-vertical focus:border-white"
-                placeholder="Deskripsi singkat produk/bundling"
+                           min-h-[80px] resize-vertical focus:border-white font-mono leading-relaxed"
+                placeholder="<p>Deskripsi singkat produk/bundling...</p>"
               />
+              <p className="text-[11px] text-neutral-500">
+                *Masukkan HTML utuh (&lt;p&gt;, &lt;h2&gt;, &lt;ul&gt;, dll).
+                Di sisi user, HTML ini akan dirender sama persis (setelah
+                normalisasi).
+              </p>
             </div>
 
-            {/* Meta SEO */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-neutral-400 tracking-[0.15em]">
@@ -279,7 +273,6 @@ const AdminAddShopPage = () => {
               </div>
             </div>
 
-            {/* Image + flags */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-neutral-400 tracking-[0.15em]">
@@ -339,7 +332,6 @@ const AdminAddShopPage = () => {
               </div>
             </div>
 
-            {/* Bottom actions */}
             <div className="flex flex-wrap items-center gap-3 justify-between pt-3 border-t border-zinc-800 mt-2">
               <div className="text-[11px] text-neutral-500">
                 Pastikan title dan link eksternal sudah benar
@@ -367,13 +359,11 @@ const AdminAddShopPage = () => {
           </form>
         </div>
 
-        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW
           </h2>
           <div className="bg-black rounded-2xl border border-zinc-800 p-6 h-full overflow-y-auto">
-            {/* Meta bar */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
               {slug && (
                 <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
@@ -406,7 +396,6 @@ const AdminAddShopPage = () => {
               </span>
             </div>
 
-            {/* Title + meta desc */}
             <h1 className="text-2xl md:text-3xl font-semibold mb-3">
               {title || "Nama produk / bundling"}
             </h1>
@@ -417,7 +406,6 @@ const AdminAddShopPage = () => {
               </p>
             )}
 
-            {/* Cover image besar */}
             {imagePreviewUrl && (
               <div className="mb-5 rounded-2xl overflow-hidden border border-zinc-800">
                 <img
@@ -428,13 +416,16 @@ const AdminAddShopPage = () => {
               </div>
             )}
 
-            {/* Deskripsi singkat */}
-            <p className="text-sm text-neutral-300 mb-4">
-              {desc ||
-                "Deskripsi singkat produk akan tampil di sini sebagaimana terlihat oleh user."}
-            </p>
+            <div className="prose prose-invert prose-sm max-w-none mb-4">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html:
+                    desc ||
+                    "<p>Deskripsi produk akan tampil di sini sebagaimana terlihat oleh user.</p>",
+                }}
+              />
+            </div>
 
-            {/* Kartu ringkas ala halaman Shop */}
             <div className="mt-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-neutral-300">
               <div className="flex items-center gap-3">
                 {imagePreviewUrl && (

@@ -223,14 +223,12 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
       }}
     >
       <div>
-        {/* Header */}
         <div className="px-[38px] mb-[25px]">
-          <img src="/assets/Ardhianzy_Logo.jpg" alt="Logo" className="h-[50px] w-auto" />
+          <img src="/assets/icon/Ardhianzy_Logo_2.png" alt="Logo" className="h-[50px] mx-auto w-auto" />
         </div>
 
         <div className="w-full" style={{ height: "0.5px", backgroundColor: "#333333" }} />
 
-        {/* Nav */}
         <nav className="flex flex-col gap-[15px] px-[24px] py-[25px]">
           {/* Analytics */}
           {/* <div className="flex flex-col">
@@ -667,7 +665,6 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
         </nav>
       </div>
 
-      {/* Footer */}
       <div className="px-[38px] pt-[20px] pb-0">
         <div className="w-full" style={{ height: "0.5px", backgroundColor: "#333333" }} />
         <button
@@ -682,7 +679,6 @@ const Sidebar: FC<{ handleLogout: () => void }> = ({ handleLogout }) => {
   );
 };
 
-/** ===== LAYOUT ===== */
 const AdminLayout: FC = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();

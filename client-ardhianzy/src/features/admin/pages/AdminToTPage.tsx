@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
-import { adminFetchToT, adminDeleteToT } from "@/lib/content/api";
+import {
+  adminFetchToT,
+  adminDeleteToT,
+  normalizeBackendHtml,
+} from "@/lib/content/api";
 import type { ToTDTO } from "@/lib/content/types";
 
 type StatusFilter = "ALL" | "PUBLISHED" | "DRAFT";
@@ -33,7 +37,8 @@ const AdminToTPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [statusFilter, setStatusFilter] =
+    useState<StatusFilter>("ALL");
   const [selected, setSelected] = useState<ToTDTO | null>(null);
 
   useEffect(() => {
@@ -94,10 +99,11 @@ const AdminToTPage: React.FC = () => {
     });
   }, [rows, search, statusFilter]);
 
-  // Pastikan selected tetap valid setelah filter berubah
   useEffect(() => {
     if (!selected) return;
-    const stillExists = filteredRows.some((t) => t.id === selected.id);
+    const stillExists = filteredRows.some(
+      (t) => t.id === selected.id
+    );
     if (!stillExists) {
       setSelected(filteredRows[0] ?? null);
     }
@@ -112,7 +118,9 @@ const AdminToTPage: React.FC = () => {
     try {
       await adminDeleteToT(id);
       setRows((prev) => prev.filter((t) => t.id !== id));
-      setSelected((prev) => (prev && prev.id === id ? null : prev));
+      setSelected((prev) =>
+        prev && prev.id === id ? null : prev
+      );
     } catch (e: any) {
       alert(e?.message || "Gagal menghapus ToT.");
     }
@@ -120,7 +128,6 @@ const AdminToTPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white px-7 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
@@ -142,24 +149,25 @@ const AdminToTPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Layout: kiri = list, kanan = preview */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1.1fr)]">
-        {/* KIRI: LIST */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl py-4 px-3">
-          {/* Filter bar */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
             <div className="flex gap-3">
               <select
                 className="bg-black border border-zinc-700 rounded-full px-4 py-2 text-sm outline-none
                            focus:border-white cursor-pointer"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as StatusFilter)
+                }
               >
-                {Object.entries(STATUS_LABEL).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
+                {Object.entries(STATUS_LABEL).map(
+                  ([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  )
+                )}
               </select>
             </div>
             <div className="relative w-full md:w-80">
@@ -177,9 +185,10 @@ const AdminToTPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Isi list */}
           {loading ? (
-            <p className="text-sm text-neutral-400">Memuat ToT...</p>
+            <p className="text-sm text-neutral-400">
+              Memuat ToT...
+            </p>
           ) : error ? (
             <p className="text-sm text-red-400">{error}</p>
           ) : filteredRows.length === 0 ? (
@@ -216,7 +225,9 @@ const AdminToTPage: React.FC = () => {
                       <tr
                         key={t.id}
                         className={`border-t border-zinc-800/70 ${
-                          isSelected ? "bg-white/5" : "bg-transparent"
+                          isSelected
+                            ? "bg-white/5"
+                            : "bg-transparent"
                         } hover:bg-white/5 transition cursor-pointer`}
                         onClick={() => setSelected(t)}
                       >
@@ -254,7 +265,9 @@ const AdminToTPage: React.FC = () => {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(ROUTES.ADMIN.TOT_EDIT(t.id));
+                                navigate(
+                                  ROUTES.ADMIN.TOT_EDIT(t.id)
+                                );
                               }}
                               className="text-xs px-3 py-1 rounded-full border border-zinc-700 hover:bg-white hover:text-black transition cursor-pointer"
                             >
@@ -281,7 +294,6 @@ const AdminToTPage: React.FC = () => {
           )}
         </div>
 
-        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl py-6 px-4 overflow-hidden flex flex-col">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW (ADMIN)
@@ -289,14 +301,20 @@ const AdminToTPage: React.FC = () => {
 
           {!selected ? (
             <p className="text-sm text-neutral-500">
-              Pilih salah satu ToT di sebelah kiri untuk melihat preview kartu
-              tokoh dan metadata-nya.
+              Pilih salah satu ToT di sebelah kiri untuk melihat
+              preview kartu tokoh dan metadata-nya.
             </p>
           ) : (
             <div className="bg-black rounded-2xl border border-zinc-800/80 py-5 px-4 overflow-y-auto">
               {(() => {
                 const t = selected;
                 const isPublished = Boolean(t.is_published);
+
+                const metaHtml = t.meta_description
+                  ? normalizeBackendHtml(
+                      t.meta_description ?? ""
+                    )
+                  : "";
 
                 return (
                   <>
@@ -306,12 +324,14 @@ const AdminToTPage: React.FC = () => {
                       </span>
                       {t.created_at && (
                         <span className="text-[11px] text-neutral-500">
-                          Dibuat: {formatDateShort(t.created_at)}
+                          Dibuat:{" "}
+                          {formatDateShort(t.created_at)}
                         </span>
                       )}
                       {t.updated_at && (
                         <span className="text-[11px] text-neutral-500">
-                          • Update {formatDateShort(t.updated_at)}
+                          • Update{" "}
+                          {formatDateShort(t.updated_at)}
                         </span>
                       )}
                       <span
@@ -321,7 +341,9 @@ const AdminToTPage: React.FC = () => {
                             : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40"
                         }`}
                       >
-                        {isPublished ? "Published" : "Draft / Preview"}
+                        {isPublished
+                          ? "Published"
+                          : "Draft / Preview"}
                       </span>
                     </div>
 
@@ -347,10 +369,14 @@ const AdminToTPage: React.FC = () => {
                       )}
                     </div>
 
-                    {t.meta_description && (
-                      <p className="text-sm text-neutral-300 mb-4">
-                        {t.meta_description}
-                      </p>
+                    {metaHtml && (
+                      <div className="prose prose-invert prose-sm max-w-none mb-4">
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: metaHtml,
+                          }}
+                        />
+                      </div>
                     )}
 
                     {t.image && (
@@ -366,19 +392,25 @@ const AdminToTPage: React.FC = () => {
                     <div className="mt-2 text-[11px] text-neutral-500 space-y-1">
                       {t.geoorigin && (
                         <p>
-                          <span className="font-medium">Geo origin:</span>{" "}
+                          <span className="font-medium">
+                            Geo origin:
+                          </span>{" "}
                           {t.geoorigin}
                         </p>
                       )}
                       {t.detail_location && (
                         <p>
-                          <span className="font-medium">Detail location:</span>{" "}
+                          <span className="font-medium">
+                            Detail location:
+                          </span>{" "}
                           {t.detail_location}
                         </p>
                       )}
                       {t.years && (
                         <p>
-                          <span className="font-medium">Years:</span>{" "}
+                          <span className="font-medium">
+                            Years:
+                          </span>{" "}
                           {t.years}
                         </p>
                       )}

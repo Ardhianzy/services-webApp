@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
-import { adminGetToTById, adminUpdateToT } from "@/lib/content/api";
+import {
+  adminGetToTById,
+  adminUpdateToT,
+  normalizeBackendHtml,
+} from "@/lib/content/api";
 
 type AdminToTForm = {
   philosofer: string;
@@ -24,7 +28,8 @@ const AdminEditToTPage: React.FC = () => {
   const [form, setForm] = useState<AdminToTForm | null>(null);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] =
+    useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -34,7 +39,9 @@ const AdminEditToTPage: React.FC = () => {
     key: K,
     value: AdminToTForm[K]
   ) => {
-    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
+    setForm((prev) =>
+      prev ? { ...prev, [key]: value } : prev
+    );
   };
 
   useEffect(() => {
@@ -61,7 +68,9 @@ const AdminEditToTPage: React.FC = () => {
           detailLocation: raw.detail_location ?? "",
           years: raw.years ?? "",
           metaTitle: raw.meta_title ?? "",
-          metaDescription: raw.meta_description ?? "",
+          metaDescription: normalizeBackendHtml(
+            raw.meta_description ?? ""
+          ),
           keywords: raw.keywords ?? "",
           isPublished: Boolean(raw.is_published),
         };
@@ -88,7 +97,9 @@ const AdminEditToTPage: React.FC = () => {
     };
   }, [id]);
 
-  const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+  const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (
+    e
+  ) => {
     const file = e.target.files?.[0] ?? null;
     setImageFile(file);
     if (file) {
@@ -116,7 +127,8 @@ const AdminEditToTPage: React.FC = () => {
       fd.append("philosofer", form.philosofer);
       if (form.slug) fd.append("slug", form.slug);
       if (form.geoorigin) fd.append("geoorigin", form.geoorigin);
-      if (form.detailLocation) fd.append("detail_location", form.detailLocation);
+      if (form.detailLocation)
+        fd.append("detail_location", form.detailLocation);
       if (form.years) fd.append("years", form.years);
       if (form.metaTitle) fd.append("meta_title", form.metaTitle);
       if (form.metaDescription)
@@ -175,7 +187,6 @@ const AdminEditToTPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white px-10 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
@@ -196,9 +207,7 @@ const AdminEditToTPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Layout */}
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
-        {/* KIRI: FORM */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
@@ -224,7 +233,9 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white font-mono"
                 value={form.slug}
-                onChange={(e) => updateField("slug", e.target.value)}
+                onChange={(e) =>
+                  updateField("slug", e.target.value)
+                }
               />
             </div>
           </div>
@@ -292,17 +303,25 @@ const AdminEditToTPage: React.FC = () => {
             </div>
             <div className="flex flex-col gap-2 md:col-span-1">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                META DESCRIPTION (SEO)
+                META DESCRIPTION (HTML)
               </label>
-              <input
-                type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
+              <textarea
+                className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
+                           min-h-[80px] resize-vertical focus:border-white font-mono leading-relaxed"
                 value={form.metaDescription}
                 onChange={(e) =>
-                  updateField("metaDescription", e.target.value)
+                  updateField(
+                    "metaDescription",
+                    e.target.value
+                  )
                 }
+                placeholder="<p>Deskripsi singkat tokoh...</p>"
               />
+              <p className="text-[11px] text-neutral-500">
+                *Dukung HTML sederhana (&lt;p&gt;, &lt;strong&gt;,
+                &lt;em&gt;, &lt;ul&gt;, dll). Di sisi user akan
+                dirender apa adanya setelah normalisasi.
+              </p>
             </div>
             <div className="flex flex-col gap-2 md:col-span-1">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
@@ -320,7 +339,6 @@ const AdminEditToTPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Image */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               PORTRAIT IMAGE
@@ -357,7 +375,10 @@ const AdminEditToTPage: React.FC = () => {
                 className="w-4 h-4 rounded border-zinc-600 bg-black"
                 checked={form.isPublished}
                 onChange={(e) =>
-                  updateField("isPublished", e.target.checked)
+                  updateField(
+                    "isPublished",
+                    e.target.checked
+                  )
                 }
               />
               <span>Publish ke user</span>
@@ -377,7 +398,6 @@ const AdminEditToTPage: React.FC = () => {
           </div>
         </div>
 
-        {/* KANAN: PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW
@@ -396,7 +416,9 @@ const AdminEditToTPage: React.FC = () => {
                     : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40"
                 }`}
               >
-                {form.isPublished ? "Published" : "Draft / Preview"}
+                {form.isPublished
+                  ? "Published"
+                  : "Draft / Preview"}
               </span>
             </div>
 
@@ -423,9 +445,15 @@ const AdminEditToTPage: React.FC = () => {
             </div>
 
             {form.metaDescription && (
-              <p className="text-sm text-neutral-300 mb-4">
-                {form.metaDescription}
-              </p>
+              <div className="prose prose-invert prose-sm max-w-none mb-4">
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: normalizeBackendHtml(
+                      form.metaDescription
+                    ),
+                  }}
+                />
+              </div>
             )}
 
             {imagePreviewUrl && (
@@ -441,8 +469,8 @@ const AdminEditToTPage: React.FC = () => {
             <div className="mt-4 text-[11px] text-neutral-500 space-y-1">
               {!form.metaDescription && (
                 <p>
-                  Meta description kosong. Kamu bisa mengisinya untuk ringkasan
-                  singkat tokoh dan kebutuhan SEO.
+                  Meta description kosong. Kamu bisa mengisinya
+                  untuk ringkasan singkat tokoh dan kebutuhan SEO.
                 </p>
               )}
             </div>

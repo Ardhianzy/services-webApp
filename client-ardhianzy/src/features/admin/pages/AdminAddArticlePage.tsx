@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
-import { adminCreateArticle } from "@/lib/content/api";
+import { adminCreateArticle, normalizeBackendHtml } from "@/lib/content/api";
 
-// NEW: kategori mengikuti field "category" di backend
 export type ArticleCategory = "READING_GUIDLINE" | "IDEAS_AND_TRADITIONS" | "POP_CULTURE";
 
 const CATEGORY_OPTIONS: { value: ArticleCategory; label: string }[] = [
@@ -29,7 +28,6 @@ type AdminArticleForm = {
   isPublished: boolean;
 };
 
-// NEW: slugify sederhana (dari title)
 function slugify(input: string): string {
   return input
     .toLowerCase()
@@ -39,7 +37,6 @@ function slugify(input: string): string {
 }
 
 function toISODateFromInput(date: string): string {
-  // "2025-10-26" -> "2025-10-26T00:00:00.000Z"
   if (!date) return "";
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return date;
@@ -67,7 +64,6 @@ const AdminAddArticlePage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // NEW: handler generic untuk field text
   const updateField = <K extends keyof AdminArticleForm>(
     key: K,
     value: AdminArticleForm[K]
@@ -81,7 +77,6 @@ const AdminAddArticlePage: React.FC = () => {
     }));
   };
 
-  // NEW: handler file image cover
   const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const file = e.target.files?.[0];
     setImageFile(file ?? null);
@@ -93,7 +88,6 @@ const AdminAddArticlePage: React.FC = () => {
     }
   };
 
-  // NEW: submit create
   const handleSubmit = async (publish: boolean) => {
     if (!form.title || !form.content) {
       setError("Minimal isi judul dan konten artikel (HTML).");
@@ -120,8 +114,7 @@ const AdminAddArticlePage: React.FC = () => {
       if (form.canonicalUrl)
         fd.append("canonical_url", form.canonicalUrl);
       fd.append("category", form.category);
-      // Flag draft/publish – backend bisa memutuskan dipakai atau diabaikan
-      fd.append("is_published", String(publish)); // NEW
+      fd.append("is_published", String(publish));
 
       await adminCreateArticle(fd);
 
@@ -138,7 +131,6 @@ const AdminAddArticlePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white px-10 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-[0.15em]">
@@ -160,9 +152,7 @@ const AdminAddArticlePage: React.FC = () => {
         </button>
       </div>
 
-      {/* Layout dua kolom: kiri form, kanan preview */}
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
-        {/* KIRI: FORM */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
@@ -322,7 +312,6 @@ const AdminAddArticlePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Upload image cover */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               COVER IMAGE
@@ -346,7 +335,6 @@ const AdminAddArticlePage: React.FC = () => {
             )}
           </div>
 
-          {/* Konten HTML */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
               CONTENT (HTML)
@@ -365,7 +353,6 @@ const AdminAddArticlePage: React.FC = () => {
             </p>
           </div>
 
-          {/* Error + tombol */}
           {error && (
             <p className="text-sm text-red-400 mt-1">
               {error}
@@ -408,7 +395,6 @@ const AdminAddArticlePage: React.FC = () => {
           </div>
         </div>
 
-        {/* KANAN: LIVE PREVIEW */}
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW (HTML)
@@ -439,6 +425,77 @@ const AdminAddArticlePage: React.FC = () => {
               </span>
             </div>
 
+            <style>{`
+              .card-typography{
+                font-family: Roboto, ui-sans-serif, system-ui;
+                font-size: 1.02rem;
+                line-height: 1.85;
+                color: #fff;
+                text-align: justify;
+                text-justify: inter-word;
+                hyphens: auto;
+                word-break: break-word;
+              }
+              .card-typography h1,.card-typography h2,.card-typography h3,.card-typography h4{
+                font-family: Roboto, ui-sans-serif, system-ui;
+                font-weight: 700;
+                line-height: 1.25;
+                margin: .85em 0 .45em;
+                letter-spacing: .2px;
+              }
+              .card-typography h1{font-size:1.15rem}
+              .card-typography h2{font-size:1.08rem}
+              .card-typography h3{font-size:1.04rem}
+              .card-typography h4{font-size:1.02rem}
+              .card-typography p{margin:0 0 1em}
+              .card-typography blockquote{margin:1em 0;padding:.75em 1em;border-left:3px solid rgba(255,255,255,.35);background:rgba(255,255,255,.04);border-radius:8px}
+              .card-typography blockquote p{margin:.4em 0}
+              .card-typography blockquote footer{margin-top:.55em;opacity:.85;font-size:.92em}
+              .card-typography ul,.card-typography ol{margin:.6em 0 1.1em;padding-left:1.3em}
+              .card-typography ul{list-style:disc}
+              .card-typography ol{list-style:decimal}
+              .card-typography img,.card-typography video,.card-typography iframe{max-width:100%;height:auto}
+              .card-typography a{color:#fff;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.6)}
+
+              .card-typography table{
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1.1em 0;
+                font-size: 0.98rem;
+                text-align: left;
+              }
+              .card-typography thead th{
+                background: rgba(255,255,255,.06);
+                font-weight: 700;
+              }
+              .card-typography th,
+              .card-typography td{
+                border: 1px solid rgba(255,255,255,.28);
+                padding: .55em .8em;
+                vertical-align: top;
+                text-align: left;
+                text-justify: auto;
+                hyphens: auto;
+                word-break: break-word;
+              }
+              .card-typography tbody tr:nth-child(even){
+                background: rgba(255,255,255,.02);
+              }
+
+              @media (max-width: 768px){
+                .card-typography{
+                  font-size:1rem;
+                  line-height:1.8;
+                }
+                .card-typography table{
+                  display: block;
+                  width: 100%;
+                  overflow-x: auto;
+                  -webkit-overflow-scrolling: touch;
+                }
+              }
+            `}</style>
+
             <h1 className="text-2xl md:text-3xl font-semibold mb-4">
               {form.title || "Judul artikel akan tampil di sini"}
             </h1>
@@ -460,9 +517,12 @@ const AdminAddArticlePage: React.FC = () => {
             )}
 
             <div
-              className="prose prose-invert prose-sm max-w-none"
-              // NEW: preview langsung HTML yang diinput di textarea
-              dangerouslySetInnerHTML={{ __html: form.content || "<p>Konten HTML akan tampil di sini...</p>" }}
+              className="card-typography prose prose-invert prose-sm max-w-none"
+              dangerouslySetInnerHTML={{
+                __html: form.content
+                  ? normalizeBackendHtml(form.content)
+                  : "Konten HTML akan tampil di sini...",
+              }}
             />
           </div>
         </div>
