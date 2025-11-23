@@ -37,6 +37,7 @@ export interface CreateToTData {
   meta_description?: string;
   keywords?: string;
   is_published?: boolean;
+  modern_country?: string;
 }
 
 export interface UpdateToTData {
@@ -50,6 +51,7 @@ export interface UpdateToTData {
   meta_description?: string;
   keywords?: string;
   is_published?: boolean;
+  modern_country?: string;
 }
 
 export class TotCrudRepo {

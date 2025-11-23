@@ -39,14 +39,14 @@ model Admin {
 }
 
 model ToT {
-  id              String  @id @default(cuid())
-  admin_id        String
-  image           String?
-  philosofer      String
-  geoorigin       String
-  detail_location String
-  years           String
-
+  id               String  @id @default(cuid())
+  admin_id         String
+  image            String?
+  philosofer       String
+  geoorigin        String
+  detail_location  String
+  years            String
+  modern_country   String?
   slug             String  @unique
   meta_title       String?
   meta_description String?
@@ -65,14 +65,14 @@ model ToT {
 }
 
 model ToT_meta {
-  id         String @id @default(cuid())
-  ToT_id     String
-  metafisika String
-  epsimologi String
-  aksiologi  String
-  conclusion String
-  is_published Boolean  @default(false)
-  tot ToT @relation(fields: [ToT_id], references: [id], name: "ToT_meta")
+  id           String  @id @default(cuid())
+  ToT_id       String
+  metafisika   String
+  epsimologi   String
+  aksiologi    String
+  conclusion   String
+  is_published Boolean @default(false)
+  tot          ToT     @relation(fields: [ToT_id], references: [id], name: "ToT_meta")
 
   @@map("tot_meta")
 }
@@ -220,9 +220,9 @@ model Megazine {
   pdf_mime        String?
   pdf_size        Int?
   pdf_uploaded_at DateTime?
-  is_published Boolean  @default(false)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  is_published    Boolean   @default(false)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
 
   admin Admin @relation(fields: [admin_id], references: [id], name: "Admin_Megazine")
 
