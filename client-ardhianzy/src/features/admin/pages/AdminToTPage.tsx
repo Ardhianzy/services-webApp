@@ -73,6 +73,7 @@ const AdminToTPage: React.FC = () => {
       const origin = (t.geoorigin ?? "").toLowerCase();
       const location = (t.detail_location ?? "").toLowerCase();
       const years = (t.years ?? "").toLowerCase();
+      const modernCountry = (t.modern_country ?? "").toLowerCase();
       const slug = (t.slug ?? "").toLowerCase();
       const metaTitle = (t.meta_title ?? "").toLowerCase();
       const metaDescription = (t.meta_description ?? "").toLowerCase();
@@ -83,6 +84,7 @@ const AdminToTPage: React.FC = () => {
         origin.includes(q) ||
         location.includes(q) ||
         years.includes(q) ||
+        modernCountry.includes(q) ||
         slug.includes(q) ||
         metaTitle.includes(q) ||
         metaDescription.includes(q);
@@ -244,6 +246,11 @@ const AdminToTPage: React.FC = () => {
                           <div className="text-[11px] text-neutral-500 truncate max-w-[150px]">
                             {t.detail_location ?? ""}
                           </div>
+                          {t.modern_country && (
+                            <div className="text-[11px] text-neutral-400 truncate max-w-[150px]">
+                              {t.modern_country}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 align-top text-center text-xs text-neutral-300">
                           {t.years ?? "-"}
@@ -362,6 +369,11 @@ const AdminToTPage: React.FC = () => {
                           Lokasi: {t.detail_location}
                         </span>
                       )}
+                      {t.modern_country && (
+                        <span className="px-2 py-1 rounded-full border border-zinc-700">
+                          Modern Country: {t.modern_country}
+                        </span>
+                      )}
                       {t.years && (
                         <span className="px-2 py-1 rounded-full border border-zinc-700">
                           Years: {t.years}
@@ -404,6 +416,14 @@ const AdminToTPage: React.FC = () => {
                             Detail location:
                           </span>{" "}
                           {t.detail_location}
+                        </p>
+                      )}
+                      {t.modern_country && (
+                        <p>
+                          <span className="font-medium">
+                            Modern country:
+                          </span>{" "}
+                          {t.modern_country}
                         </p>
                       )}
                       {t.years && (
