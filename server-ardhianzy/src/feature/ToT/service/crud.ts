@@ -152,6 +152,8 @@ export class TotService {
     if (totData.keywords?.trim()) updateData.keywords = totData.keywords.trim();
     if (totData.is_published !== undefined)
       updateData.is_published = totData.is_published;
+    if (totData.modern_country?.trim())
+      updateData.modern_country = totData.modern_country.trim();
 
     // Upload new image if provided
     if (totData.image) {
