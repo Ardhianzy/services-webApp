@@ -40,8 +40,8 @@ const WORLD_BOUNDS: [[number, number], [number, number]] = [
   [85, 180],
 ];
 
-const START_YEAR = -400;
-const END_YEAR = 2000;
+const START_YEAR = -700;
+const END_YEAR = 2005;
 const PIXELS_PER_YEAR = 2;
 
 const fmtYear = (y: number) => (y < 0 ? `${Math.abs(y)} BC` : `${y}`);
@@ -155,29 +155,57 @@ const mapSourceCandidates: Record<number, string[]> = {
   1000: ["/data/geoworld/world_1000.geo.json"],
   1100: ["/data/geoworld/world_1100.geo.json"],
   1200: ["/data/geoworld/world_1200.geo.json"],
+  1279: ["/data/geoworld/world_1279.geo.json"],
   1300: ["/data/geoworld/world_1300.geo.json"],
   1400: ["/data/geoworld/world_1400.geo.json"],
+  1492: ["/data/geoworld/world_1492.geo.json"],
   1500: ["/data/geoworld/world_1500.geo.json"],
+  1530: ["/data/geoworld/world_1530.geo.json"],
   1600: ["/data/geoworld/world_1600.geo.json"],
+  1650: ["/data/geoworld/world_1650.geo.json"],
   1700: ["/data/geoworld/world_1700.geo.json"],
-  1800: ["/data/geoworld/countries.geo.json"],
-  1900: ["/data/geoworld/countries.geo.json"],
+  1715: ["/data/geoworld/world_1715.geo.json"],
+  1783: ["/data/geoworld/world_1783.geo.json"],
+  1800: ["/data/geoworld/world_1800.geo.json"],
+  1815: ["/data/geoworld/world_1815.geo.json"],
+  1880: ["/data/geoworld/world_1880.geo.json"],
+  1900: ["/data/geoworld/world_1900.geo.json"],
+  1914: ["/data/geoworld/world_1914.geo.json"],
+  1920: ["/data/geoworld/world_1920.geo.json"],
+  1930: ["/data/geoworld/world_1930.geo.json"],
+  1938: ["/data/geoworld/world_1938.geo.json"],
+  1945: ["/data/geoworld/world_1945.geo.json"],
+  1960: ["/data/geoworld/world_1960.geo.json"],
+  1994: ["/data/geoworld/world_1994.geo.json"],
+  2001: ["/data/geoworld/countries.geo.json"],
+  // 1800: ["/data/geoworld/countries.geo.json"],
+  // 1900: ["/data/geoworld/countries.geo.json"],
 };
 
 function parseYears(raw: string | undefined | null): [number, number] {
   if (!raw) return [NaN, NaN];
-  const norm = String(raw).trim().replace(/[–—]/g, "-").toUpperCase();
-  const hasBC = norm.includes("BC");
+  let norm = String(raw).trim().replace(/[–—]/g, "-").toUpperCase();
+
+  const isBC = /\bBCE?\b/.test(norm);
+  const isBE = /\bBE\b/.test(norm);
+
+  norm = norm.replace(/\b(BCE?|CE|AD|BE)\b/g, "").trim();
+
   const parts = norm
-    .replace(/\s*BC/g, "")
     .split("-")
     .map((s) => s.trim())
     .filter(Boolean);
+
   const toNum = (s: string) => {
     const n = Number(s);
     if (Number.isNaN(n)) return NaN;
-    return hasBC ? -Math.abs(n) : n;
+    if (isBC) return -Math.abs(n);
+    if (isBE) {
+      return n;
+    }
+    return n;
   };
+
   if (parts.length === 1) {
     const a = toNum(parts[0]);
     return [a, a];
@@ -253,18 +281,21 @@ function useCountries(): CountriesFC {
 }
 
 function resolveLatLng(t: ToTDTO, countries: CountriesFC): [number, number] | null {
+  const modern = normName(t.modern_country);
+  if (modern && MANUAL_XY[modern]) return MANUAL_XY[modern];
+
   const g = normName(t.geoorigin);
   if (g && MANUAL_XY[g]) return MANUAL_XY[g];
   const d = normName(t.detail_location);
   if (d && MANUAL_XY[d]) return MANUAL_XY[d];
 
-  let cand = g || d || "";
+  let cand = modern || g || d || "";
   if (!cand && t.philosofer) cand = normName(t.philosofer);
   for (const [k, v] of Object.entries(SYNONYM)) {
     if (cand.includes(k)) cand = v;
   }
 
-  if (countries?.features?.length) {
+  if (countries?.features?.length && cand) {
     const hit = (countries.features as any[]).find((f: any) => {
       const props = f.properties || {};
       const name: string = String(props?.name ?? props?.NAME ?? props?.NAME_EN ?? props?.ADMIN ?? "").toLowerCase();
@@ -406,14 +437,13 @@ export default function TimelineOfThoughtSection({
   }, []);
 
   useEffect(() => {
-    const centuries = Object.keys(mapSourceCandidates)
+    const years = Object.keys(mapSourceCandidates)
       .map((n) => parseInt(n, 10))
       .sort((a, b) => a - b);
 
-    let picked = centuries[0];
-    const century = Math.floor(year / 100) * 100;
-    for (const c of centuries) {
-      if (century >= c) picked = c;
+    let picked = years[0];
+    for (const y of years) {
+      if (year >= y) picked = y;
       else break;
     }
 

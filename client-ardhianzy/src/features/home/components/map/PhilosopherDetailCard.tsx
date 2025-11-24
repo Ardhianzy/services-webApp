@@ -55,7 +55,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
 
   const hero = philosopher.cardImage || philosopher.hero || DEFAULT_HERO;
   const dateText = philosopher.fullDates || philosopher.years || "";
-  const locationText = [philosopher.geoorigin, philosopher.detail_location].filter(Boolean).join(", ");
+  const locationText = philosopher.detail_location || philosopher.geoorigin || "";
   const infoLine = [dateText, locationText].filter(Boolean).join(" | ");
 
   return (
