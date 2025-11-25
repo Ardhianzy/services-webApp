@@ -48,7 +48,7 @@ const AdminToTPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await adminFetchToT();
+        const data = await adminFetchToT({ page: 1, limit: 1000 });
         if (cancelled) return;
         setRows(data);
         setSelected(data[0] ?? null);

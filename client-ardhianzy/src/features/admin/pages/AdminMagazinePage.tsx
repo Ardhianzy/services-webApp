@@ -52,7 +52,7 @@ const AdminMagazinePage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await adminFetchMagazines();
+        const data = await adminFetchMagazines({ page: 1, limit: 1000 });
         if (cancelled) return;
         const casted = (data ?? []) as MagazineRow[];
         setRows(casted);

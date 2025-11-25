@@ -47,7 +47,7 @@ const AdminResearchPage: FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await adminFetchResearch();
+        const data = await adminFetchResearch({ page: 1, limit: 1000 });
         if (cancelled) return;
         setRows(data);
         setSelected(data[0] ?? null);
