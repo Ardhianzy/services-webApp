@@ -20,7 +20,7 @@ const AdminToTMetaPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await adminFetchToTMeta();
+      const data = await adminFetchToTMeta({ page: 1, limit: 1000 });
       setItems(data);
       setSelected((prev) => prev ?? data[0] ?? null);
     } catch (err: any) {

@@ -177,7 +177,7 @@ const mapSourceCandidates: Record<number, string[]> = {
   1945: ["/data/geoworld/world_1945.geo.json"],
   1960: ["/data/geoworld/world_1960.geo.json"],
   1994: ["/data/geoworld/world_1994.geo.json"],
-  2001: ["/data/geoworld/countries.geo.json"],
+  2005: ["/data/geoworld/countries.geo.json"],
   // 1800: ["/data/geoworld/countries.geo.json"],
   // 1900: ["/data/geoworld/countries.geo.json"],
 };

@@ -35,6 +35,7 @@ function ensureMarkerStyles() {
       align-items: center;
       justify-content: flex-start;
       filter: drop-shadow(0 2px 6px rgba(0,0,0,6));
+      box-sizing: border-box;
     }
 
     .philo-marker-portrait {
@@ -46,11 +47,13 @@ function ensureMarkerStyles() {
       border-top-left-radius: 36px;
       border-top-right-radius: 36px;
       overflow: hidden;
+      box-sizing: border-box;
     }
     .philo-marker-portrait img {
-      width: 100%;
-      height: 100%;
+      width: 100% !important;
+      height: 100% !important;
       object-fit: cover;
+      object-position: center;
       filter: grayscale(100%);
       display: block;
     }
@@ -65,12 +68,21 @@ function ensureMarkerStyles() {
       border-bottom-right-radius: 8px;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       padding: 2px 4px;
+      box-sizing: border-box;
     }
 
     .philo-marker-flag { height: 12px; width: auto; display: block; }
-    .philo-marker-caption { line-height: 1; }
+    .philo-marker-caption {
+      line-height: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
 
     .philo-marker-name {
       font-family: 'Bebas Neue', sans-serif;

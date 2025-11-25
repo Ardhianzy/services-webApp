@@ -43,7 +43,7 @@ const AdminShopPage: FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await adminFetchShops();
+        const data = await adminFetchShops({ page: 1, limit: 1000 });
         if (cancelled) return;
         const safe = Array.isArray(data) ? data : [];
         setShops(safe);
