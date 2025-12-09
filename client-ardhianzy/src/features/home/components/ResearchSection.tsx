@@ -1,18 +1,9 @@
 // src/features/home/components/ResearchSection.tsx
 import { type FC, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { contentApi } from "@/lib/content/api";
+import { contentApi, normalizeBackendHtml } from "@/lib/content/api";
 import type { ResearchCardVM, ResearchDTO } from "@/lib/content/types";
 import { ROUTES } from "@/app/routes";
-
-function normalizeBackendHtml(payload?: string | null): string {
-  if (!payload) return "";
-  let s = String(payload).trim();
-  s = s.replace(/\\u003C/gi, "<").replace(/\\u003E/gi, ">").replace(/\\u0026/gi, "&");
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
-  s = s.replace(/<p>\s*<\/p>/gi, "");
-  return s.trim();
-}
 
 function sanitizeBasicHtml(html: string): string {
   let out = html;
@@ -35,7 +26,9 @@ function makePreview(
   phrase: string,
   maxWords: number
 ): { preview: string; truncated: boolean } {
-  const text = htmlToText(sanitizeBasicHtml(normalizeBackendHtml(html)));
+  const normalized = normalizeBackendHtml(html);
+  const safeHtml = sanitizeBasicHtml(normalized || html);
+  const text = htmlToText(safeHtml);
   if (!text) return { preview: "", truncated: false };
 
   const idx = text.toLowerCase().indexOf(phrase.toLowerCase());

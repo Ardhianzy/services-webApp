@@ -6,7 +6,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
-import { adminCreateShop } from "@/lib/content/api";
+import { adminCreateShop, normalizeBackendHtml } from "@/lib/content/api";
 
 const AdminAddShopPage = () => {
   const [title, setTitle] = useState("");
@@ -75,6 +75,7 @@ const AdminAddShopPage = () => {
         fd.set("meta_description", metaDescription.trim());
 
       fd.set("is_published", isPublished ? "true" : "false");
+      fd.set("is_available", isAvailable ? "true" : "false");
 
       if (imageFile) {
         fd.set("image", imageFile);
@@ -92,14 +93,17 @@ const AdminAddShopPage = () => {
   const cleanedPrice = price.replace(/[^\d]/g, "");
   const displayPrice =
     cleanedPrice && !Number.isNaN(Number(cleanedPrice))
-      ? `Rp ${new Intl.NumberFormat("id-ID").format(
-          Number(cleanedPrice)
-        )}`
+      ? `Rp ${new Intl.NumberFormat("id-ID").format(Number(cleanedPrice))}`
       : "Rp -";
 
   const displayStock = stock.trim()
     ? `${stock.trim()} pcs`
     : "Stock belum diisi";
+
+  const normalizedDescPreview = normalizeBackendHtml(
+    desc ||
+      "<p>Deskripsi produk akan tampil di sini sebagaimana terlihat oleh user.</p>"
+  );
 
   return (
     <div className="min-h-screen bg-black text-white px-10 py-8">
@@ -419,9 +423,7 @@ const AdminAddShopPage = () => {
             <div className="prose prose-invert prose-sm max-w-none mb-4">
               <div
                 dangerouslySetInnerHTML={{
-                  __html:
-                    desc ||
-                    "<p>Deskripsi produk akan tampil di sini sebagaimana terlihat oleh user.</p>",
+                  __html: normalizedDescPreview,
                 }}
               />
             </div>

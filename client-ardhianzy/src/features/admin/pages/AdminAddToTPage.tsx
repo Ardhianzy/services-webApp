@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
-import { adminCreateToT } from "@/lib/content/api";
+import { adminCreateToT, normalizeBackendHtml } from "@/lib/content/api";
 
 type AdminToTForm = {
   philosofer: string;
@@ -117,6 +117,10 @@ const AdminAddToTPage: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  const normalizedMetaDescriptionPreview = normalizeBackendHtml(
+    form.metaDescription || ""
+  );
 
   return (
     <div className="min-h-screen bg-black text-white px-10 py-8">
@@ -418,7 +422,7 @@ const AdminAddToTPage: React.FC = () => {
               <div className="prose prose-invert prose-sm max-w-none mb-4">
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: form.metaDescription,
+                    __html: normalizedMetaDescriptionPreview,
                   }}
                 />
               </div>

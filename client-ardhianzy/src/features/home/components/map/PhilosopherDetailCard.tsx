@@ -84,7 +84,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         aria-label="Close"
         onClick={onClose}
         className={[
-          "absolute right-2 top-2 z-[3] inline-flex h-9 w-9 items-center justify-center cursor-pointer",
+          "sticky top-0 self-end mr-2 z-[3] inline-flex h-9 w-9 shrink-0 items-center justify-center cursor-pointer",
           "rounded-full border border-[#666] bg-[#111] text-white",
           "shadow-[0_4px_10px_rgba(0,0,0,4)] hover:bg-[#151515]",
         ].join(" ")}
@@ -92,7 +92,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         ×
       </button>
 
-      <div className="mt-13 grid grid-cols-2 gap-4">
+      <div className="mt-4 grid grid-cols-2 gap-4">
         <div className="relative">
           <img
             src={hero}
@@ -135,12 +135,15 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         .card-typography{
           font-family: Roboto, ui-sans-serif, system-ui;
           font-size: 1.02rem;
-          line-height: 1.85;
+          line-height: 1.25;
           color: #fff;
           text-align: justify;
           text-justify: inter-word;
           hyphens: auto;
           word-break: break-word;
+        }
+        .card-typography em, .card-typography i {
+          font-style: italic;
         }
         .card-typography h1,.card-typography h2,.card-typography h3,.card-typography h4{
           font-family: Roboto, ui-sans-serif, system-ui;
