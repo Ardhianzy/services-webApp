@@ -5,8 +5,8 @@ export type ModelType =
   | "article"
   | "shop"
   | "tot"
-  | "glosarium"
-  | "collected_meditations";
+  | "megazine"
+  | "monologues";
 
 export interface SEOMetaResult {
   metaTitle: string;
@@ -85,9 +85,8 @@ class DatabaseSlugChecker {
       article: () => prisma.article.findFirst({ where }),
       shop: () => prisma.shop.findFirst({ where }),
       tot: () => prisma.toT.findFirst({ where }),
-      glosarium: () => prisma.glosarium.findFirst({ where }),
-      collected_meditations: () =>
-        prisma.collected_meditations.findFirst({ where }),
+      megazine: () => prisma.megazine.findFirst({ where }),
+      monologues: () => prisma.monologues.findFirst({ where }),
     };
 
     try {

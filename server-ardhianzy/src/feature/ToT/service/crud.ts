@@ -15,6 +15,7 @@ interface CreateTotData {
   keywords?: string;
   is_published?: boolean;
   admin_id: string; // ← cuid string
+  modern_country?: string;
 }
 
 // Interface untuk Update ToT
@@ -28,6 +29,7 @@ interface UpdateTotData {
   meta_description?: string;
   keywords?: string;
   is_published?: boolean;
+  modern_country?: string;
 }
 
 // Interface untuk Pagination
@@ -96,6 +98,7 @@ export class TotService {
       meta_description: totData.meta_description,
       keywords: totData.keywords,
       is_published: totData.is_published,
+      modern_country: totData.modern_country,
     });
   }
 
@@ -149,6 +152,8 @@ export class TotService {
     if (totData.keywords?.trim()) updateData.keywords = totData.keywords.trim();
     if (totData.is_published !== undefined)
       updateData.is_published = totData.is_published;
+    if (totData.modern_country?.trim())
+      updateData.modern_country = totData.modern_country.trim();
 
     // Upload new image if provided
     if (totData.image) {

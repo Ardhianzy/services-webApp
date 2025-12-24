@@ -21,17 +21,15 @@ export class ToTMetaHandler {
   constructor() {
     this.totMetaService = new ToTMetaService();
   }
-
-  // Create ToT Meta (Admin only)
   createByAdmin = async (req: Request, res: Response): Promise<void> => {
     try {
       const newToTMeta = await this.totMetaService.createByAdmin({
-        // CHANGED: Removed parseInt, as ToT_id is a String (CUID)
         ToT_id: req.body.ToT_id,
         metafisika: req.body.metafisika,
         epsimologi: req.body.epsimologi,
         aksiologi: req.body.aksiologi,
         conclusion: req.body.conclusion,
+        is_published: req.body.is_published,
       });
 
       res.status(201).json({
@@ -47,18 +45,15 @@ export class ToTMetaHandler {
       });
     }
   };
-
-  // Update ToT Meta by ID (Admin only)
   updateById = async (req: Request, res: Response): Promise<void> => {
     try {
-      // CHANGED: Removed parseInt, as 'id' is a String (CUID)
       const { id } = req.params;
-
       const updateData: any = {
         metafisika: req.body.metafisika,
         epsimologi: req.body.epsimologi,
         aksiologi: req.body.aksiologi,
         conclusion: req.body.conclusion,
+        is_published: req.body.is_published,
       };
 
       // Handle ToT_id if provided

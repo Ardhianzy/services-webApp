@@ -10,14 +10,13 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": "src",
     "paths": {
-      "@routes/*": ["routes/*"],
-      "@middleware/*": ["middleware/*"],
-      "@config/*": ["config/*"],
-      "@feature/*": ["feature/*"],
-      "@libs/*": ["libs/*"],
-      "@utils/*": ["utils/*"]
+      "@routes/*": ["./routes/*"],
+      "@middleware/*": ["./middleware/*"],
+      "@config/*": ["./config/*"],
+      "@feature/*": ["./feature/*"],
+      "@libs/*": ["./libs/*"],
+      "@utils/*": ["./utils/*"]
     }
   },
   "include": ["src/**/*"],

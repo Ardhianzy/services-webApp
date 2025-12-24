@@ -1,19 +1,34 @@
 import { Request, Response } from "express";
-import { ArticleService } from "../service/crud_articel";
-import { Article } from "@prisma/client";
+import { ArticleService } from "../service/crud_articel"; // Sesuaikan path
+import { Article, ArticleCategory } from "@prisma/client"; // Impor ArticleCategory
 
-// Extend Request agar cocok dengan middleware kamu (req.user)
+// --- Deklarasi Global & Helper Functions ---
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        admin_Id: string; // dari JWT
-        username: string;
-      };
-      file?: Express.Multer.File;
+      user?: { admin_Id: string; username: string };
+      file?: Express.Multer.File; // Dari multer.single()
     }
   }
 }
+
+/** Parse boolean dari string "true" atau "false" */
+function parseBool(value: unknown): boolean | undefined {
+  if (typeof value === "string") {
+    if (value.toLowerCase() === "true") return true;
+    if (value.toLowerCase() === "false") return false;
+  }
+  return undefined;
+}
+
+/** Parse date dari string dan validasi hasilnya */
+function parseDate(value: unknown): Date | null {
+  if (!value) return null;
+  const d = new Date(String(value));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// ===============================================
 
 export class ArticleHandler {
   private articleService: ArticleService;
@@ -22,51 +37,54 @@ export class ArticleHandler {
     this.articleService = new ArticleService();
   }
 
-  // Create Article (Admin only)
   createByAdmin = async (req: Request, res: Response): Promise<void> => {
     try {
-      const adminId = req.user?.admin_Id; // <<< ambil dari middleware
+      const adminId = req.user?.admin_Id;
       if (!adminId) {
-        res
-          .status(401)
-          .json({ success: false, message: "Unauthorized: admin not found" });
+        res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
 
-      // Normalisasi boolean dari form-data
-      const isPublished =
-        req.body.is_published === "true" || req.body.is_published === true;
-      const isFeatured =
-        req.body.is_featured === "true" || req.body.is_featured === true;
-
-      // Validasi & normalisasi date
-      if (!req.body.date) {
-        res.status(400).json({ success: false, message: "Date is required" });
-        return;
-      }
-      const date = new Date(req.body.date);
-      if (isNaN(date.getTime())) {
+      const date = parseDate(req.body.date);
+      if (!date) {
         res
           .status(400)
-          .json({ success: false, message: "Invalid date format" });
+          .json({ success: false, message: "Valid date is required" });
         return;
       }
 
-      const newArticle = await this.articleService.createByAdmin({
-        admin_id: String(adminId),
+      // Validasi category enum
+      const category = req.body.category as ArticleCategory;
+      if (!category || !Object.values(ArticleCategory).includes(category)) {
+        res.status(400).json({
+          success: false,
+          message: `Invalid category. Must be one of: ${Object.values(
+            ArticleCategory
+          ).join(", ")}`,
+        });
+        return;
+      }
+
+      const body = {
+        admin_id: adminId,
         title: req.body.title,
         content: req.body.content,
         author: req.body.author,
-        date,
-        meta_title: req.body.meta_title ?? null,
-        meta_description: req.body.meta_description ?? null,
-        keywords: req.body.keywords ?? null,
-        excerpt: req.body.excerpt ?? null,
-        canonical_url: req.body.canonical_url ?? null,
-        is_published: isPublished,
-        is_featured: isFeatured,
-        image: req.file, // service akan upload ke ImageKit jika ada
-      });
+        date: date,
+        category: category,
+        meta_title: req.body.meta_title,
+        meta_description: req.body.meta_description,
+        keywords: req.body.keywords,
+        excerpt: req.body.excerpt,
+        canonical_url: req.body.canonical_url,
+        is_published: parseBool(req.body.is_published) ?? false,
+        is_featured: parseBool(req.body.is_featured) ?? false,
+      };
+
+      const newArticle = await this.articleService.createByAdmin(
+        body,
+        req.file as Express.Multer.File
+      );
 
       res.status(201).json({
         success: true,
@@ -82,60 +100,49 @@ export class ArticleHandler {
     }
   };
 
-  // Update Article by ID (Admin only)
   updateById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const id = req.params.id; // id string (cuid)
-      if (!id || typeof id !== "string") {
-        res.status(400).json({ success: false, message: "Invalid ID format" });
+      const id = req.params.id?.trim();
+      if (!id) {
+        res
+          .status(400)
+          .json({ success: false, message: "Article ID is required" });
         return;
       }
 
-      const updateData: any = {
-        title: req.body.title ?? undefined,
-        content: req.body.content ?? undefined,
-        author: req.body.author ?? undefined,
-        meta_title: req.body.meta_title ?? undefined,
-        meta_description: req.body.meta_description ?? undefined,
-        keywords: req.body.keywords ?? undefined,
-        excerpt: req.body.excerpt ?? undefined,
-        canonical_url: req.body.canonical_url ?? undefined,
-        image: req.file, // jika ada file, service akan upload
-      };
+      const updateData: any = {};
 
-      if (req.body.date !== undefined) {
-        const d = new Date(req.body.date);
-        if (isNaN(d.getTime())) {
-          res
-            .status(400)
-            .json({ success: false, message: "Invalid date format" });
-          return;
+      // Salin field yang ada dari body
+      const fields = [
+        "title",
+        "content",
+        "author",
+        "meta_title",
+        "meta_description",
+        "keywords",
+        "excerpt",
+        "canonical_url",
+        "category",
+        "view_count",
+      ];
+      fields.forEach((field) => {
+        if (req.body[field] !== undefined) {
+          updateData[field] = req.body[field];
         }
-        updateData.date = d;
-      }
+      });
 
-      if (req.body.is_published !== undefined) {
-        updateData.is_published =
-          req.body.is_published === "true" || req.body.is_published === true;
-      }
-      if (req.body.is_featured !== undefined) {
-        updateData.is_featured =
-          req.body.is_featured === "true" || req.body.is_featured === true;
-      }
-      if (req.body.view_count !== undefined) {
-        const vc = parseInt(req.body.view_count, 10);
-        if (Number.isNaN(vc)) {
-          res
-            .status(400)
-            .json({ success: false, message: "view_count must be a number" });
-          return;
-        }
-        updateData.view_count = vc;
-      }
+      // Handle parsing khusus
+      if (req.body.date !== undefined)
+        updateData.date = parseDate(req.body.date);
+      if (req.body.is_published !== undefined)
+        updateData.is_published = parseBool(req.body.is_published);
+      if (req.body.is_featured !== undefined)
+        updateData.is_featured = parseBool(req.body.is_featured);
 
       const updatedArticle = await this.articleService.updateById(
         id,
-        updateData
+        updateData,
+        req.file
       );
 
       res.status(200).json({
@@ -144,110 +151,81 @@ export class ArticleHandler {
         data: updatedArticle,
       });
     } catch (error) {
-      if (error instanceof Error && error.message === "Article not found") {
-        res.status(404).json({ success: false, message: "Article not found" });
-        return;
-      }
-      res.status(500).json({
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Failed to update Article",
-      });
+      const msg =
+        error instanceof Error ? error.message : "Failed to update Article";
+      res
+        .status(msg === "Article not found" ? 404 : 500)
+        .json({ success: false, message: msg });
     }
   };
 
-  // Delete Article by ID (Admin only)
   deleteById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const id = req.params.id; // string cuid
-      if (!id || typeof id !== "string") {
-        res.status(400).json({ success: false, message: "Invalid ID format" });
+      const id = req.params.id?.trim();
+      if (!id) {
+        res
+          .status(400)
+          .json({ success: false, message: "Article ID is required" });
         return;
       }
-
       const deletedArticle = await this.articleService.deleteById(id);
-
       res.status(200).json({
         success: true,
         message: "Article deleted successfully",
         data: deletedArticle,
       });
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === "Article not found") {
-          res
-            .status(404)
-            .json({ success: false, message: "Article not found" });
-          return;
-        }
-        if (error.message === "Cannot delete Article: it has related records") {
-          res.status(400).json({
-            success: false,
-            message: "Cannot delete Article: it has related records",
-          });
-          return;
-        }
-      }
-      res.status(500).json({
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Failed to delete Article",
-      });
+      const msg =
+        error instanceof Error ? error.message : "Failed to delete Article";
+      res
+        .status(msg === "Article not found" ? 404 : 500)
+        .json({ success: false, message: msg });
     }
   };
 
-  // Get all Article dengan pagination
   getAll = async (req: Request, res: Response): Promise<void> => {
     try {
-      const page = parseInt(req.query.page as string, 10) || 1;
-      const limit = parseInt(req.query.limit as string, 10) || 10;
-
-      const validSortBy: (keyof Article)[] = [
-        "id",
-        "title",
-        "slug",
-        "author",
-        "date",
-        "created_at",
-        "updated_at",
-        "is_published",
-        "is_featured",
-        "view_count",
-      ];
-      const rawSortBy = (req.query.sortBy as string) || "created_at";
-      const sortBy = (
-        validSortBy.includes(rawSortBy as keyof Article)
-          ? (rawSortBy as keyof Article)
-          : "created_at"
-      ) as keyof Article;
-
-      const sortOrder =
-        (req.query.sortOrder as "asc" | "desc") === "asc" ? "asc" : "desc";
-
       const result = await this.articleService.getAll({
-        page,
-        limit,
-        sortBy,
-        sortOrder,
+        page: parseInt(req.query.page as string) || 1,
+        limit: parseInt(req.query.limit as string) || 10,
+        sortBy: req.query.sortBy as keyof Article,
+        sortOrder: req.query.sortOrder as "asc" | "desc",
       });
-
       res.status(200).json({
         success: true,
-        message: "Article retrieved successfully",
+        message: "Articles retrieved successfully",
         ...result,
       });
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch Article list",
-      });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch articles" });
     }
   };
 
-  // Get Article by title
+  // Mengganti getByTitle dengan findBySlug untuk URL yang lebih baik
+  findBySlug = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const slug = req.params.slug?.trim();
+      if (!slug) {
+        res.status(400).json({ success: false, message: "Slug is required" });
+        return;
+      }
+      // Asumsi service memiliki method findBySlug
+      const article = await (this.articleService as any).findBySlug(slug);
+      res.status(200).json({
+        success: true,
+        message: "Article retrieved successfully",
+        data: article,
+      });
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Failed to fetch article";
+      res
+        .status(msg === "Article not found" ? 404 : 500)
+        .json({ success: false, message: msg });
+    }
+  };
   getByTitle = async (req: Request, res: Response): Promise<void> => {
     try {
       const { title } = req.params;
@@ -258,9 +236,7 @@ export class ArticleHandler {
         });
         return;
       }
-
       const article = await this.articleService.getByTitle(title);
-
       res.status(200).json({
         success: true,
         message: "Article retrieved successfully",
@@ -278,6 +254,59 @@ export class ArticleHandler {
         success: false,
         message:
           error instanceof Error ? error.message : "Failed to fetch Article",
+      });
+    }
+  };
+  getByArticelCategory = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { category } = req.params;
+      if (!category) {
+        res.status(400).json({
+          success: false,
+          message: "Category parameter is required",
+        });
+        return;
+      }
+      if (!Object.values(ArticleCategory).includes(category as ArticleCategory)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid article category",
+        });
+        return;
+      }
+      const validCategory = category as ArticleCategory;
+      const { page, limit } = req.query;
+      const paginationParams = {
+        page: page ? parseInt(page as string, 10) : 1,
+        limit: limit ? parseInt(limit as string, 10) : 10,
+      };
+      if (isNaN(paginationParams.page) || paginationParams.page < 1) {
+        paginationParams.page = 1;
+      }
+      if (isNaN(paginationParams.limit) || paginationParams.limit < 1) {
+        paginationParams.limit = 10;
+      }
+      const paginatedResult = await this.articleService.getByArticleCategory(
+        validCategory,
+        paginationParams
+      );
+      res.status(200).json({
+        success: true,
+        message: "Articles retrieved successfully",
+        data: paginatedResult,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("No articles found")) {
+        res.status(44).json({
+          success: false,
+          message: "No articles found for the specified category",
+        });
+        return;
+      }
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to fetch articles",
       });
     }
   };

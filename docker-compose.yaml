@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: sx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - sx-pgdata:/var/lib/postgresql/data
+    networks: [sx-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server-ardhianzy:
+    build:
+      context: ./server-ardhianzy
+      dockerfile: Dockerfile
+    container_name: sx-api-data
+    restart: unless-stopped
+    env_file:
+      - ./server-ardhianzy/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5000:5000" # hanya localhost (Nginx yg expose publik)
+    networks: [sx-net]
+
+  client-ardhianzy:
+    build:
+      context: ./client-ardhianzy
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+      dockerfile: Dockerfile
+    container_name: sx-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5173:5173" # hanya localhost (Nginx yg expose publik)
+    networks: [sx-net]
+
+volumes:
+  sx-pgdata:
+
+networks:
+  sx-net:
+    driver: bridge

@@ -43,6 +43,7 @@ export class TotHandler {
         is_published:
           req.body.is_published === "true" || req.body.is_published === true,
         image: req.file,
+        modern_country: req.body.modern_country,
       });
 
       res.status(201).json({
@@ -173,6 +174,7 @@ export class TotHandler {
         meta_description: req.body.meta_description,
         keywords: req.body.keywords,
         image: req.file,
+        modern_country: req.body.modern_country,
       };
 
       if (req.body.is_published !== undefined) {

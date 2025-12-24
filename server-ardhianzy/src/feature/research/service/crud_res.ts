@@ -1,54 +1,43 @@
+import prisma from "../../../config/db";
 import { ResearchRepository } from "../repository/crud_res";
 import { Research } from "@prisma/client";
 import imagekit from "../../../libs/imageKit";
 import path from "path";
 
-// Interface untuk Create Research
-interface CreateResearchData {
-  image?: Express.Multer.File;
+// ===== Util PDF =====
+function looksLikePdf(buf: Buffer) {
+  return buf.slice(0, 4).toString() === "%PDF";
+}
+const MAX_10MB = 10 * 1024 * 1024;
+
+// ===== DTO untuk Service =====
+export interface CreateResearchData {
+  // files masuk via parameter terpisah biar Service tetap testable
   research_title: string;
   research_sum: string;
   researcher: string;
   research_date: Date;
+  fiel: string;
   meta_title?: string;
   meta_description?: string;
   keywords?: string;
   is_published?: boolean;
-  admin_id: string; // ← cuid string
+  admin_id: string; // cuid
 }
 
-// Interface untuk Update Research
-interface UpdateResearchData {
-  image?: Express.Multer.File;
+export interface UpdateResearchData {
   research_title?: string;
   research_sum?: string;
   researcher?: string;
   research_date?: Date;
+  fiel?: string;
   meta_title?: string;
   meta_description?: string;
   keywords?: string;
   is_published?: boolean;
-}
 
-// Interface untuk Pagination
-interface PaginationParams {
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-}
-
-// Interface untuk Pagination Result
-interface PaginatedResult<T> {
-  data: T[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
+  // kontrol PDF
+  remove_pdf?: boolean; // true = hapus PDF tanpa upload baru
 }
 
 export class ResearchService {
@@ -58,103 +47,144 @@ export class ResearchService {
     this.repo = new ResearchRepository();
   }
 
-  // Create Research (Admin only)
-  async createByAdmin(researchData: CreateResearchData): Promise<Research> {
-    // Validasi input
-    if (!researchData.research_title?.trim()) {
+  /**
+   * Create Research (upload image wajib, pdf opsional).
+   * imageFile & pdfFile didapat dari handler (multer)
+   */
+  async createByAdmin(
+    body: CreateResearchData,
+    imageFile?: Express.Multer.File,
+    pdfFile?: Express.Multer.File
+  ): Promise<Research> {
+    // Validasi basic
+    if (!body.research_title?.trim())
       throw new Error("Research title is required");
-    }
-    if (!researchData.research_sum?.trim()) {
+    if (!body.research_sum?.trim())
       throw new Error("Research summary is required");
-    }
-    if (!researchData.researcher?.trim()) {
-      throw new Error("Researcher is required");
-    }
-    if (!researchData.research_date) {
-      throw new Error("Research date is required");
-    }
-    if (!researchData.admin_id?.trim()) {
-      throw new Error("Admin ID is required");
+    if (!body.researcher?.trim()) throw new Error("Researcher is required");
+    if (!body.research_date) throw new Error("Research date is required");
+    if (!body.fiel?.trim()) throw new Error("Field 'fiel' is required");
+    if (!body.admin_id?.trim()) throw new Error("Admin ID is required");
+
+    // ===== Upload IMAGE (wajib menurut service-mu sebelumnya)
+    if (!imageFile) throw new Error("Image is required");
+    let imageUrl: string;
+    try {
+      const fileBase64 = imageFile.buffer.toString("base64");
+      const response = await imagekit.upload({
+        fileName: Date.now() + path.extname(imageFile.originalname),
+        file: fileBase64,
+        folder: "/website-ardhianzy/research/images",
+        useUniqueFileName: true,
+        tags: ["research", "image"],
+      });
+      imageUrl = response.url;
+    } catch {
+      throw new Error("Failed to upload image");
     }
 
-    let imageUrl: string | undefined;
+    // ===== Upload PDF (opsional)
+    let pdfPayload:
+      | {
+          pdf_file_id: string;
+          pdf_url: string;
+          pdf_filename: string;
+          pdf_mime: string;
+          pdf_size: number;
+          pdf_uploaded_at: Date;
+        }
+      | undefined;
 
-    // Upload image jika ada
-    if (researchData.image) {
-      try {
-        const fileBase64 = researchData.image.buffer.toString("base64");
-        const response = await imagekit.upload({
-          fileName: Date.now() + path.extname(researchData.image.originalname),
-          file: fileBase64,
-          folder: "Ardianzy/research",
-        });
-        imageUrl = response.url;
-      } catch {
-        throw new Error("Failed to upload image");
-      }
+    if (pdfFile) {
+      if (pdfFile.size > MAX_10MB) throw new Error("PDF > 10MB ditolak");
+      if (!looksLikePdf(pdfFile.buffer))
+        throw new Error("File bukan PDF valid");
+
+      const safeName = body.research_title
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]+/g, "-")
+        .slice(0, 80);
+
+      const uploaded = await imagekit.upload({
+        file: pdfFile.buffer, // langsung buffer
+        fileName: `${safeName}.pdf`,
+        folder: "/website-ardhianzy/research/pdfs",
+        useUniqueFileName: true,
+        isPrivateFile: false,
+        tags: ["research", "pdf"],
+      });
+
+      pdfPayload = {
+        pdf_file_id: uploaded.fileId,
+        pdf_url: uploaded.url,
+        pdf_filename: pdfFile.originalname,
+        pdf_mime: pdfFile.mimetype || "application/pdf",
+        pdf_size: pdfFile.size,
+        pdf_uploaded_at: new Date(),
+      };
     }
 
-    if (!imageUrl) {
-      throw new Error("Image is required");
-    }
-
+    // ===== Simpan via repo
     return this.repo.createByAdmin({
-      admin_id: researchData.admin_id, // ← string
-      research_title: researchData.research_title,
-      research_sum: researchData.research_sum,
+      admin_id: body.admin_id,
+      research_title: body.research_title,
+      research_sum: body.research_sum,
       image: imageUrl,
-      researcher: researchData.researcher,
-      research_date: researchData.research_date,
-      meta_title: researchData.meta_title,
-      meta_description: researchData.meta_description,
-      keywords: researchData.keywords,
-      is_published: researchData.is_published,
+      researcher: body.researcher,
+      research_date: body.research_date,
+      fiel: body.fiel,
+      meta_title: body.meta_title,
+      meta_description: body.meta_description,
+      keywords: body.keywords,
+      is_published: body.is_published,
+      ...(pdfPayload ?? {}),
     });
   }
 
-  // Update Research by ID (Admin only)
+  /**
+   * Update Research (image & pdf opsional).
+   * - Jika remove_pdf = true → hapus PDF lama (ImageKit + kolom DB)
+   * - Jika pdfFile ada → replace PDF lama
+   */
   async updateById(
     id: string,
-    researchData: UpdateResearchData
+    body: UpdateResearchData,
+    imageFile?: Express.Multer.File,
+    pdfFile?: Express.Multer.File
   ): Promise<Research> {
     if (!id?.trim()) throw new Error("Valid Research ID is required");
 
+    // ambil existing buat operasi replace/hapus PDF
+    const existing = await prisma.research.findUnique({ where: { id } });
+    if (!existing) throw new Error("Research not found");
+
     const updateData: any = {};
 
-    // Only update provided fields
-    if (researchData.research_title?.trim()) {
-      updateData.research_title = researchData.research_title.trim();
-    }
-    if (researchData.research_sum?.trim()) {
-      updateData.research_sum = researchData.research_sum.trim();
-    }
-    if (researchData.researcher?.trim()) {
-      updateData.researcher = researchData.researcher.trim();
-    }
-    if (researchData.research_date) {
-      updateData.research_date = researchData.research_date;
-    }
-    if (researchData.meta_title?.trim()) {
-      updateData.meta_title = researchData.meta_title.trim();
-    }
-    if (researchData.meta_description?.trim()) {
-      updateData.meta_description = researchData.meta_description.trim();
-    }
-    if (researchData.keywords?.trim()) {
-      updateData.keywords = researchData.keywords.trim();
-    }
-    if (researchData.is_published !== undefined) {
-      updateData.is_published = researchData.is_published;
-    }
+    // fields biasa
+    if (body.research_title?.trim())
+      updateData.research_title = body.research_title.trim();
+    if (body.research_sum?.trim())
+      updateData.research_sum = body.research_sum.trim();
+    if (body.researcher?.trim()) updateData.researcher = body.researcher.trim();
+    if (typeof body.fiel !== "undefined") updateData.fiel = body.fiel;
+    if (body.research_date) updateData.research_date = body.research_date;
+    if (body.meta_title?.trim()) updateData.meta_title = body.meta_title.trim();
+    if (body.meta_description?.trim())
+      updateData.meta_description = body.meta_description.trim();
+    if (body.keywords?.trim()) updateData.keywords = body.keywords.trim();
+    if (typeof body.is_published !== "undefined")
+      updateData.is_published = body.is_published;
 
-    // Upload new image if provided
-    if (researchData.image) {
+    // replace IMAGE (opsional)
+    if (imageFile) {
       try {
-        const fileBase64 = researchData.image.buffer.toString("base64");
+        const fileBase64 = imageFile.buffer.toString("base64");
         const response = await imagekit.upload({
-          fileName: Date.now() + path.extname(researchData.image.originalname),
+          fileName: Date.now() + path.extname(imageFile.originalname),
           file: fileBase64,
-          folder: "Ardianzy/research",
+          folder: "/website-ardhianzy/research/images",
+          useUniqueFileName: true,
+          tags: ["research", "image"],
         });
         updateData.image = response.url;
       } catch {
@@ -162,32 +192,103 @@ export class ResearchService {
       }
     }
 
-    // Andalkan repo untuk melempar "Research not found" (P2025) bila ID tidak ada
+    // hapus PDF tanpa upload baru
+    if (body.remove_pdf === true && existing.pdf_file_id) {
+      try {
+        await imagekit.deleteFile(existing.pdf_file_id);
+      } catch {
+        /* ignore */
+      }
+      updateData.pdf_file_id = null;
+      updateData.pdf_url = null;
+      updateData.pdf_filename = null;
+      updateData.pdf_mime = null;
+      updateData.pdf_size = null;
+      updateData.pdf_uploaded_at = null;
+    }
+
+    // replace PDF (upload baru)
+    if (pdfFile) {
+      if (pdfFile.size > MAX_10MB) throw new Error("PDF > 10MB ditolak");
+      if (!looksLikePdf(pdfFile.buffer))
+        throw new Error("File bukan PDF valid");
+
+      if (existing.pdf_file_id) {
+        try {
+          await imagekit.deleteFile(existing.pdf_file_id);
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const safeName = (body.research_title ?? existing.research_title)
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]+/g, "-")
+        .slice(0, 80);
+
+      const uploaded = await imagekit.upload({
+        file: pdfFile.buffer,
+        fileName: `${safeName}.pdf`,
+        folder: "/website-ardhianzy/research/pdfs",
+        useUniqueFileName: true,
+        isPrivateFile: false,
+        tags: ["research", "pdf"],
+      });
+
+      updateData.pdf_file_id = uploaded.fileId;
+      updateData.pdf_url = uploaded.url;
+      updateData.pdf_filename = pdfFile.originalname;
+      updateData.pdf_mime = pdfFile.mimetype || "application/pdf";
+      updateData.pdf_size = pdfFile.size;
+      updateData.pdf_uploaded_at = new Date();
+    }
+
+    // repo akan:
+    // - regenerate slug kalau title berubah
+    // - regenerate SEO meta kalau title/summary berubah (jika meta tidak diisi)
     return this.repo.updateById(id, updateData);
   }
 
-  // Delete Research by ID (Admin only)
   async deleteById(id: string): Promise<Research> {
     if (!id?.trim()) throw new Error("Valid Research ID is required");
+    const existing = await prisma.research.findUnique({ where: { id } });
+    if (!existing) throw new Error("Research not found");
+
+    if (existing.pdf_file_id) {
+      try {
+        await imagekit.deleteFile(existing.pdf_file_id);
+      } catch {
+        /* ignore */
+      }
+    }
+
     return this.repo.deleteById(id);
   }
 
-  // Get all Research dengan pagination
-  async getAll(
-    paginationParams?: PaginationParams
-  ): Promise<PaginatedResult<Research>> {
+  // passthrough list & getByTitle
+  async getAll(paginationParams?: {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+  }): Promise<{
+    data: Research[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
+  }> {
     return this.repo.getAll(paginationParams || {});
   }
 
-  // Get Research by research title
   async getByResearchTitle(researchTitle: string): Promise<Research> {
-    if (!researchTitle?.trim()) {
-      throw new Error("Research title is required");
-    }
+    if (!researchTitle?.trim()) throw new Error("Research title is required");
     const research = await this.repo.getByResearchTitle(researchTitle.trim());
-    if (!research) {
-      throw new Error("Research not found");
-    }
+    if (!research) throw new Error("Research not found");
     return research;
   }
 }

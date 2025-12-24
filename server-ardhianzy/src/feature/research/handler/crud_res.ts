@@ -1,17 +1,69 @@
+// src/feature/research/handler/crud_res.ts
 import { Request, Response } from "express";
 import { ResearchService } from "../service/crud_res";
 
-// Extend Request untuk payload JWT (string cuid) + file upload
+// Perluas tipe Request agar nyaman akses files
 declare global {
   namespace Express {
     interface Request {
       user?: {
-        admin_Id: string;
+        admin_Id: string; // dari middleware auth (perhatikan kapitalisasi konsisten dengan middleware)
         username: string;
       };
-      file?: Express.Multer.File;
+      file?: Express.Multer.File; // jika route pakai .single()
+      files?:
+        | Express.Multer.File[]
+        | { [fieldname: string]: Express.Multer.File[] }
+        | undefined;
+      fileImage?: Express.Multer.File | undefined; // opsional jika kamu isi manual di middleware
     }
   }
+}
+
+/** Ambil file "image" dari req (mendukung .fields, custom, dsb.) */
+function getImageFromReq(req: Request): Express.Multer.File | undefined {
+  const anyReq = req as any;
+  // Jika pakai .fields()
+  const filesObj = (req.files as { [k: string]: Express.Multer.File[] }) || {};
+  if (filesObj.image?.[0]) return filesObj.image[0];
+
+  // Kalau ada custom attach
+  if (anyReq.fileImage) return anyReq.fileImage;
+
+  // Jika route lain pakai .single("image")
+  if ((req as any).file && (req as any).file.fieldname === "image") {
+    return (req as any).file as Express.Multer.File;
+  }
+  return undefined;
+}
+
+/** Ambil file "pdf" dari req (mendukung .fields atau .single("pdf")) */
+function getPdfFromReq(req: Request): Express.Multer.File | undefined {
+  const filesObj = (req.files as { [k: string]: Express.Multer.File[] }) || {};
+  if (filesObj.pdf?.[0]) return filesObj.pdf[0];
+
+  // fallback: .single("pdf")
+  if ((req as any).file && (req as any).file.fieldname === "pdf") {
+    return (req as any).file as Express.Multer.File;
+  }
+  return undefined;
+}
+
+/** Parse boolean dari multipart form-data */
+function parseBool(v: unknown): boolean | undefined {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") {
+    if (v.toLowerCase() === "true") return true;
+    if (v.toLowerCase() === "false") return false;
+  }
+  return undefined;
+}
+
+/** Parse date ISO; balikan Date atau undefined */
+function parseDate(v: unknown): Date | undefined {
+  if (!v) return undefined;
+  const d = new Date(String(v));
+  return isNaN(d.getTime()) ? undefined : d;
 }
 
 export class ResearchHandler {
@@ -32,24 +84,32 @@ export class ResearchHandler {
         return;
       }
 
-      const newResearch = await this.researchService.createByAdmin({
-        admin_id: adminId, // cuid string
-        research_title: req.body.research_title,
-        research_sum: req.body.research_sum,
-        researcher: req.body.researcher,
-        research_date: new Date(req.body.research_date),
-        meta_title: req.body.meta_title,
-        meta_description: req.body.meta_description,
-        keywords: req.body.keywords,
-        is_published:
-          req.body.is_published === "true" || req.body.is_published === true,
-        image: req.file,
-      });
+      const imageFile = getImageFromReq(req); // file cover (opsional)
+      const pdfFile = getPdfFromReq(req); // file PDF (opsional)
+
+      const created = await this.researchService.createByAdmin(
+        {
+          admin_id: adminId, // cuid string
+          research_title: req.body.research_title,
+          research_sum: req.body.research_sum,
+          researcher: req.body.researcher,
+          research_date: parseDate(req.body.research_date) as Date, // CREATE: wajib sesuai schema
+          fiel: req.body.fiel, // wajib sesuai schema (typo "fiel" di prisma)
+          meta_title: req.body.meta_title,
+          meta_description: req.body.meta_description,
+          keywords: req.body.keywords,
+          is_published: parseBool(req.body.is_published) ?? false,
+          // NOTE: jika image kamu kirim sebagai URL (teks), ambil dari req.body.image di service
+          // jika image file, service ambil dari imageFile (unggah ke ImageKit dan set URL cover).
+        },
+        imageFile,
+        pdfFile
+      );
 
       res.status(201).json({
         success: true,
         message: "Research created successfully",
-        data: newResearch,
+        data: created,
       });
     } catch (error) {
       res.status(400).json({
@@ -63,41 +123,38 @@ export class ResearchHandler {
   // Update Research by ID (Admin only)
   updateById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const id = req.params.id; // cuid string
-
-      if (!id?.trim()) {
+      const id = req.params.id?.trim();
+      if (!id) {
         res.status(400).json({ success: false, message: "Invalid ID format" });
         return;
       }
 
-      const updateData: any = {
-        research_title: req.body.research_title,
-        research_sum: req.body.research_sum,
-        researcher: req.body.researcher,
-        meta_title: req.body.meta_title,
-        meta_description: req.body.meta_description,
-        keywords: req.body.keywords,
-        image: req.file,
-      };
+      const imageFile = getImageFromReq(req); // opsional
+      const pdfFile = getPdfFromReq(req); // opsional
 
-      if (req.body.research_date) {
-        updateData.research_date = new Date(req.body.research_date);
-      }
-
-      if (req.body.is_published !== undefined) {
-        updateData.is_published =
-          req.body.is_published === "true" || req.body.is_published === true;
-      }
-
-      const updatedResearch = await this.researchService.updateById(
+      const updated = await this.researchService.updateById(
         id,
-        updateData
+        {
+          research_title: req.body.research_title,
+          research_sum: req.body.research_sum,
+          researcher: req.body.researcher,
+          research_date: parseDate(req.body.research_date),
+          fiel: req.body.fiel,
+          meta_title: req.body.meta_title,
+          meta_description: req.body.meta_description,
+          keywords: req.body.keywords,
+          is_published: parseBool(req.body.is_published),
+          remove_pdf: parseBool(req.body.remove_pdf) === true, // hapus PDF tanpa upload baru
+          // NOTE: image URL teks masih bisa dikirim via req.body.image jika bukan file.
+        },
+        imageFile,
+        pdfFile
       );
 
       res.status(200).json({
         success: true,
         message: "Research updated successfully",
-        data: updatedResearch,
+        data: updated,
       });
     } catch (error) {
       if (error instanceof Error && error.message === "Research not found") {
@@ -115,19 +172,18 @@ export class ResearchHandler {
   // Delete Research by ID (Admin only)
   deleteById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const id = req.params.id; // cuid string
-
-      if (!id?.trim()) {
+      const id = req.params.id?.trim();
+      if (!id) {
         res.status(400).json({ success: false, message: "Invalid ID format" });
         return;
       }
 
-      const deletedResearch = await this.researchService.deleteById(id);
+      const deleted = await this.researchService.deleteById(id);
 
       res.status(200).json({
         success: true,
         message: "Research deleted successfully",
-        data: deletedResearch,
+        data: deleted,
       });
     } catch (error) {
       if (error instanceof Error) {
@@ -160,7 +216,7 @@ export class ResearchHandler {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const sortBy = (req.query.sortBy as string) || undefined; // biar service yang pilih default
+      const sortBy = (req.query.sortBy as string) || undefined;
       const sortOrder = (req.query.sortOrder as "asc" | "desc") || "desc";
 
       const result = await this.researchService.getAll({
@@ -189,9 +245,8 @@ export class ResearchHandler {
   // Get Research by research title
   getByResearchTitle = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { researchTitle } = req.params;
-
-      if (!researchTitle?.trim()) {
+      const researchTitle = req.params.researchTitle?.trim();
+      if (!researchTitle) {
         res.status(400).json({
           success: false,
           message: "Research title parameter is required",
@@ -200,7 +255,7 @@ export class ResearchHandler {
       }
 
       const research = await this.researchService.getByResearchTitle(
-        researchTitle.trim()
+        researchTitle
       );
 
       res.status(200).json({
