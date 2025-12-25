@@ -1,11 +1,12 @@
 // src/features/home/components/TimelineOfThoughtSection.tsx
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { MapContainer, TileLayer, GeoJSON, useMap, Polyline, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, useMap, Polyline, useMapEvents, Pane } from "react-leaflet";
 import type { FeatureCollection, Geometry, Feature } from "geojson";
 import "leaflet/dist/leaflet.css";
 
 import PhilosopherMarker from "./map/PhilosopherMarker";
 import PhilosopherDetailCard, { type DetailPhilosopher } from "./map/PhilosopherDetailCard";
+import TimelineSearch from "./TImelineSearch";
 import { contentApi } from "@/lib/content/api";
 import type { ToTDTO } from "@/lib/content/types";
 
@@ -73,14 +74,38 @@ function unprojectPointToLatLng(x: number, y: number, zoom: number): [number, nu
   return [lat, lng];
 }
 
-function ZoomButtons() {
+function ZoomButtons({ onSearchClick }: { onSearchClick: () => void }) {
   const map = useMap();
   const bounds: [[number, number], [number, number]] = [
     [90, -180],
     [-90, 180],
   ];
+  
+  const btnClass = "flex h-10 w-10 items-center justify-center !border-b !border-b-white last:!border-b-0 text-white transition-colors !bg-black hover:bg-white/15 font-sans leading-none text-[18px] cursor-pointer";
+
   return (
     <div className="absolute left-5 top-1/2 z-[1000] -translate-y-1/2 flex flex-col overflow-hidden rounded-[10px] text-[18px] border border-white bg-black shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
+      <button
+        onClick={onSearchClick}
+        className={btnClass}
+        title="Search Philosopher"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </button>
+
       {["+", "−", "⟳"].map((label) => (
         <button
           key={label}
@@ -89,7 +114,7 @@ function ZoomButtons() {
             else if (label === "−") map.zoomOut();
             else map.fitBounds(bounds as any);
           }}
-          className="flex h-10 w-10 items-center justify-center !border-b !border-b-white last:!border-b-0 text-white transition-colors !bg-black hover:bg-white/15 font-sans leading-none text-[18px]"
+          className={btnClass}
           title={label === "⟳" ? "Reset" : label === "+" ? "Zoom In" : "Zoom Out"}
         >
           {label}
@@ -301,33 +326,44 @@ function useCountries(): CountriesFC {
   return fc;
 }
 
-function resolveLatLng(t: ToTDTO, countries: CountriesFC): [number, number] | null {
-  const modern = normName(t.modern_country);
-  if (modern && MANUAL_XY[modern]) return MANUAL_XY[modern];
+function findFeature(features: any[], target: string) {
+  return features.find((f: any) => {
+    const props = f.properties || {};
+    const name = String(props?.name ?? props?.NAME ?? props?.NAME_EN ?? props?.ADMIN ?? "").toLowerCase();
+    return !!name && (name.includes(target) || target.includes(name));
+  });
+}
 
-  const g = normName(t.geoorigin);
-  if (g && MANUAL_XY[g]) return MANUAL_XY[g];
-  const d = normName(t.detail_location);
-  if (d && MANUAL_XY[d]) return MANUAL_XY[d];
+function resolveLatLng(t: ToTDTO, currentMap: FeatureCollection | null, modernMap: CountriesFC): [number, number] | null {
+  const priorities = [t.detail_location, t.geoorigin, t.modern_country];
 
-  let cand = modern || g || d || "";
-  if (!cand && t.philosofer) cand = normName(t.philosofer);
-  for (const [k, v] of Object.entries(SYNONYM)) {
-    if (cand.includes(k)) cand = v;
-  }
+  for (const raw of priorities) {
+    let cand = normName(raw);
+    if (!cand) continue;
 
-  if (countries?.features?.length && cand) {
-    const hit = (countries.features as any[]).find((f: any) => {
-      const props = f.properties || {};
-      const name: string = String(props?.name ?? props?.NAME ?? props?.NAME_EN ?? props?.ADMIN ?? "").toLowerCase();
-      return !!name && (name.includes(cand) || cand.includes(name));
-    });
+    if (MANUAL_XY[cand]) return MANUAL_XY[cand];
 
-    if (hit) {
-      const xy = bboxCentroid(hit as Feature<Geometry, any>);
-      if (xy) return xy;
+    for (const [k, v] of Object.entries(SYNONYM)) {
+      if (cand.includes(k)) cand = v;
+    }
+
+    if (currentMap?.features) {
+      const hit = findFeature(currentMap.features as any[], cand);
+      if (hit) {
+        const xy = bboxCentroid(hit as Feature<Geometry, any>);
+        if (xy) return xy;
+      }
+    }
+
+    if (modernMap?.features) {
+      const hit = findFeature(modernMap.features as any[], cand);
+      if (hit) {
+        const xy = bboxCentroid(hit as Feature<Geometry, any>);
+        if (xy) return xy;
+      }
     }
   }
+
   return null;
 }
 
@@ -366,6 +402,7 @@ export default function TimelineOfThoughtSection({
 
   const [philosophers, setPhilosophers] = useState<TimelinePhilosopher[]>([]);
   const [selected, setSelected] = useState<DetailPhilosopher | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const countries = useCountries();
 
@@ -536,7 +573,7 @@ export default function TimelineOfThoughtSection({
         const mapped: TimelinePhilosopher[] = [];
 
         for (const t of list) {
-          const xy = resolveLatLng(t, countries);
+          const xy = resolveLatLng(t, mapData, countries);
           if (!xy) continue;
 
           mapped.push({
@@ -557,7 +594,7 @@ export default function TimelineOfThoughtSection({
       }
     })();
     return () => ac.abort();
-  }, [overridePhilos, countries]);
+  }, [overridePhilos, countries, mapData]);
 
   const handleYear: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const y = Number(e.target.value);
@@ -679,8 +716,29 @@ export default function TimelineOfThoughtSection({
     onMarkerClick?.(p);
   };
 
+  const handleSearchSelect = (p: TimelinePhilosopher) => {
+    const [start, end] = parseYears(p.years);
+    if (Number.isFinite(start)) {
+      const targetYear = Number.isFinite(end) ? Math.floor((start + end) / 2) : start;
+      
+      const clampedYear = Math.max(minYear, Math.min(targetYear, maxYear));
+      
+      setYear(clampedYear);
+      centerToYear(clampedYear, true);
+    }
+    // Opsional: Jika ingin membuka kartu detail otomatis, uncomment baris ini
+    openDetailFromMarker(p);
+  };
+
   return (
     <section id="timeline-of-thought" className="relative h-full w-full bg-[#1a1a1a] text-white">
+      <TimelineSearch 
+        isOpen={isSearchOpen} 
+        onClose={() => setIsSearchOpen(false)} 
+        data={philosophers}
+        onSelect={handleSearchSelect}
+      />
+
       <div className="relative flex h-full flex-col">
         {selected && <PhilosopherDetailCard philosopher={selected} onClose={() => setSelected(null)} />}
 
@@ -709,8 +767,9 @@ export default function TimelineOfThoughtSection({
           >
             <EnsureFullWidthNoWrap />
             <MapZoomWatcher onZoomChange={setMapZoom} />
+            
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
               noWrap
               bounds={WORLD_BOUNDS}
             />
@@ -726,57 +785,68 @@ export default function TimelineOfThoughtSection({
               />
             )}
 
+            <Pane name="labels" style={{ zIndex: 650, pointerEvents: 'none' }}>
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+                noWrap
+                bounds={WORLD_BOUNDS}
+              />
+            </Pane>
+
             {positionedVisiblePhilosophers.map((p) => {
               const hasOffset =
                 Math.abs(p.anchorLat - p.mapLat) > 1e-6 ||
                 Math.abs(p.anchorLng - p.mapLng) > 1e-6;
+              
+              if (!hasOffset) return null;
 
               return (
-                <Fragment key={p.id}>
-                  {hasOffset && (
-                    <>
-                      <Polyline
-                        positions={[
-                          [p.anchorLat, p.anchorLng],
-                          [p.mapLat, p.mapLng],
-                        ]}
-                        pathOptions={{
-                          color: "#C0C0C0",
-                          weight: 5,
-                          opacity: 0.8,
-                          lineCap: "round",
-                          lineJoin: "round",
-                        }}
-                      />
-                      <Polyline
-                        positions={[
-                          [p.anchorLat, p.anchorLng],
-                          [p.mapLat, p.mapLng],
-                        ]}
-                        pathOptions={{
-                          color: "#000000",
-                          weight: 2.5,
-                          opacity: 0.95,
-                          lineCap: "round",
-                          lineJoin: "round",
-                        }}
-                      />
-                    </>
-                  )}
-
-                  <PhilosopherMarker
-                    philosopher={{
-                      ...p,
-                      lat: p.mapLat,
-                      lng: p.mapLng,
-                    }}
-                    onMarkerClick={openDetailFromMarker}
-                  />
+                <Fragment key={`line-${p.id}`}>
+                    <Polyline
+                      positions={[
+                        [p.anchorLat, p.anchorLng],
+                        [p.mapLat, p.mapLng],
+                      ]}
+                      pathOptions={{
+                        color: "#C0C0C0",
+                        weight: 5,
+                        opacity: 0.8,
+                        lineCap: "round",
+                        lineJoin: "round",
+                      }}
+                    />
+                    <Polyline
+                      positions={[
+                        [p.anchorLat, p.anchorLng],
+                        [p.mapLat, p.mapLng],
+                      ]}
+                      pathOptions={{
+                        color: "#000000",
+                        weight: 2.5,
+                        opacity: 0.95,
+                        lineCap: "round",
+                        lineJoin: "round",
+                      }}
+                    />
                 </Fragment>
               );
             })}
 
-            <ZoomButtons />
+            <Pane name="top-markers" style={{ zIndex: 800 }}>
+                {positionedVisiblePhilosophers.map((p) => (
+                    <PhilosopherMarker
+                        key={`marker-${p.id}`}
+                        philosopher={{
+                          ...p,
+                          lat: p.mapLat,
+                          lng: p.mapLng,
+                        }}
+                        onMarkerClick={openDetailFromMarker}
+                    />
+                ))}
+            </Pane>
+
+            <ZoomButtons onSearchClick={() => setIsSearchOpen(true)} />
           </MapContainer>
 
           <div
@@ -822,10 +892,10 @@ export default function TimelineOfThoughtSection({
 
           {showGuide && (
             <>
-              <div className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-[2px]" />
+              <div className="fixed inset-0 z-[5000] bg-black/70 backdrop-blur-[2px]" />
               <div
                 id="tot-guide-callout"
-                className="fixed z-[3001] text-left right-4 bottom-[15rem] max-w-[420px] rounded-xl border border-white/70 bg-black/85 p-4 shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
+                className="fixed z-[5001] text-left right-4 bottom-[15rem] max-w-[420px] rounded-xl border border-white/70 bg-black/85 p-4 shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
               >
                 <p className="font-roboto text-[0.98rem] leading-relaxed">
                   Masih banyak yang bisa digali. Klik panah bawah untuk menemukan wawasan lebih dalam!

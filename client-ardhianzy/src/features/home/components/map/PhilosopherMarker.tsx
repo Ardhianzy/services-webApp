@@ -24,7 +24,7 @@ let stylesInjected = false;
 function ensureMarkerStyles() {
   if (stylesInjected || typeof document === "undefined") return;
   const css = `
-    .leaflet-marker-icon.philo-marker-wrap { z-index: 700 !important; }
+    .leaflet-marker-icon.philo-marker-wrap { z-index: 3000 !important; }
     .philo-marker-wrap { pointer-events: auto; }
 
     .philo-marker.sm {
