@@ -392,6 +392,43 @@ const AdminAddMagazinePage: React.FC = () => {
               .card-typography img,.card-typography video,.card-typography iframe{max-width:100%;height:auto}
               .card-typography a{color:#fff;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.6)}
 
+              .card-typography em,
+              .card-typography i{
+                font-style: italic;
+              }
+              .card-typography strong,
+              .card-typography b{
+                font-weight: 700;
+              }
+              .card-typography code{
+                font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+                font-size: 0.9em;
+                background: rgba(255,255,255,.06);
+                padding: .1em .3em;
+                border-radius: 4px;
+              }
+              .card-typography pre{
+                font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+                font-size: 0.9em;
+                background: rgba(255,255,255,.06);
+                padding: .8em 1em;
+                border-radius: 8px;
+                overflow-x: auto;
+              }
+              .card-typography sup{
+                font-size: 0.75em;
+                vertical-align: super;
+              }
+              .card-typography sub{
+                font-size: 0.75em;
+                vertical-align: sub;
+              }
+              .card-typography hr{
+                border: 0;
+                border-top: 1px solid rgba(255,255,255,.28);
+                margin: 1.5em 0;
+              }
+
               .card-typography table{
                 width: 100%;
                 border-collapse: collapse;

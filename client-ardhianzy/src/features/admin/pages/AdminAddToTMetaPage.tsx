@@ -425,6 +425,42 @@ const AdminAddToTMetaPage: React.FC = () => {
           text-underline-offset:2px;
           text-decoration-color:rgba(255,255,255,.6);
         }
+        .admin-totmeta-html em,
+        .admin-totmeta-html i{
+          font-style: italic;
+        }
+        .admin-totmeta-html strong,
+        .admin-totmeta-html b{
+          font-weight: 700;
+        }
+        .admin-totmeta-html code{
+          font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+          font-size: 0.9em;
+          background: rgba(255,255,255,.06);
+          padding: .1em .3em;
+          border-radius: 4px;
+        }
+        .admin-totmeta-html pre{
+          font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+          font-size: 0.9em;
+          background: rgba(255,255,255,.06);
+          padding: .8em 1em;
+          border-radius: 8px;
+          overflow-x: auto;
+        }
+        .admin-totmeta-html sup{
+          font-size: 0.75em;
+          vertical-align: super;
+        }
+        .admin-totmeta-html sub{
+          font-size: 0.75em;
+          vertical-align: sub;
+        }
+        .admin-totmeta-html hr{
+          border: 0;
+          border-top: 1px solid rgba(255,255,255,.28);
+          margin: 1.5em 0;
+        }
 
         .admin-totmeta-html table{
           width: 100%;

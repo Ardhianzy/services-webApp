@@ -24,12 +24,13 @@ let stylesInjected = false;
 function ensureMarkerStyles() {
   if (stylesInjected || typeof document === "undefined") return;
   const css = `
-    .leaflet-marker-icon.philo-marker-wrap { z-index: 700 !important; }
+    .leaflet-marker-icon.philo-marker-wrap { z-index: 3000 !important; }
     .philo-marker-wrap { pointer-events: auto; }
 
     .philo-marker.sm {
       width: 64px;
-      height: 88px;
+      height: auto; 
+      min-height: 88px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -48,6 +49,7 @@ function ensureMarkerStyles() {
       border-top-right-radius: 36px;
       overflow: hidden;
       box-sizing: border-box;
+      flex-shrink: 0;
     }
     .philo-marker-portrait img {
       width: 100% !important;
@@ -60,28 +62,32 @@ function ensureMarkerStyles() {
 
     .philo-marker-flagline {
       width: 64px;
-      height: 24px;
+      height: auto;
+      min-height: 24px;
       background: #1b1b1b;
       border: 1.5px solid #999;
       border-top: none;
       border-bottom-left-radius: 8px;
       border-bottom-right-radius: 8px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      padding: 2px 4px;
+      gap: 2px;
+      padding: 4px 2px;
       box-sizing: border-box;
     }
 
-    .philo-marker-flag { height: 12px; width: auto; display: block; }
+    .philo-marker-flag { height: 12px; width: auto; display: block; margin-bottom: 2px; }
+    
     .philo-marker-caption {
-      line-height: 1;
+      line-height: 1.1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
+      width: 100%;
     }
 
     .philo-marker-name {
@@ -90,18 +96,24 @@ function ensureMarkerStyles() {
       letter-spacing: .2px;
       color: #fff;
       text-shadow: 0 1px 2px rgba(0,0,0,6);
-      white-space: nowrap;
-      max-width: 44px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      word-wrap: break-word;
+      max-width: 58px;
     }
+
     .philo-marker-years {
       font-size: 9px;
       color: #bbb;
-      white-space: nowrap;
-      max-width: 44px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      word-wrap: break-word;
+      max-width: 58px;
+      margin-top: 1px;
     }
   `;
   const style = document.createElement("style");
@@ -141,9 +153,9 @@ export default function PhilosopherMarker({ philosopher, onMarkerClick }: Props)
     return divIcon({
       className: "philo-marker-wrap",
       html,
-      iconSize: [64, 88],
+      iconSize: [64, 88], 
       iconAnchor: [32, 44],
-      tooltipAnchor: [0, -4],
+      tooltipAnchor: [0, -44],
     });
   }, [portraitSrc, flagSrc, name, years]);
 

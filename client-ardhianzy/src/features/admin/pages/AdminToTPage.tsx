@@ -29,6 +29,19 @@ function formatDateShort(value?: string | null) {
   });
 }
 
+function snippetHtml(html?: string | null, maxLen = 120): string {
+  if (!html) return "";
+  const normalized = normalizeBackendHtml(html);
+  const plain = normalized
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!plain) return "";
+  if (plain.length <= maxLen) return plain;
+  return plain.slice(0, maxLen).trimEnd() + "…";
+}
+
 const AdminToTPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -238,7 +251,7 @@ const AdminToTPage: React.FC = () => {
                             {t.philosofer ?? "-"}
                           </div>
                           <div className="text-xs text-neutral-500 truncate max-w-[190px]">
-                            {t.meta_description ?? ""}
+                            {snippetHtml(t.meta_description)}
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top text-xs text-neutral-300">

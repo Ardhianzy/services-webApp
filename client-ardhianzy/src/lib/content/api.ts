@@ -680,18 +680,186 @@ function isPublishedFlag(value: unknown): boolean {
   return false;
 }
 
-export function normalizeBackendHtml(input?: string | null): string {
-  if (!input) return "";
-  let html = String(input)
-    .replace(/\\u003c/gi, "<")
-    .replace(/\\u003e/gi, ">")
-    .replace(/\\u0026/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&amp;/gi, "&");
-  html = html.replace(/<\s*(script|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "");
-  html = html.replace(/\son\w+="[^"]*"/gi, "");
-  return html;
+export function normalizeBackendHtml(raw: string | null | undefined): string {
+  if (!raw) return "";
+
+  let html = String(raw)
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t");
+
+  html = html
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+
+  if (typeof window === "undefined" || typeof DOMParser === "undefined") {
+    return html;
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const body = doc.body || doc.getElementsByTagName("body")[0];
+  if (!body) {
+    return html.trim();
+  }
+
+  const allowedTags = new Set<string>([
+    "body",
+
+    "p",
+    "br",
+    "strong",
+    "em",
+    "i",
+    "u",
+    "s",
+    "span",
+    "blockquote",
+    "ul",
+    "ol",
+    "li",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "table",
+    "thead",
+    "tbody",
+    "tfoot",
+    "tr",
+    "th",
+    "td",
+    "img",
+    "a",
+    "figure",
+    "figcaption",
+    "code",
+    "pre",
+    "sup",
+    "sub",
+    "hr",
+  ]);
+
+  const unwrapTags = new Set<string>([
+    "div",
+    "section",
+    "article",
+    "header",
+    "footer",
+    "main",
+    "aside",
+    "nav",
+  ]);
+
+  const forbiddenTags = new Set<string>([
+    "script",
+    "style",
+    "iframe",
+    "object",
+    "embed",
+    "link",
+    "meta",
+  ]);
+
+  const allowedAttrsByTag: Record<string, Set<string>> = {
+    a: new Set(["href", "title", "target", "rel"]),
+    img: new Set(["src", "alt", "title", "loading"]),
+    table: new Set(["border", "cellpadding", "cellspacing"]),
+    th: new Set(["colspan", "rowspan", "scope"]),
+    td: new Set(["colspan", "rowspan"]),
+    span: new Set(["class"]),
+    i: new Set(["class"]),
+    em: new Set(["class"]),
+  };
+
+  function sanitizeNode(node: Node | null): void {
+    if (!node) return;
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      const tag = el.tagName.toLowerCase();
+
+      if (forbiddenTags.has(tag)) {
+        el.remove();
+        return;
+      }
+
+      if (unwrapTags.has(tag) && !allowedTags.has(tag)) {
+        const parent = el.parentNode;
+        while (el.firstChild) {
+          parent?.insertBefore(el.firstChild, el);
+        }
+        el.remove();
+        return;
+      }
+
+      if (!allowedTags.has(tag)) {
+        const parent = el.parentNode;
+        while (el.firstChild) {
+          parent?.insertBefore(el.firstChild, el);
+        }
+        el.remove();
+        return;
+      }
+
+      if (tag === "i" || tag === "em") {
+        if (!el.classList.contains("italic")) {
+          el.classList.add("italic");
+        }
+      }
+
+      const allowedAttrs = allowedAttrsByTag[tag] ?? new Set<string>();
+      Array.from(el.attributes).forEach((attr) => {
+        const name = attr.name.toLowerCase();
+
+        if (name.startsWith("on")) {
+          el.removeAttribute(attr.name);
+          return;
+        }
+
+        if (name === "style") {
+          el.removeAttribute(attr.name);
+          return;
+        }
+
+        if (!allowedAttrs.has(name)) {
+          el.removeAttribute(attr.name);
+          return;
+        }
+
+        if (tag === "a" && name === "href") {
+          const href = el.getAttribute("href") ?? "";
+          if (/^javascript:/i.test(href)) {
+            el.removeAttribute("href");
+          } else {
+            if (
+              !/^https?:/i.test(href) &&
+              !/^mailto:/i.test(href) &&
+              !/^#/i.test(href) &&
+              !/^\//.test(href)
+            ) {
+              el.setAttribute("href", "#");
+            }
+            const rel = el.getAttribute("rel") ?? "";
+            el.setAttribute("rel", (rel + " noopener noreferrer").trim());
+          }
+        }
+      });
+    }
+
+    let child = node.firstChild;
+    while (child) {
+      const next = child.nextSibling;
+      sanitizeNode(child);
+      child = next;
+    }
+  }
+
+  sanitizeNode(body);
+
+  return body.innerHTML.trim();
 }
 
 async function getPublicList<T>(

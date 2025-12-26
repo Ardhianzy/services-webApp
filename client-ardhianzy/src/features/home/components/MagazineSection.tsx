@@ -1,20 +1,9 @@
 // src/features/home/components/MagazineSection.tsx
 import { type FC, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { contentApi } from "@/lib/content/api";
+import { contentApi, normalizeBackendHtml } from "@/lib/content/api";
 import type { MagazineCardVM, MagazineDTO } from "@/lib/content/types";
 import { ROUTES } from "@/app/routes";
-
-function normalizeBackendHtml(payload?: string | null): string {
-  if (!payload) return "";
-  let s = String(payload).trim();
-  s = s.replace(/\\u003C/gi, "<").replace(/\\u003E/gi, ">").replace(/\\u0026/gi, "&");
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-    s = s.slice(1, -1);
-  }
-  s = s.replace(/<p>\s*<\/p>/gi, "");
-  return s.trim();
-}
 
 function sanitizeBasicHtml(html: string): string {
   let out = html;
@@ -37,10 +26,16 @@ function makePreview(
   phrase: string,
   maxWords: number
 ): { preview: string; truncated: boolean } {
-  const text = htmlToText(sanitizeBasicHtml(normalizeBackendHtml(html)));
+  const normalized = normalizeBackendHtml(html);
+  const safeHtml = sanitizeBasicHtml(normalized || html);
+  const text = htmlToText(safeHtml);
+
   if (!text) return { preview: "", truncated: false };
 
-  const idx = text.toLowerCase().indexOf(phrase.toLowerCase());
+  const lower = text.toLowerCase();
+  const target = phrase.toLowerCase();
+  const idx = target ? lower.indexOf(target) : -1;
+
   let preview = "";
   let truncated = false;
 
@@ -244,7 +239,9 @@ const MagazineSection: FC = () => {
                 {loading ? "Loading..." : (big?.title ?? "Coming soon")}
               </h3>
 
-              <p className="mb-[2rem] font-semibold text[1.1rem] text-[#aaa]">By {big?.author}</p>
+              <p className="mb-[2rem] font-semibold text[1.1rem] text-[#aaa]">
+                By {big?.author}
+              </p>
 
               <p className="mt-10 text-justify text-[1rem] leading-[1.5] text-white/80 line-clamp-14">
                 {loading
