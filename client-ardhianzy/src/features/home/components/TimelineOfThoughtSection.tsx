@@ -727,7 +727,7 @@ export default function TimelineOfThoughtSection({
       centerToYear(clampedYear, true);
     }
     // Opsional: Jika ingin membuka kartu detail otomatis, uncomment baris ini
-    openDetailFromMarker(p);
+    // openDetailFromMarker(p);
   };
 
   return (
