@@ -48,7 +48,7 @@ const AdminMonologuePage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await adminFetchMonologues();
+        const data = await adminFetchMonologues({ page: 1, limit: 1000 });
         if (cancelled) return;
         setRows(data);
         setSelected(data[0] ?? null);

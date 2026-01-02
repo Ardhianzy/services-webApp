@@ -1,7 +1,7 @@
 // src/features/home/components/MonologuesSection.tsx
 import { type FC, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { contentApi } from "@/lib/content/api";
+import { contentApi, normalizeBackendHtml } from "@/lib/content/api";
 import type { MonologueDTO, MonologueCardVM } from "@/lib/content/types";
 import { ROUTES } from "@/app/routes";
 
@@ -16,15 +16,6 @@ function ContinueReadInline() {
       Continue to Read&nbsp;→
     </span>
   );
-}
-
-function normalizeBackendHtml(payload?: string | null): string {
-  if (!payload) return "";
-  let s = String(payload).trim();
-  s = s.replace(/\\u003C/gi, "<").replace(/\\u003E/gi, ">").replace(/\\u0026/gi, "&");
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
-  s = s.replace(/<p>\s*<\/p>/gi, "");
-  return s.trim();
 }
 
 function sanitizeBasicHtml(html: string): string {
@@ -182,7 +173,7 @@ const MonologuesSection: FC = () => {
 
   const { html: descPreviewHtml, truncated: isTruncated } = loading
     ? { html: "", truncated: false }
-    : makeStructuredPreview(big?.description ?? "", "",95);
+    : makeStructuredPreview(big?.description ?? "", "", 95);
 
   const rightTitle = right?.title ?? RIGHT_CARD_PLACEHOLDER.title;
   const rightImage = right?.imageUrl ?? RIGHT_CARD_PLACEHOLDER.image;
@@ -330,7 +321,7 @@ const MonologuesSection: FC = () => {
                   alt={rightTitle}
                   className="max-h-full w-[40%] object-contain"
                 />
-              <div className="pointer-events-none absolute inset-0" />
+                <div className="pointer-events-none absolute inset-0" />
               </div>
 
               <div className="px-4 py-5 text-left ml-4">

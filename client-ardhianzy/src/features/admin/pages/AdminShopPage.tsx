@@ -43,7 +43,7 @@ const AdminShopPage: FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await adminFetchShops();
+        const data = await adminFetchShops({ page: 1, limit: 1000 });
         if (cancelled) return;
         const safe = Array.isArray(data) ? data : [];
         setShops(safe);
@@ -227,7 +227,7 @@ const AdminShopPage: FC = () => {
                             {item.image && (
                               <img
                                 src={item.image}
-                                alt={item.title}
+                                alt={item.title ?? ""}
                                 className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
                               />
                             )}
@@ -328,9 +328,10 @@ const AdminShopPage: FC = () => {
                 const item = selected;
                 const isPublished = Boolean(item.is_published);
                 const isAvailable = Boolean(item.is_available);
-                const rawDesc = (item as any)?.desc ?? "";
+
+                const rawDesc = item.desc ?? "";
                 const htmlDesc =
-                  typeof rawDesc === "string"
+                  typeof rawDesc === "string" && rawDesc.trim()
                     ? normalizeBackendHtml(rawDesc)
                     : "";
 
@@ -376,7 +377,7 @@ const AdminShopPage: FC = () => {
                       <div className="mb-5 rounded-2xl overflow-hidden border border-zinc-800">
                         <img
                           src={item.image}
-                          alt={item.title}
+                          alt={item.title ?? ""}
                           className="w-full h-64 object-cover"
                         />
                       </div>
@@ -397,7 +398,7 @@ const AdminShopPage: FC = () => {
                         {item.image && (
                           <img
                             src={item.image}
-                            alt={item.title}
+                            alt={item.title ?? ""}
                             className="w-14 h-14 rounded-2xl object-cover flex-shrink-0"
                           />
                         )}

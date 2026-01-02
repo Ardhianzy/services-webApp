@@ -8,15 +8,114 @@ import type {
   ArticleDTO,
   ArticleCategory,
   ShopDTO,
-  ToTDTO, 
+  ToTDTO,
   ToTMetaDTO as ToTMetaDTOBase,
   LatestYoutubeDTO,
+  Pagination,
 } from "./types";
 import { http, authHeader } from "@/lib/http";
 
 const ADMIN_API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ||
   "";
+
+type PageParams = {
+  page?: number;
+  limit?: number;
+};
+
+function buildUrlWithPagination(baseUrl: string, params?: PageParams): string {
+  if (!params) return baseUrl;
+
+  const queryParts: string[] = [];
+
+  if (typeof params.page === "number" && !Number.isNaN(params.page)) {
+    queryParts.push(`page=${encodeURIComponent(params.page)}`);
+  }
+
+  if (typeof params.limit === "number" && !Number.isNaN(params.limit)) {
+    queryParts.push(`limit=${encodeURIComponent(params.limit)}`);
+  }
+
+  if (!queryParts.length) return baseUrl;
+
+  return baseUrl + (baseUrl.includes("?") ? "&" : "?") + queryParts.join("&");
+}
+
+function ensurePagination<T>(
+  data: T[],
+  pagination?: Pagination
+): Pagination {
+  if (pagination) return pagination;
+
+  const total = data.length;
+
+  return {
+    total,
+    page: 1,
+    limit: total || 1,
+    totalPages: total > 0 ? 1 : 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  };
+}
+
+function normalizeListResponse<T>(
+  raw:
+    | ListResponse<T>
+    | T[]
+    | { data?: T[]; pagination?: Pagination; success?: boolean; message?: string }
+    | unknown
+): ListResponse<T> {
+  const anyRaw: any = raw as any;
+
+  if (Array.isArray(raw)) {
+    const arr = raw as T[];
+    return {
+      success: true,
+      data: arr,
+      pagination: ensurePagination(arr),
+    };
+  }
+
+  if (anyRaw && Array.isArray(anyRaw.data)) {
+    const arr = anyRaw.data as T[];
+    return {
+      success:
+        typeof anyRaw.success === "boolean" ? anyRaw.success : true,
+      message: anyRaw.message,
+      data: arr,
+      pagination: ensurePagination(arr, anyRaw.pagination),
+    };
+  }
+
+  return {
+    success:
+      typeof anyRaw?.success === "boolean" ? anyRaw.success : true,
+    message: anyRaw?.message,
+    data: [],
+    pagination: ensurePagination([]),
+  };
+}
+
+async function adminGetList<T>(
+  path: string,
+  params?: PageParams
+): Promise<ListResponse<T>> {
+  const baseUrl = `${ADMIN_API_BASE}${path}`;
+  const url = buildUrlWithPagination(baseUrl, params);
+
+  const res = await http<
+    ListResponse<T> | T[] | { data?: T[]; pagination?: Pagination; success?: boolean; message?: string }
+  >(url, {
+    method: "GET",
+    headers: {
+      ...authHeader(),
+    },
+  });
+
+  return normalizeListResponse<T>(res);
+}
 
 function unwrapAdminDetail<T>(payload: T | { data?: T }): T {
   if ((payload as any)?.data !== undefined) {
@@ -27,27 +126,21 @@ function unwrapAdminDetail<T>(payload: T | { data?: T }): T {
 
 /* ========== ADMIN: ARTICLES ========== */
 
-export async function adminFetchArticles(): Promise<ArticleDTO[]> {
-  const res = await http<ArticleDTO[] | { data?: ArticleDTO[] }>(
-    `${ADMIN_API_BASE}/api/articel`,
-    {
-      method: "GET",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
-
-  if (Array.isArray(res)) return res;
-  if (Array.isArray((res as any).data)) {
-    return (res as any).data as ArticleDTO[];
-  }
-  return [];
+export async function adminFetchArticlesPaginated(
+  params?: PageParams
+): Promise<ListResponse<ArticleDTO>> {
+  return adminGetList<ArticleDTO>("/api/articel", params);
 }
 
-// FIX: backend tidak punya GET /api/articel/:id → ambil dari list lalu filter
+export async function adminFetchArticles(
+  params?: PageParams
+): Promise<ArticleDTO[]> {
+  const res = await adminFetchArticlesPaginated(params);
+  return res.data;
+}
+
 export async function adminGetArticleById(id: string): Promise<ArticleDTO> {
-  const list = await adminFetchArticles();
+  const list = await adminFetchArticles({ page: 1, limit: 1000 });
   const found = list.find((item) => String(item.id) === String(id));
   if (!found) {
     throw new Error("Artikel tidak ditemukan.");
@@ -102,27 +195,21 @@ export async function adminDeleteArticle(id: string): Promise<void> {
 
 /* ========== ADMIN: MAGAZINES ========== */
 
-export async function adminFetchMagazines(): Promise<MagazineDTO[]> {
-  const res = await http<MagazineDTO[] | { data?: MagazineDTO[] }>(
-    `${ADMIN_API_BASE}/api/megazine`,
-    {
-      method: "GET",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
-
-  if (Array.isArray(res)) return res;
-  if (Array.isArray((res as any).data)) {
-    return (res as any).data as MagazineDTO[];
-  }
-  return [];
+export async function adminFetchMagazinesPaginated(
+  params?: PageParams
+): Promise<ListResponse<MagazineDTO>> {
+  return adminGetList<MagazineDTO>("/api/megazine", params);
 }
 
-// FIX: backend biasanya hanya punya GET /api/megazine (list) + PUT /api/megazine/:id
+export async function adminFetchMagazines(
+  params?: PageParams
+): Promise<MagazineDTO[]> {
+  const res = await adminFetchMagazinesPaginated(params);
+  return res.data;
+}
+
 export async function adminGetMagazineById(id: string): Promise<MagazineDTO> {
-  const list = await adminFetchMagazines();
+  const list = await adminFetchMagazines({ page: 1, limit: 1000 });
   const found = list.find((item) => String(item.id) === String(id));
   if (!found) {
     throw new Error("Magazine tidak ditemukan.");
@@ -177,29 +264,23 @@ export async function adminDeleteMagazine(id: string): Promise<void> {
 
 /* ========== ADMIN: MONOLOGUES ========== */
 
-export async function adminFetchMonologues(): Promise<MonologueDTO[]> {
-  const res = await http<MonologueDTO[] | { data?: MonologueDTO[] }>(
-    `${ADMIN_API_BASE}/api/monologues`,
-    {
-      method: "GET",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
-
-  if (Array.isArray(res)) return res;
-  if (Array.isArray((res as any).data)) {
-    return (res as any).data as MonologueDTO[];
-  }
-  return [];
+export async function adminFetchMonologuesPaginated(
+  params?: PageParams
+): Promise<ListResponse<MonologueDTO>> {
+  return adminGetList<MonologueDTO>("/api/monologues", params);
 }
 
-// FIX: backend punya GET /api/monologues (list) + PUT/DELETE /api/monologues/:id
+export async function adminFetchMonologues(
+  params?: PageParams
+): Promise<MonologueDTO[]> {
+  const res = await adminFetchMonologuesPaginated(params);
+  return res.data;
+}
+
 export async function adminGetMonologueById(
   id: string
 ): Promise<MonologueDTO> {
-  const list = await adminFetchMonologues();
+  const list = await adminFetchMonologues({ page: 1, limit: 1000 });
   const found = list.find((item) => String(item.id) === String(id));
   if (!found) {
     throw new Error("Monologue tidak ditemukan.");
@@ -254,27 +335,21 @@ export async function adminDeleteMonologue(id: string): Promise<void> {
 
 /* ========== ADMIN: RESEARCH ========== */
 
-export async function adminFetchResearch(): Promise<ResearchDTO[]> {
-  const res = await http<ResearchDTO[] | { data?: ResearchDTO[] }>(
-    `${ADMIN_API_BASE}/api/research`,
-    {
-      method: "GET",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
-
-  if (Array.isArray(res)) return res;
-  if (Array.isArray((res as any).data)) {
-    return (res as any).data as ResearchDTO[];
-  }
-  return [];
+export async function adminFetchResearchPaginated(
+  params?: PageParams
+): Promise<ListResponse<ResearchDTO>> {
+  return adminGetList<ResearchDTO>("/api/research", params);
 }
 
-// FIX: YAML/Insomnia hanya sebut GET /api/research (list) untuk fetch
+export async function adminFetchResearch(
+  params?: PageParams
+): Promise<ResearchDTO[]> {
+  const res = await adminFetchResearchPaginated(params);
+  return res.data;
+}
+
 export async function adminGetResearchById(id: string): Promise<ResearchDTO> {
-  const list = await adminFetchResearch();
+  const list = await adminFetchResearch({ page: 1, limit: 1000 });
   const found = list.find((item) => String(item.id) === String(id));
   if (!found) {
     throw new Error("Research tidak ditemukan.");
@@ -329,27 +404,21 @@ export async function adminDeleteResearch(id: string): Promise<void> {
 
 /* ========== ADMIN: SHOP ========== */
 
-export async function adminFetchShops(): Promise<ShopDTO[]> {
-  const res = await http<ShopDTO[] | { data?: ShopDTO[] }>(
-    `${ADMIN_API_BASE}/api/shop`,
-    {
-      method: "GET",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
-
-  if (Array.isArray(res)) return res;
-  if (Array.isArray((res as any).data)) {
-    return (res as any).data as ShopDTO[];
-  }
-  return [];
+export async function adminFetchShopsPaginated(
+  params?: PageParams
+): Promise<ListResponse<ShopDTO>> {
+  return adminGetList<ShopDTO>("/api/shop", params);
 }
 
-// FIX: backend pakai GET /api/shop (list) + PUT/DELETE /api/shop/:id
+export async function adminFetchShops(
+  params?: PageParams
+): Promise<ShopDTO[]> {
+  const res = await adminFetchShopsPaginated(params);
+  return res.data;
+}
+
 export async function adminGetShopById(id: string): Promise<ShopDTO> {
-  const list = await adminFetchShops();
+  const list = await adminFetchShops({ page: 1, limit: 1000 });
   const found = list.find((item) => String(item.id) === String(id));
   if (!found) {
     throw new Error("Shop item tidak ditemukan.");
@@ -404,22 +473,17 @@ export async function adminDeleteShop(id: string): Promise<void> {
 
 /* ========== ADMIN: ToT (Timeline of Thought) ========== */
 
-export async function adminFetchToT(): Promise<ToTDTO[]> {
-  const res = await http<ToTDTO[] | { data?: ToTDTO[] }>(
-    `${ADMIN_API_BASE}/api/tot`,
-    {
-      method: "GET",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
+export async function adminFetchToTPaginated(
+  params?: PageParams
+): Promise<ListResponse<ToTDTO>> {
+  return adminGetList<ToTDTO>("/api/tot", params);
+}
 
-  if (Array.isArray(res)) return res;
-  if (Array.isArray((res as any).data)) {
-    return (res as any).data as ToTDTO[];
-  }
-  return [];
+export async function adminFetchToT(
+  params?: PageParams
+): Promise<ToTDTO[]> {
+  const res = await adminFetchToTPaginated(params);
+  return res.data;
 }
 
 export async function adminGetToTById(id: string): Promise<ToTDTO> {
@@ -484,22 +548,17 @@ export async function adminDeleteToT(id: string): Promise<void> {
 
 export type ToTMetaDTO = ToTMetaDTOBase;
 
-export async function adminFetchToTMeta(): Promise<ToTMetaDTO[]> {
-  const res = await http<ToTMetaDTO[] | { data?: ToTMetaDTO[] }>(
-    `${ADMIN_API_BASE}/api/tot-meta`,
-    {
-      method: "GET",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
+export async function adminFetchToTMetaPaginated(
+  params?: PageParams
+): Promise<ListResponse<ToTMetaDTO>> {
+  return adminGetList<ToTMetaDTO>("/api/tot-meta", params);
+}
 
-  if (Array.isArray(res)) return res;
-  if (Array.isArray((res as any).data)) {
-    return (res as any).data as ToTMetaDTO[];
-  }
-  return [];
+export async function adminFetchToTMeta(
+  params?: PageParams
+): Promise<ToTMetaDTO[]> {
+  const res = await adminFetchToTMetaPaginated(params);
+  return res.data;
 }
 
 export async function adminGetToTMetaById(id: string): Promise<ToTMetaDTO> {
@@ -586,7 +645,8 @@ export async function adminDeleteToTMeta(id: string): Promise<void> {
 ============================================================================ */
 
 const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ?? "";
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ??
+  "";
 
 async function getJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, {
@@ -602,13 +662,8 @@ async function getJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
   return (await res.json()) as T;
 }
 
-function unwrapList<T>(payload: ListResponse<T>): T[] {
-  if (Array.isArray(payload)) return payload as T[];
-  const anyPayload = payload as any;
-  if (anyPayload?.data && Array.isArray(anyPayload.data)) {
-    return anyPayload.data as T[];
-  }
-  return [];
+export function unwrapList<T>(payload: ListResponse<T> | T[] | unknown): T[] {
+  return normalizeListResponse<T>(payload as any).data;
 }
 
 function isAbortSignal(x: unknown): x is AbortSignal {
@@ -625,80 +680,482 @@ function isPublishedFlag(value: unknown): boolean {
   return false;
 }
 
-export function normalizeBackendHtml(input?: string | null): string {
-  if (!input) return "";
-  let html = String(input)
-    .replace(/\\u003c/gi, "<")
-    .replace(/\\u003e/gi, ">")
-    .replace(/\\u0026/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&amp;/gi, "&");
-  html = html.replace(/<\s*(script|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "");
-  html = html.replace(/\son\w+="[^"]*"/gi, "");
-  return html;
+export function normalizeBackendHtml(raw: string | null | undefined): string {
+  if (!raw) return "";
+
+  let html = String(raw)
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t");
+
+  html = html
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+
+  if (typeof window === "undefined" || typeof DOMParser === "undefined") {
+    return html;
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const body = doc.body || doc.getElementsByTagName("body")[0];
+  if (!body) {
+    return html.trim();
+  }
+
+  const allowedTags = new Set<string>([
+    "body",
+
+    "p",
+    "br",
+    "strong",
+    "em",
+    "i",
+    "u",
+    "s",
+    "span",
+    "blockquote",
+    "ul",
+    "ol",
+    "li",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "table",
+    "thead",
+    "tbody",
+    "tfoot",
+    "tr",
+    "th",
+    "td",
+    "img",
+    "a",
+    "figure",
+    "figcaption",
+    "code",
+    "pre",
+    "sup",
+    "sub",
+    "hr",
+  ]);
+
+  const unwrapTags = new Set<string>([
+    "div",
+    "section",
+    "article",
+    "header",
+    "footer",
+    "main",
+    "aside",
+    "nav",
+  ]);
+
+  const forbiddenTags = new Set<string>([
+    "script",
+    "style",
+    "iframe",
+    "object",
+    "embed",
+    "link",
+    "meta",
+  ]);
+
+  const allowedAttrsByTag: Record<string, Set<string>> = {
+    a: new Set(["href", "title", "target", "rel"]),
+    img: new Set(["src", "alt", "title", "loading"]),
+    table: new Set(["border", "cellpadding", "cellspacing"]),
+    th: new Set(["colspan", "rowspan", "scope"]),
+    td: new Set(["colspan", "rowspan"]),
+    span: new Set(["class"]),
+    i: new Set(["class"]),
+    em: new Set(["class"]),
+  };
+
+  function sanitizeNode(node: Node | null): void {
+    if (!node) return;
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      const tag = el.tagName.toLowerCase();
+
+      if (forbiddenTags.has(tag)) {
+        el.remove();
+        return;
+      }
+
+      if (unwrapTags.has(tag) && !allowedTags.has(tag)) {
+        const parent = el.parentNode;
+        while (el.firstChild) {
+          parent?.insertBefore(el.firstChild, el);
+        }
+        el.remove();
+        return;
+      }
+
+      if (!allowedTags.has(tag)) {
+        const parent = el.parentNode;
+        while (el.firstChild) {
+          parent?.insertBefore(el.firstChild, el);
+        }
+        el.remove();
+        return;
+      }
+
+      if (tag === "i" || tag === "em") {
+        if (!el.classList.contains("italic")) {
+          el.classList.add("italic");
+        }
+      }
+
+      const allowedAttrs = allowedAttrsByTag[tag] ?? new Set<string>();
+      Array.from(el.attributes).forEach((attr) => {
+        const name = attr.name.toLowerCase();
+
+        if (name.startsWith("on")) {
+          el.removeAttribute(attr.name);
+          return;
+        }
+
+        if (name === "style") {
+          el.removeAttribute(attr.name);
+          return;
+        }
+
+        if (!allowedAttrs.has(name)) {
+          el.removeAttribute(attr.name);
+          return;
+        }
+
+        if (tag === "a" && name === "href") {
+          const href = el.getAttribute("href") ?? "";
+          if (/^javascript:/i.test(href)) {
+            el.removeAttribute("href");
+          } else {
+            if (
+              !/^https?:/i.test(href) &&
+              !/^mailto:/i.test(href) &&
+              !/^#/i.test(href) &&
+              !/^\//.test(href)
+            ) {
+              el.setAttribute("href", "#");
+            }
+            const rel = el.getAttribute("rel") ?? "";
+            el.setAttribute("rel", (rel + " noopener noreferrer").trim());
+          }
+        }
+      });
+    }
+
+    let child = node.firstChild;
+    while (child) {
+      const next = child.nextSibling;
+      sanitizeNode(child);
+      child = next;
+    }
+  }
+
+  sanitizeNode(body);
+
+  return body.innerHTML.trim();
+}
+
+async function getPublicList<T>(
+  path: string,
+  opts?: {
+    signal?: AbortSignal;
+    page?: number;
+    limit?: number;
+    publishedOnly?: boolean;
+  }
+): Promise<ListResponse<T>> {
+  const { signal, page, limit, publishedOnly } = opts ?? {};
+  const baseUrl = `${API_BASE}${path}`;
+  const url = buildUrlWithPagination(baseUrl, { page, limit });
+
+  const payload = await getJSON<unknown>(url, signal);
+  const normalized = normalizeListResponse<T>(payload);
+
+  const data = publishedOnly
+    ? normalized.data.filter((item) =>
+        isPublishedFlag((item as any)?.is_published)
+      )
+    : normalized.data;
+
+  return {
+    ...normalized,
+    data,
+  };
 }
 
 export const contentApi = {
   magazines: {
-    async list(signal?: AbortSignal): Promise<MagazineDTO[]> {
-      const url = `${API_BASE}/api/megazine`;
-      const payload = await getJSON<ListResponse<MagazineDTO>>(url, signal);
-      const list = unwrapList<MagazineDTO>(payload);
+    async listPaginated(
+      opts?: { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<ListResponse<MagazineDTO>> {
+      return getPublicList<MagazineDTO>("/api/megazine", {
+        signal: opts?.signal,
+        page: opts?.page,
+        limit: opts?.limit,
+        publishedOnly: true,
+      });
+    },
 
-      return list.filter((mag) => isPublishedFlag((mag as any)?.is_published));
+    async list(
+      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<MagazineDTO[]> {
+      const signal = isAbortSignal(arg) ? arg : arg?.signal;
+      const limit =
+        !isAbortSignal(arg) &&
+        typeof arg?.limit === "number" &&
+        !Number.isNaN(arg.limit) &&
+        arg.limit > 0
+          ? arg.limit
+          : 50;
+
+      const all: MagazineDTO[] = [];
+      let page = 1;
+      let hasNext = true;
+
+      while (hasNext) {
+        const res = await getPublicList<MagazineDTO>("/api/megazine", {
+          signal,
+          page,
+          limit,
+          publishedOnly: true,
+        });
+
+        all.push(...res.data);
+
+        const pg = res.pagination;
+        if (!pg) {
+          hasNext = false;
+        } else {
+          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
+        }
+
+        if (hasNext) {
+          page += 1;
+        }
+      }
+
+      return all;
     },
   },
 
   research: {
-    async list(signal?: AbortSignal): Promise<ResearchDTO[]> {
-      const url = `${API_BASE}/api/research`;
-      const payload = await getJSON<ListResponse<ResearchDTO>>(url, signal);
-      const list = unwrapList<ResearchDTO>(payload);
+    async listPaginated(
+      opts?: { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<ListResponse<ResearchDTO>> {
+      return getPublicList<ResearchDTO>("/api/research", {
+        signal: opts?.signal,
+        page: opts?.page,
+        limit: opts?.limit,
+        publishedOnly: true,
+      });
+    },
 
-      return list.filter((mag) => isPublishedFlag((mag as any)?.is_published));
+    async list(
+      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<ResearchDTO[]> {
+      const signal = isAbortSignal(arg) ? arg : arg?.signal;
+      const limit =
+        !isAbortSignal(arg) &&
+        typeof arg?.limit === "number" &&
+        !Number.isNaN(arg.limit) &&
+        arg.limit > 0
+          ? arg.limit
+          : 50;
+
+      const all: ResearchDTO[] = [];
+      let page = 1;
+      let hasNext = true;
+
+      while (hasNext) {
+        const res = await getPublicList<ResearchDTO>("/api/research", {
+          signal,
+          page,
+          limit,
+          publishedOnly: true,
+        });
+
+        all.push(...res.data);
+
+        const pg = res.pagination;
+        if (!pg) {
+          hasNext = false;
+        } else {
+          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
+        }
+
+        if (hasNext) {
+          page += 1;
+        }
+      }
+
+      return all;
     },
   },
 
   monologues: {
-    async list(signal?: AbortSignal): Promise<MonologueDTO[]> {
-      const url = `${API_BASE}/api/monologues`;
-      const payload = await getJSON<ListResponse<MonologueDTO>>(url, signal);
-      const list = unwrapList<MonologueDTO>(payload);
+    async listPaginated(
+      opts?: { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<ListResponse<MonologueDTO>> {
+      return getPublicList<MonologueDTO>("/api/monologues", {
+        signal: opts?.signal,
+        page: opts?.page,
+        limit: opts?.limit,
+        publishedOnly: true,
+      });
+    },
 
-      return list.filter((mag) => isPublishedFlag((mag as any)?.is_published));
+    async list(
+      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<MonologueDTO[]> {
+      const signal = isAbortSignal(arg) ? arg : arg?.signal;
+      const limit =
+        !isAbortSignal(arg) &&
+        typeof arg?.limit === "number" &&
+        !Number.isNaN(arg.limit) &&
+        arg.limit > 0
+          ? arg.limit
+          : 50;
+
+      const all: MonologueDTO[] = [];
+      let page = 1;
+      let hasNext = true;
+
+      while (hasNext) {
+        const res = await getPublicList<MonologueDTO>("/api/monologues", {
+          signal,
+          page,
+          limit,
+          publishedOnly: true,
+        });
+
+        all.push(...res.data);
+
+        const pg = res.pagination;
+        if (!pg) {
+          hasNext = false;
+        } else {
+          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
+        }
+
+        if (hasNext) {
+          page += 1;
+        }
+      }
+
+      return all;
     },
   },
 
   articles: {
-    async list(
-      arg?: AbortSignal | { category?: ArticleCategory; signal?: AbortSignal }
-    ): Promise<ArticleDTO[]> {
-      const category =
-        arg && typeof arg === "object" && !isAbortSignal(arg)
-          ? arg.category
-          : undefined;
-      const signal =
-        (arg && typeof arg === "object" && !isAbortSignal(arg)
-          ? arg.signal
-          : undefined) ?? (isAbortSignal(arg) ? arg : undefined);
+    async listPaginated(
+      arg?:
+        | AbortSignal
+        | {
+            category?: ArticleCategory;
+            signal?: AbortSignal;
+            page?: number;
+            limit?: number;
+          }
+    ): Promise<ListResponse<ArticleDTO>> {
+      const isObj = arg && typeof arg === "object" && !isAbortSignal(arg);
+      const category = isObj ? (arg as any).category : undefined;
+      const signal = isObj
+        ? (arg as any).signal
+        : isAbortSignal(arg)
+        ? (arg as AbortSignal)
+        : undefined;
+      const page = isObj ? (arg as any).page : undefined;
+      const limit = isObj ? (arg as any).limit : undefined;
 
-      const url = `${API_BASE}/api/articel`;
-      const payload = await getJSON<ListResponse<ArticleDTO>>(url, signal);
-      const list = unwrapList<ArticleDTO>(payload);
-
-      const published = list.filter((item) =>
-        isPublishedFlag((item as any)?.is_published)
-      );
+      const res = await getPublicList<ArticleDTO>("/api/articel", {
+        signal,
+        page,
+        limit,
+        publishedOnly: true,
+      });
 
       if (category) {
         const target = String(category).toUpperCase();
-        return published.filter(
+        const filtered = res.data.filter(
           (x) => (x.category ?? "").toUpperCase() === target
         );
+        return {
+          ...res,
+          data: filtered,
+        };
       }
 
-      return published;
+      return res;
+    },
+
+    async list(
+      arg?:
+        | AbortSignal
+        | {
+            category?: ArticleCategory;
+            signal?: AbortSignal;
+            page?: number;
+            limit?: number;
+          }
+    ): Promise<ArticleDTO[]> {
+      const isObj = arg && typeof arg === "object" && !isAbortSignal(arg);
+      const category = isObj ? (arg as any).category : undefined;
+      const signal = isObj
+        ? (arg as any).signal
+        : isAbortSignal(arg)
+        ? (arg as AbortSignal)
+        : undefined;
+
+      const pageSize =
+        isObj &&
+        typeof (arg as any).limit === "number" &&
+        !Number.isNaN((arg as any).limit) &&
+        (arg as any).limit > 0
+          ? (arg as any).limit
+          : 50;
+
+      const all: ArticleDTO[] = [];
+      let page = 1;
+      let hasNext = true;
+
+      while (hasNext) {
+        const res = await getPublicList<ArticleDTO>("/api/articel", {
+          signal,
+          page,
+          limit: pageSize,
+          publishedOnly: true,
+        });
+
+        let pageData = res.data;
+        if (category) {
+          const target = String(category).toUpperCase();
+          pageData = pageData.filter(
+            (x) => (x.category ?? "").toUpperCase() === target
+          );
+        }
+
+        all.push(...pageData);
+
+        const pg = res.pagination;
+        if (!pg) {
+          hasNext = false;
+        } else {
+          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
+        }
+
+        if (hasNext) {
+          page += 1;
+        }
+      }
+
+      return all;
     },
 
     async detailBySlug(
@@ -706,7 +1163,12 @@ export const contentApi = {
       opts?: { category?: ArticleCategory; signal?: AbortSignal }
     ): Promise<ArticleDTO | null> {
       const { category, signal } = opts ?? {};
-      const list = await contentApi.articles.list({ category, signal });
+      const list = await contentApi.articles.list({
+        category,
+        signal,
+        page: 1,
+        limit: 1000,
+      });
       const norm = (s: string) => s?.trim().toLowerCase();
       const found = list.find((a) => norm(a.slug) === norm(slug));
       return found ?? null;
@@ -714,34 +1176,110 @@ export const contentApi = {
   },
 
   shops: {
-    async list(): Promise<ShopDTO[]> {
-      const url = `${API_BASE}/api/shop`;
-      const res = await fetch(url, { method: "GET" });
-      if (!res.ok) throw new Error(`Failed to fetch shops (${res.status})`);
+    async listPaginated(
+      opts?: { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<ListResponse<ShopDTO>> {
+      return getPublicList<ShopDTO>("/api/shop", {
+        signal: opts?.signal,
+        page: opts?.page,
+        limit: opts?.limit,
+        publishedOnly: true,
+      });
+    },
 
-      const json = await res.json();
-      const rawList: ShopDTO[] = Array.isArray(json?.data)
-        ? (json.data as ShopDTO[])
-        : [];
+    async list(
+      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<ShopDTO[]> {
+      const signal = isAbortSignal(arg) ? arg : arg?.signal;
+      const limit =
+        !isAbortSignal(arg) &&
+        typeof arg?.limit === "number" &&
+        !Number.isNaN(arg.limit) &&
+        arg.limit > 0
+          ? arg.limit
+          : 50;
 
-      return rawList.filter((item) =>
-        isPublishedFlag((item as any)?.is_published)
-      );
+      const all: ShopDTO[] = [];
+      let page = 1;
+      let hasNext = true;
+
+      while (hasNext) {
+        const res = await getPublicList<ShopDTO>("/api/shop", {
+          signal,
+          page,
+          limit,
+          publishedOnly: true,
+        });
+
+        all.push(...res.data);
+
+        const pg = res.pagination;
+        if (!pg) {
+          hasNext = false;
+        } else {
+          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
+        }
+
+        if (hasNext) {
+          page += 1;
+        }
+      }
+
+      return all;
     },
   },
 
   tot: {
-    async list(signal?: AbortSignal): Promise<ToTDTO[]> {
-      const url = `${API_BASE}/api/tot`;
-      const payload = await getJSON<ListResponse<ToTDTO>>(url, signal);
+    async listPaginated(
+      opts?: { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<ListResponse<ToTDTO>> {
+      return getPublicList<ToTDTO>("/api/tot", {
+        signal: opts?.signal,
+        page: opts?.page,
+        limit: opts?.limit,
+        publishedOnly: true,
+      });
+    },
 
-      const rawList: ToTDTO[] = Array.isArray((payload as any)?.data)
-        ? ((payload as any).data as ToTDTO[])
-        : Array.isArray(payload)
-        ? (payload as unknown as ToTDTO[])
-        : [];
+    async list(
+      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
+    ): Promise<ToTDTO[]> {
+      const signal = isAbortSignal(arg) ? arg : arg?.signal;
+      const limit =
+        !isAbortSignal(arg) &&
+        typeof arg?.limit === "number" &&
+        !Number.isNaN(arg.limit) &&
+        arg.limit > 0
+          ? arg.limit
+          : 100;
 
-      return rawList.filter((item) => isPublishedFlag((item as any)?.is_published));
+      const all: ToTDTO[] = [];
+      let page = 1;
+      let hasNext = true;
+
+      while (hasNext) {
+        const res = await getPublicList<ToTDTO>("/api/tot", {
+          signal,
+          page,
+          limit,
+          publishedOnly: true,
+        });
+
+        all.push(...res.data);
+
+        const pg = res.pagination;
+        if (!pg) {
+          hasNext = false;
+        } else {
+          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
+        }
+
+        if (hasNext) {
+          page += 1;
+        }
+      }
+
+      return all;
     },
   },
 
@@ -759,7 +1297,8 @@ export const contentApi = {
         meta = any.data as ToTMetaDTO;
       } else if (Array.isArray(any?.data)) {
         const list = any.data as ToTMetaDTO[];
-        meta = list.find((m) => isPublishedFlag((m as any)?.is_published)) ?? null;
+        meta =
+          list.find((m) => isPublishedFlag((m as any)?.is_published)) ?? null;
       } else {
         meta = (any as ToTMetaDTO) ?? null;
       }

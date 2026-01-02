@@ -6,6 +6,7 @@ export type ToTDTO = {
   geoorigin?: string | null;
   detail_location?: string | null;
   years?: string | null;
+  modern_country?: string | null;
   slug?: string | null;
   meta_title?: string | null;
   meta_description?: string | null;

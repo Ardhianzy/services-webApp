@@ -66,7 +66,7 @@ const AdminEditShopPage: FC = () => {
         setSlug((data as any).slug ?? "");
         setMetaTitle((data as any).meta_title ?? "");
         setMetaDescription((data as any).meta_description ?? "");
-        setIsAvailable(Boolean(data.is_available));
+        setIsAvailable(Boolean((data as any).is_available));
         setIsPublished(Boolean((data as any).is_published));
         setCurrentImageUrl((data as any).image ?? "");
         setImagePreviewUrl(null);
@@ -105,6 +105,7 @@ const AdminEditShopPage: FC = () => {
     if (metaDescription) formData.append("meta_description", metaDescription);
 
     formData.append("is_published", isPublished ? "true" : "false");
+    formData.append("is_available", isAvailable ? "true" : "false");
 
     if (imageFile) {
       formData.append("image", imageFile);
@@ -306,9 +307,7 @@ const AdminEditShopPage: FC = () => {
                   className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                              focus:border-white"
                   value={metaTitle}
-                  onChange={(e) =>
-                    setMetaTitle(e.target.value)
-                  }
+                  onChange={(e) => setMetaTitle(e.target.value)}
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -319,9 +318,7 @@ const AdminEditShopPage: FC = () => {
                   className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-sm outline-none
                              min-h-[80px] focus:border-white"
                   value={metaDescription}
-                  onChange={(e) =>
-                    setMetaDescription(e.target.value)
-                  }
+                  onChange={(e) => setMetaDescription(e.target.value)}
                 />
               </div>
             </div>
@@ -359,9 +356,7 @@ const AdminEditShopPage: FC = () => {
                     type="checkbox"
                     className="w-4 h-4 rounded border-zinc-600 bg-black"
                     checked={isAvailable}
-                    onChange={(e) =>
-                      setIsAvailable(e.target.checked)
-                    }
+                    onChange={(e) => setIsAvailable(e.target.checked)}
                   />
                   <span>Available (stok aktif)</span>
                 </label>
@@ -370,9 +365,7 @@ const AdminEditShopPage: FC = () => {
                     type="checkbox"
                     className="w-4 h-4 rounded border-zinc-600 bg-black"
                     checked={isPublished}
-                    onChange={(e) =>
-                      setIsPublished(e.target.checked)
-                    }
+                    onChange={(e) => setIsPublished(e.target.checked)}
                   />
                   <span>Publish ke user</span>
                 </label>
@@ -466,9 +459,9 @@ const AdminEditShopPage: FC = () => {
             <div className="prose prose-invert prose-sm max-w-none mb-4">
               <div
                 dangerouslySetInnerHTML={{
-                  __html:
-                    desc ||
-                    "<p>Deskripsi singkat produk akan tampil di sini sebagaimana terlihat oleh user.</p>",
+                  __html: desc
+                    ? normalizeBackendHtml(desc)
+                    : "<p>Deskripsi singkat produk akan tampil di sini sebagaimana terlihat oleh user.</p>",
                 }}
               />
             </div>

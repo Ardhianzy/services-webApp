@@ -1,5 +1,5 @@
 // src/features/home/components/map/PhilosopherDetailCard.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { contentApi, normalizeBackendHtml } from "@/lib/content/api";
 
 export type DetailPhilosopher = {
@@ -16,11 +16,13 @@ export type DetailPhilosopher = {
 type Props = { philosopher?: DetailPhilosopher | null; onClose?: () => void; };
 
 const DEFAULT_HERO = "/assets/Group 5117.png";
-const MEA_ICON = "/assets/icon/MEA_icon.png";
+const MEA_ICON = "/assets/icon/MEA_icon_nt.png";
 
 export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [meta, setMeta] = useState<{ metafisika?: string; epsimologi?: string; aksiologi?: string; conclusion?: string; } | null>(null);
+  
+  const cardRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose?.(); };
@@ -51,15 +53,33 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
     return () => { alive = false; };
   }, [philosopher?.id]);
 
+  const scrollToSection = (id: string) => {
+    const container = cardRef.current;
+    const target = document.getElementById(id);
+
+    if (container && target) {
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      
+      const offsetPosition = targetRect.top - containerRect.top + container.scrollTop;
+
+      container.scrollTo({
+        top: offsetPosition - 20, 
+        behavior: "smooth"
+      });
+    }
+  };
+
   if (!philosopher) return null;
 
   const hero = philosopher.cardImage || philosopher.hero || DEFAULT_HERO;
   const dateText = philosopher.fullDates || philosopher.years || "";
-  const locationText = [philosopher.geoorigin, philosopher.detail_location].filter(Boolean).join(", ");
+  const locationText = philosopher.detail_location || philosopher.geoorigin || "";
   const infoLine = [dateText, locationText].filter(Boolean).join(" | ");
 
   return (
     <aside
+      ref={cardRef}
       role="dialog"
       aria-label={philosopher.name || "Philosopher detail"}
       aria-modal={false}
@@ -77,6 +97,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         gap: "14px",
         overflowY: "auto",
         scrollbarGutter: "stable both-edges" as any,
+        overscrollBehavior: "contain",
       }}
     >
       <button
@@ -84,7 +105,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         aria-label="Close"
         onClick={onClose}
         className={[
-          "absolute right-2 top-2 z-[3] inline-flex h-9 w-9 items-center justify-center cursor-pointer",
+          "sticky top-0 self-end mr-2 z-[3] inline-flex h-9 w-9 shrink-0 items-center justify-center cursor-pointer",
           "rounded-full border border-[#666] bg-[#111] text-white",
           "shadow-[0_4px_10px_rgba(0,0,0,4)] hover:bg-[#151515]",
         ].join(" ")}
@@ -92,7 +113,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         ×
       </button>
 
-      <div className="mt-13 grid grid-cols-2 gap-4">
+      <div className="mt-4 grid grid-cols-2 gap-4">
         <div className="relative">
           <img
             src={hero}
@@ -112,19 +133,54 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
           </h3>
 
           <div className="mt-2 flex-1 grid place-items-center">
-            <img
-              src={MEA_ICON}
-              alt="MEA icon"
-              draggable={false}
-              className="block w-full max-w-[320px] h-auto object-contain select-none"
-            />
+            <div className="relative ml-4 mt-5 w-full max-w-[250px]">
+              <img
+                src={MEA_ICON}
+                alt="MEA icon"
+                draggable={false}
+                className="block w-full h-auto object-contain select-none"
+              />
+
+              <button
+                type="button"
+                onClick={() => meta?.metafisika && scrollToSection("section-metafisika")}
+                className={`absolute top-[-25px] left-32 -translate-x-1/2 z-10 transition-colors ${
+                  meta?.metafisika ? "cursor-pointer hover:text-white/80" : "cursor-default opacity-50"
+                }`}
+                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", letterSpacing: "1px" }}
+              >
+                METAFISIKA
+              </button>
+
+              <button
+                type="button"
+                onClick={() => meta?.epsimologi && scrollToSection("section-epistemologi")}
+                className={`absolute bottom-[75px] left-[-20px] -translate-x-1/4 z-10 transition-colors ${
+                  meta?.epsimologi ? "cursor-pointer hover:text-white/80" : "cursor-default opacity-50"
+                }`}
+                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", letterSpacing: "1px" }}
+              >
+                EPISTEMOLOGI
+              </button>
+
+              <button
+                type="button"
+                onClick={() => meta?.aksiologi && scrollToSection("section-aksiologi")}
+                className={`absolute bottom-[75px] right-[-15px] translate-x-1/4 z-10 transition-colors ${
+                  meta?.aksiologi ? "cursor-pointer hover:text-white/80" : "cursor-default opacity-50"
+                }`}
+                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", letterSpacing: "1px" }}
+              >
+                AKSIOLOGI
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {infoLine && (
         <p
-          className="mt-1 mb-0 text-left text-white/80 text-[26px]"
+          className="mt-0 mb-0 text-left text-white/80 text-[26px]"
           style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         >
           {infoLine}
@@ -135,12 +191,15 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         .card-typography{
           font-family: Roboto, ui-sans-serif, system-ui;
           font-size: 1.02rem;
-          line-height: 1.85;
+          line-height: 1.25;
           color: #fff;
           text-align: justify;
           text-justify: inter-word;
           hyphens: auto;
           word-break: break-word;
+        }
+        .card-typography em, .card-typography i {
+          font-style: italic;
         }
         .card-typography h1,.card-typography h2,.card-typography h3,.card-typography h4{
           font-family: Roboto, ui-sans-serif, system-ui;
@@ -202,21 +261,21 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         }
       `}</style>
 
-      <section className="mt-2 mb-3">
+      <section id="section-metafisika" className="mt-2 mb-3">
         <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
           Metafisika
         </h4>
         <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.metafisika || (loading ? "Loading..." : "—") }} />
       </section>
 
-      <section className="mb-3">
+      <section id="section-epistemologi" className="mb-3">
         <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
           Epistemologi
         </h4>
         <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.epsimologi || (loading ? "Loading..." : "—") }} />
       </section>
 
-      <section className="mb-3">
+      <section id="section-aksiologi" className="mb-3">
         <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
           Aksiologi
         </h4>

@@ -15,6 +15,7 @@ type AdminToTForm = {
   geoorigin: string;
   detailLocation: string;
   years: string;
+  modernCountry: string;
   metaTitle: string;
   metaDescription: string;
   keywords: string;
@@ -67,6 +68,7 @@ const AdminEditToTPage: React.FC = () => {
           geoorigin: raw.geoorigin ?? "",
           detailLocation: raw.detail_location ?? "",
           years: raw.years ?? "",
+          modernCountry: raw.modern_country ?? "",
           metaTitle: raw.meta_title ?? "",
           metaDescription: normalizeBackendHtml(
             raw.meta_description ?? ""
@@ -130,6 +132,8 @@ const AdminEditToTPage: React.FC = () => {
       if (form.detailLocation)
         fd.append("detail_location", form.detailLocation);
       if (form.years) fd.append("years", form.years);
+      if (form.modernCountry)
+        fd.append("modern_country", form.modernCountry);
       if (form.metaTitle) fd.append("meta_title", form.metaTitle);
       if (form.metaDescription)
         fd.append("meta_description", form.metaDescription);
@@ -269,21 +273,34 @@ const AdminEditToTPage: React.FC = () => {
                 }
               />
             </div>
-          </div>
-
-          <div className="flex flex-col gap-2 max-w-xs">
-            <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              YEARS (PERIODE)
-            </label>
-            <input
-              type="text"
-              className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                         focus:border-white"
-              value={form.years}
-              onChange={(e) =>
-                updateField("years", e.target.value)
-              }
-            />
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                MODERN COUNTRY
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                           focus:border-white"
+                value={form.modernCountry}
+                onChange={(e) =>
+                  updateField("modernCountry", e.target.value)
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-2 max-w-xs">
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">
+                YEARS (PERIODE)
+              </label>
+              <input
+                type="text"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
+                          focus:border-white"
+                value={form.years}
+                onChange={(e) =>
+                  updateField("years", e.target.value)
+                }
+              />
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -435,6 +452,11 @@ const AdminEditToTPage: React.FC = () => {
               {form.detailLocation && (
                 <span className="px-2 py-1 rounded-full border border-zinc-700">
                   Lokasi: {form.detailLocation}
+                </span>
+              )}
+              {form.modernCountry && (
+                <span className="px-2 py-1 rounded-full border border-zinc-700">
+                  Modern Country: {form.modernCountry}
                 </span>
               )}
               {form.years && (
