@@ -62,4 +62,17 @@ export class YoutubeHandler {
             next(error);
         }
     };
+    
+    public delete = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { id } = req.params;
+            const deletedYoutube = await this.youtubeService.delete(id);
+            res.status(200).json({
+                message: "Youtube record deleted successfully",
+                data: deletedYoutube,
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 }

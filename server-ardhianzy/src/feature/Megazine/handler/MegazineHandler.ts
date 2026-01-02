@@ -114,6 +114,19 @@ export class MegazineHandler {
 
       const imageFile = getImageFromReq(req);
       const pdfFile = getPdfFromReq(req);
+      
+      const existing = await this.megazineService.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Megazine not found" });
+        return;
+      }
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this megazine",
+        });
+        return;
+      }
 
       const updateData = {
         title: req.body.title,
@@ -153,6 +166,18 @@ export class MegazineHandler {
         res
           .status(400)
           .json({ success: false, message: "Megazine ID is required" });
+        return;
+      }
+      const existing = await this.megazineService.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Megazine not found" });
+        return;
+      }
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this megazine",
+        });
         return;
       }
       const deletedMegazine = await this.megazineService.deleteById(id);

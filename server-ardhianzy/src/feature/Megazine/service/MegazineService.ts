@@ -234,4 +234,8 @@ export class MegazineService {
     if (!megazine) throw new Error("Megazine not found");
     return megazine;
   }
+  async getById(id: string): Promise<Megazine | null> {
+    const megazine = await prisma.megazine.findUnique({ where: { id } });
+    return megazine;
+  }
 }

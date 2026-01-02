@@ -210,4 +210,13 @@ export class ShopService {
       );
     }
   }
+  async getById(id: string): Promise<Shop | null> {
+    try {
+      return await this.repo.getById(id);
+    } catch (error) {
+       // If repo doesn't have it, valid to throw error? No, return null or throw.
+       // Let's assume repo doesn't have it and add it shortly.
+       throw error;
+    }
+  }
 }

@@ -278,4 +278,18 @@ export class ArticleRepository {
       );
     }
   }
+  async getById(id: string): Promise<Article | null> {
+    try {
+      const article = await prisma.article.findUnique({
+        where: { id },
+      });
+      return article;
+    } catch (error) {
+       throw new Error(
+        `Failed to get Article by id: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
 }

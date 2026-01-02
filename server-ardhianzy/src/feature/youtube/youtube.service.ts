@@ -42,4 +42,10 @@ export class YoutubeService {
             );
         }
     }
+    async getById(id: string): Promise<Youtube | null> {
+        return this.youtubeRepo.getById(id);
+    }
+    async delete(id: string): Promise<Youtube> {
+        return this.youtubeRepo.delete(id);
+    }
 }

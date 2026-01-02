@@ -101,6 +101,19 @@ export class MonologuesHandler {
 
       const imageFile = getImageFromReq(req);
       const pdfFile = getPdfFromReq(req);
+      
+      const existing = await this.monologuesService.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Monologue not found" });
+        return;
+      }
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this monologue",
+        });
+        return;
+      }
 
       // Eksplisit mendefinisikan data update, bukan menyalin semua dari body
       const updateData = {
@@ -140,6 +153,18 @@ export class MonologuesHandler {
         res
           .status(400)
           .json({ success: false, message: "Monologue ID is required" });
+        return;
+      }
+      const existing = await this.monologuesService.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Monologue not found" });
+        return;
+      }
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this monologue",
+        });
         return;
       }
       const deletedMonologue = await this.monologuesService.deleteById(id);

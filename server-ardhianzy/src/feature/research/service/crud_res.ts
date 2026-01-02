@@ -291,4 +291,7 @@ export class ResearchService {
     if (!research) throw new Error("Research not found");
     return research;
   }
+  async getById(id: string): Promise<Research | null> {
+    return prisma.research.findUnique({ where: { id } });
+  }
 }

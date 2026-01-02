@@ -5,6 +5,10 @@ import { MegazineHandler } from "../feature/Megazine/handler/MegazineHandler"; /
 import { authenticate } from "../middleware/authenticate";
 import { uploadMixedLocal } from "../middleware/multerPdf";
 
+import { validate } from "../middleware/validate";
+import { createMegazineSchema, updateMegazineSchema } from "../feature/Megazine/validation";
+import { uploadLimiter } from "../middleware/rateLimiter";
+
 const router = Router();
 const megazineHandler = new MegazineHandler();
 
@@ -16,13 +20,17 @@ const handleFiles = uploadMixedLocal.fields([
 router.post(
   "/",
   authenticate,
+  uploadLimiter,
   handleFiles,
+  validate(createMegazineSchema),
   megazineHandler.createByAdmin.bind(megazineHandler)
 );
 router.put(
   "/:id",
   authenticate,
+  uploadLimiter,
   handleFiles, // Middleware untuk file
+  validate(updateMegazineSchema),
   megazineHandler.updateById.bind(megazineHandler)
 );
 

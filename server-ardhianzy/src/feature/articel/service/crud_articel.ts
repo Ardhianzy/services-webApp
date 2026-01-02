@@ -164,6 +164,22 @@ export class ArticleService {
 
   // --- Metode Passthrough (hanya meneruskan ke Repository) ---
 
+  async getById(id: string): Promise<Article | null> {
+      // Perlu implementasi di repo jika belum ada, atau pakai prisma langsung di repo.
+      // Cek repository dulu apakah ada getById.
+      // Di view sebelumnya, repository punya updateById yang pake prisma.article.update({where: {id}}).
+      // Sebaiknya kita tambahkan getById di Repo juga jika belum ada.
+      // Tapi tunggu, repo.updateById throws P2025 if not found.
+      // Kita butuh getById untuk cek admin_id.
+      // Cek repo file content di step 190.
+      // Repo punya createByAdmin, updateById, deleteById, getAll, getByTitle, getByArticelCategory.
+      // Tidak ada getById by ID.
+      // Saya harus tambah getById di Repo dulu.
+      // Tapi saya di sini edit service.
+      // Saya akan tambahkan getById di service yang memanggil repo.getById (yang akan saya buat).
+      return this.repo.getById(id);
+  }
+
   async deleteById(id: string): Promise<Article> {
     return this.repo.deleteById(id);
   }

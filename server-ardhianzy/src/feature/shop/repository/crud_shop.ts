@@ -240,4 +240,19 @@ export class ShopRepository {
       );
     }
   }
+  
+  async getById(id: string): Promise<Shop | null> {
+    try {
+      const shop = await prisma.shop.findUnique({
+        where: { id },
+      });
+      return shop;
+    } catch (error) {
+      throw new Error(
+        `Failed to get Shop by id: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
 }

@@ -2,6 +2,10 @@ import { Router } from "express";
 import { MonologuesHandler } from "../feature/Monologues/handler/crud_handler"; // Pastikan path ini benar
 import { authenticate } from "../middleware/authenticate";
 import { uploadMixedLocal } from "../middleware/multerPdf";
+import { validate } from "../middleware/validate";
+import { createMonologueSchema, updateMonologueSchema } from "../feature/Monologues/validation";
+import { uploadLimiter } from "../middleware/rateLimiter";
+
 const router = Router();
 const monologuesHandler = new MonologuesHandler();
 
@@ -17,7 +21,9 @@ const handleFiles = uploadMixedLocal.fields([
 router.post(
   "/",
   authenticate,
+  uploadLimiter,
   handleFiles, // Gunakan middleware yang sudah didefinisikan
+  validate(createMonologueSchema),
   monologuesHandler.createByAdmin
 );
 
@@ -25,7 +31,9 @@ router.post(
 router.put(
   "/:id",
   authenticate,
+  uploadLimiter,
   handleFiles, // Gunakan middleware yang sama untuk update
+  validate(updateMonologueSchema),
   monologuesHandler.updateById
 );
 

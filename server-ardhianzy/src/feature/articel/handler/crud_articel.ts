@@ -139,6 +139,23 @@ export class ArticleHandler {
       if (req.body.is_featured !== undefined)
         updateData.is_featured = parseBool(req.body.is_featured);
 
+      // 1. Fetch existing article
+      const existingArticle = await this.articleService.getById(id);
+      if (!existingArticle) {
+        res.status(404).json({ success: false, message: "Article not found" });
+        return;
+      }
+
+      // 2. Ownership Check
+      const adminId = req.user?.admin_Id;
+      if (existingArticle.admin_id !== adminId) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this article",
+        });
+        return;
+      }
+
       const updatedArticle = await this.articleService.updateById(
         id,
         updateData,
@@ -168,6 +185,23 @@ export class ArticleHandler {
           .json({ success: false, message: "Article ID is required" });
         return;
       }
+      // 1. Fetch existing article
+      const existingArticle = await this.articleService.getById(id);
+      if (!existingArticle) {
+        res.status(404).json({ success: false, message: "Article not found" });
+        return;
+      }
+
+      // 2. Ownership Check
+      const adminId = req.user?.admin_Id;
+      if (existingArticle.admin_id !== adminId) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this article",
+        });
+        return;
+      }
+
       const deletedArticle = await this.articleService.deleteById(id);
       res.status(200).json({
         success: true,

@@ -70,6 +70,12 @@ export class TotService {
     if (!totData.years?.trim()) throw new Error("Years is required");
     if (!totData.admin_id?.trim()) throw new Error("Admin ID is required");
 
+    // Check if philosopher name already exists
+    const existing = await this.repo.getByPhilosofer(totData.philosofer);
+    if (existing) {
+      throw new Error(`Philosopher '${totData.philosofer}' already exists`);
+    }
+
     let imageUrl: string | undefined;
 
     // Upload image jika ada
@@ -138,8 +144,15 @@ export class TotService {
     const updateData: any = {};
 
     // Only update provided fields
-    if (totData.philosofer?.trim())
-      updateData.philosofer = totData.philosofer.trim();
+    if (totData.philosofer?.trim()) {
+      const newPhilosofer = totData.philosofer.trim();
+      // Check if another record has this name
+      const conflicting = await this.repo.getByPhilosofer(newPhilosofer);
+      if (conflicting && conflicting.id !== id) {
+        throw new Error(`Philosopher '${newPhilosofer}' already exists`);
+      }
+      updateData.philosofer = newPhilosofer;
+    }
     if (totData.geoorigin?.trim())
       updateData.geoorigin = totData.geoorigin.trim();
     if (totData.detail_location?.trim())

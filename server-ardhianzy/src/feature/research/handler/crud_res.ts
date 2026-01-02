@@ -131,6 +131,19 @@ export class ResearchHandler {
 
       const imageFile = getImageFromReq(req); // opsional
       const pdfFile = getPdfFromReq(req); // opsional
+      
+      const existing = await this.researchService.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Research not found" });
+        return;
+      }
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this research",
+        });
+        return;
+      }
 
       const updated = await this.researchService.updateById(
         id,
@@ -178,6 +191,18 @@ export class ResearchHandler {
         return;
       }
 
+      const existing = await this.researchService.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Research not found" });
+        return;
+      }
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this research",
+        });
+        return;
+      }
       const deleted = await this.researchService.deleteById(id);
 
       res.status(200).json({

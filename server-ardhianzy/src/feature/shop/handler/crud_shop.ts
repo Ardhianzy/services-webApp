@@ -151,6 +151,19 @@ export class ShopHandler {
         return;
       }
 
+      const existing = await this.service.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Shop not found" });
+        return;
+      }
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this shop item",
+        });
+        return;
+      }
+
       const deletedShop = await this.service.deleteById(id);
 
       res.status(200).json({
@@ -196,6 +209,19 @@ export class ShopHandler {
         res.status(400).json({
           success: false,
           message: "Invalid shop ID",
+        });
+        return;
+      }
+
+      const existing = await this.service.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Shop not found" });
+        return;
+      }
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this shop item",
         });
         return;
       }

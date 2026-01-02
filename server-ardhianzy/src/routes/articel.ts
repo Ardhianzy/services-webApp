@@ -3,6 +3,10 @@ import { ArticleHandler } from "../feature/articel/handler/crud_articel";
 import { authenticate } from "../middleware/authenticate";
 import upload from "../middleware/multer";
 
+import { validate } from "../middleware/validate";
+import { createArticleSchema, updateArticleSchema } from "../feature/articel/validation";
+import { uploadLimiter } from "../middleware/rateLimiter";
+
 const router = Router();
 const articleHandler = new ArticleHandler();
 
@@ -10,7 +14,9 @@ const articleHandler = new ArticleHandler();
 router.post(
   "/",
   authenticate,
+  uploadLimiter,
   upload.single("image"),
+  validate(createArticleSchema),
   articleHandler.createByAdmin
 );
 
@@ -24,7 +30,9 @@ router.get("/title/:title", articleHandler.getByTitle);
 router.put(
   "/:id",
   authenticate,
+  uploadLimiter,
   upload.single("image"),
+  validate(updateArticleSchema),
   articleHandler.updateById
 );
 router.get("/category/:category", articleHandler.getByArticelCategory);

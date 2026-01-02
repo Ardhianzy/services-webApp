@@ -1,9 +1,17 @@
 import express, { Application, Request, Response, NextFunction } from "express";
 import cors, { CorsOptions } from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
 import prisma from "./config/db";
 import mainRoutes from "./routes";
+import { globalLimiter } from "./middleware/rateLimiter";
 
 const app: Application = express();
+
+const morganFormat = process.env.NODE_ENV === "production" ? "combined" : "dev";
+app.use(morgan(morganFormat)); // Logger menyesuaikan environment
+app.use(helmet());
+app.use(globalLimiter); // Terapkan rate limiter global
 
 const allowedOrigins: string[] = [
   "https://www.ardhianzy.com",
