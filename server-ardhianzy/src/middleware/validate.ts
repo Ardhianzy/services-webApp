@@ -12,9 +12,9 @@ export const validate =
         file: req.file,
       })) as { body: any; query: any; params: any };
 
-      req.body = result.body;
-      req.query = result.query;
-      req.params = result.params;
+      if (result.body !== undefined) req.body = result.body;
+      if (result.query !== undefined) req.query = result.query;
+      if (result.params !== undefined) req.params = result.params;
 
       next();
     } catch (error) {
@@ -22,16 +22,18 @@ export const validate =
         res.status(400).json({
           success: false,
           message: "Validation failed",
-          errors: (error as any).errors.map((e: any) => ({
-            field: e.path.join("."),
+          errors: ((error as any).errors || []).map((e: any) => ({
+            field: (e.path || []).join("."),
             message: e.message,
           })),
         });
         return;
       }
+      console.error("Validation Internal Error:", error);
       res.status(500).json({
         success: false,
         message: "Internal server error during validation",
+        errorDetail: error instanceof Error ? error.message : String(error)
       });
       return;
     }
