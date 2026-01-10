@@ -419,7 +419,7 @@ const AdminAddToTPage: React.FC = () => {
             </div>
 
             {form.metaDescription && (
-              <div className="prose prose-invert prose-sm max-w-none mb-4">
+              <div className="admin-totmeta-html text-sm max-w-none mb-4">
                 <div
                   dangerouslySetInnerHTML={{
                     __html: normalizedMetaDescriptionPreview,
