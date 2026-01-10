@@ -108,12 +108,51 @@ export default function MagazineCollectionSection({ items }: Props) {
         .magcol__h3 { font-family: 'Bebas Neue', sans-serif !important; font-weight: 400 !important; font-size: 42px !important; line-height: 1.1 !important; color: #fff !important; margin: 0 0 .5rem 0 !important; text-shadow: 0 4px 50px rgba(0,0,0,0.25) !important; }
         .magcol__desc { font-family: 'Roboto', sans-serif !important; font-weight: 400 !important; font-size: 16px !important; line-height: 1.5 !important; text-align: justify !important; color: #fff !important; margin: 0 !important; }
 
-        @media (max-width: 1350px) { .magcol__container { padding: 0 2rem !important; } }
+        @media (max-width: 1350px) { .magcol__container { padding: 0 0rem !important; } }
         @media (max-width: 968px) {
           .magcol__article { flex-direction: column !important; height: auto !important; }
           .magcol__imgwrap, .magcol__content { position: static !important; width: 100% !important; transform: none !important; }
           .magcol__imgwrap { height: 300px !important; }
           .magcol__content { background: #171717 !important; border-radius: 20px !important; padding: 2rem !important; margin-top: -2rem !important; position: relative !important; z-index: 2 !important; }
+        }
+
+        @media (max-width: 640px) {
+          .magcol { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+          .magcol__container { padding-bottom: 72px !important; }
+          .magcol__title {
+            font-size: 2.4rem !important;
+            margin-bottom: 2rem !important;
+            padding-top: 14px !important;
+          }
+          .magcol__list { gap: 2.5rem !important; }
+
+          .magcol__article { border-left-width: 1px !important; border-radius: 14px !important; }
+          .magcol__imgwrap { height: 240px !important; border-radius: 16px !important; }
+          .magcol__imgwrap::after { border-radius: 16px !important; }
+          .magcol__img { border-radius: 16px !important; }
+          .magcol__img__soon { border-radius: 16px !important; padding: 32px !important; }
+
+          .magcol__content {
+            padding: 1.25rem 1.25rem !important;
+            margin-top: -1.25rem !important;
+            border-radius: 16px !important;
+          }
+
+          .magcol__h3 { font-size: 2.4rem !important; }
+          .magcol__desc {
+            font-size: 0.95rem !important;
+            line-height: 1.65 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 6 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .magcol__imgwrap { height: 220px !important; }
+          .magcol__content { padding: 1.1rem 1.1rem !important; }
+          .magcol__desc { -webkit-line-clamp: 5 !important; }
         }
       `}</style>
 
@@ -128,7 +167,9 @@ export default function MagazineCollectionSection({ items }: Props) {
                   src={"/assets/magazine/placeholder.png"}
                   alt="Coming Soon"
                   className="magcol__img__soon"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/assets/icon/Ardhianzy_Logo_2.png"; }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/assets/icon/Ardhianzy_Logo_2.png";
+                  }}
                 />
               </div>
               <div className="magcol__content">

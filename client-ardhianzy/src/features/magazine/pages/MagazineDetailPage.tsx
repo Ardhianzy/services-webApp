@@ -6,11 +6,13 @@ import SectionNavLinks from "@/features/layout/components/SectionNavLinks";
 import MagazineCollectionSection from "@/features/magazine/components/MagazineCollectionSection";
 import { contentApi } from "@/lib/content/api";
 import type { MagazineDTO } from "@/lib/content/types";
+
 declare global {
   interface Window {
     pdfjsLib?: any;
   }
 }
+
 async function ensurePdfJsLoaded(): Promise<void> {
   if (window.pdfjsLib) return;
   await new Promise<void>((resolve, reject) => {
@@ -47,13 +49,21 @@ function PdfInlineViewer({ url, title }: { url: string; title: string }) {
         const loadingTask = window.pdfjsLib.getDocument({ url });
         const pdf = await loadingTask.promise;
 
+        const isMobile =
+          typeof window !== "undefined" &&
+          typeof window.matchMedia === "function" &&
+          window.matchMedia("(max-width: 640px)").matches;
+
+        const scaleBoost = isMobile ? 1.15 : 1.5;
+        const pageGap = isMobile ? 16 : 24;
+
         for (let i = 1; i <= pdf.numPages; i++) {
           if (canceled) return;
           const page = await pdf.getPage(i);
 
           const baseViewport = page.getViewport({ scale: 1 });
           const cssWidth = container.clientWidth || baseViewport.width;
-          const scale = (cssWidth / baseViewport.width) * 1.5;
+          const scale = (cssWidth / baseViewport.width) * scaleBoost;
           const viewport = page.getViewport({ scale });
 
           const canvas = document.createElement("canvas");
@@ -64,7 +74,8 @@ function PdfInlineViewer({ url, title }: { url: string; title: string }) {
           canvas.style.width = "100%";
           canvas.style.height = "auto";
           canvas.style.display = "block";
-          canvas.style.margin = i === pdf.numPages ? "0 auto 0" : "0 auto 24px";
+          canvas.style.margin =
+            i === pdf.numPages ? "0 auto 0" : `0 auto ${pageGap}px`;
           canvas.style.backgroundColor = "#fff";
           canvas.style.boxShadow = "0 10px 40px rgba(0,0,0,0.35)";
           canvas.setAttribute("role", "img");
@@ -86,8 +97,16 @@ function PdfInlineViewer({ url, title }: { url: string; title: string }) {
   }, [url, title]);
 
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-black py-6">
-      <div ref={ref} className="w-[90%] mx-auto" />
+    <div className="mag-pdf w-full rounded-xl border border-white/10 bg-black py-6">
+      <style>{`
+        /* Mobile-only: jangan ganggu desktop */
+        @media (max-width: 640px) {
+          .mag-pdf { padding-top: 14px !important; padding-bottom: 14px !important; border-radius: 16px !important; }
+          .mag-pdf__inner { width: 94% !important; }
+        }
+      `}</style>
+
+      <div ref={ref} className="mag-pdf__inner w-[90%] mx-auto" />
       {err ? (
         <div className="w-[90%] mx-auto mt-4 text-white/80">{err}</div>
       ) : null}
@@ -114,7 +133,9 @@ export default function MagazineDetailPage() {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [slug]);
 
   const title = item?.title ?? "Magazine";
@@ -126,29 +147,27 @@ export default function MagazineDetailPage() {
       <SectionNavLinks />
 
       <main className="bg-black text-white min-h-screen pt-[70px] pb-[80px]">
-        {/* <section
-          className="relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden"
-          aria-label="Magazine hero"
-        >
-          <img
-            src="/assets/magazine/smdamdla.png"
-            alt={title}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ filter: "grayscale(100%)", mixBlendMode: "luminosity" }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
-          <h1
-            className="absolute inset-x-0 bottom-[44%] m-0 text-center text-white"
-            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2.5rem,6vw,5rem)", lineHeight: 1.05 }}
-          >
-            {title}
-          </h1>
-        </section> */}
+        <style>{`
+          /* Mobile-only: spacing + tombol back biar tidak kepanjangan ke samping */
+          @media (max-width: 640px) {
+            .mag-detail__wrap { width: 92% !important; margin-top: 22px !important; }
+            .mag-detail__back {
+              font-size: 14px !important;
+              padding: 10px 12px !important;
+              gap: 8px !important;
+              line-height: 1.15 !important;
+              flex-wrap: wrap !important;
+              max-width: 100% !important;
+            }
+            .mag-detail__backIcon { width: 22px !important; height: 22px !important; }
+          }
+        `}</style>
 
-        <section className="w-[95%] mx-auto mt-[32px]">
+        <section className="mag-detail__wrap w-[95%] mx-auto mt-[32px]">
           <button
             onClick={() => navigate(-1)}
             className="
+              mag-detail__back
               font-roboto mb-4 underline text-white cursor-pointer
               inline-flex items-center gap-[10px]
               rounded-full px-4 py-2 text-[15px] font-semibold bg-transparent
@@ -158,10 +177,14 @@ export default function MagazineDetailPage() {
             aria-label="Go back"
             title="Back"
           >
-            <span className="inline-grid place-items-center w-[24px] h-[24px] leading-none" aria-hidden>
+            <span
+              className="mag-detail__backIcon inline-grid place-items-center w-[24px] h-[24px] leading-none"
+              aria-hidden
+            >
               <span className="pointer-events-none select-none text-[20px]">←</span>
             </span>
-            Back to "Magazine Section"
+
+            <span>Back to "Magazine Section"</span>
           </button>
 
           <div className="h-[24px]" />
@@ -173,6 +196,7 @@ export default function MagazineDetailPage() {
           ) : (
             <div className="text-white/80">PDF tidak tersedia.</div>
           )}
+
           <div className="mt-[60px]">
             <MagazineCollectionSection />
           </div>

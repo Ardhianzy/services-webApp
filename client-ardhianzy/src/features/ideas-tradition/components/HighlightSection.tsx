@@ -1,5 +1,5 @@
 // src/features/ideas-tradition/components/HighlightSection.tsx
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { contentApi } from "@/lib/content/api";
 import type { ArticleDTO } from "@/lib/content/types";
@@ -66,6 +66,38 @@ export default function HighlightSection({
   const [remote, setRemote] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [ledeOpen, setLedeOpen] = useState(false);
+
+  const isMobileNow = () => {
+    if (typeof window === "undefined") return false;
+    if (typeof window.matchMedia !== "function") return false;
+    return window.matchMedia("(max-width: 640px)").matches;
+  };
+
+  const openLedeModal = () => {
+    if (!isMobileNow()) return;
+    setLedeOpen(true);
+  };
+
+  const closeLedeModal = () => setLedeOpen(false);
+
+  useEffect(() => {
+    if (!ledeOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLedeModal();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [ledeOpen]);
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -85,10 +117,7 @@ export default function HighlightSection({
         });
 
         const mapped: Card[] = ideas.map((a: ArticleDTO) => {
-          const desc =
-            normalizeMetaText(a.meta_description) ||
-            (a.excerpt ?? "").trim() ||
-            stripHtml(a.content);
+          const desc = normalizeMetaText(a.meta_description) || (a.excerpt ?? "").trim() || stripHtml(a.content);
 
           return {
             id: a.id,
@@ -128,14 +157,14 @@ export default function HighlightSection({
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [articles]);
 
   const items: Card[] = articles?.length ? articles : remote;
 
-  const [currentIndex, setCurrentIndex] = useState(
-    Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0))
-  );
+  const [currentIndex, setCurrentIndex] = useState(Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0)));
   useEffect(() => {
     setCurrentIndex((prev) => (items.length ? Math.min(prev, items.length - 1) : 0));
   }, [items.length]);
@@ -145,158 +174,356 @@ export default function HighlightSection({
   const LEDE =
     "Kumpulan artikel dan tulisan mendalam yang membedah ide-ide filosofis besar dalam sejarah dan tradisi intelektual manusia. Mulai dari metafisika Yunani kuno, pemikiran skolastik, pencerahan modern, hingga kritik post-strukturalis. Halaman ini adalah pusat gravitasi filosofis dari Ardhianzy, tempat di mana teori besar diuji dalam percakapan zaman.";
 
+  const LEDE_TEASER = "Kumpulan artikel dan tulisan mendalam yang membedah ide-ide filosofis besar...";
+  const ledeTeaser = useMemo(() => LEDE_TEASER, []);
+
   const isNavDisabled = items.length <= 1;
 
-  const goPrev = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === 0 ? items.length - 1 : p - 1)); };
-  const goNext = () => { if (!isNavDisabled) setCurrentIndex((p) => (p === items.length - 1 ? 0 : p + 1)); };
+  const goPrev = () => {
+    if (!isNavDisabled) setCurrentIndex((p) => (p === 0 ? items.length - 1 : p - 1));
+  };
+  const goNext = () => {
+    if (!isNavDisabled) setCurrentIndex((p) => (p === items.length - 1 ? 0 : p + 1));
+  };
 
   return (
-    <div className="it-highlight-wrapper">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;300&display=swap');
+    <>
+      <div className="it-highlight-wrapper">
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;300&display=swap');
 
-        .it__bebas { font-family: 'Bebas Neue', cursive !important; }
-        .it__roboto { font-family: 'Roboto', sans-serif !important; }
-        .it__heroTitle { font-size: 5rem !important; }
+          .it__bebas { font-family: 'Bebas Neue', cursive !important; }
+          .it__roboto { font-family: 'Roboto', sans-serif !important; }
 
-        .it-head__dekWrap{
-          position: absolute !important;
-          z-index: 2 !important;
-          left: 50% !important;
-          transform: translateX(-50%) !important;
-          bottom: clamp(18px, 6vh, 0px) !important;
-          width: min(150ch, 100vw) !important;
-          max-width: min(250ch, 100vw) !important;
-          pointer-events: none !important;
-          text-align: center !important;
-        }
-        .it-head__dek{
-          position: relative !important;
-          pointer-events: auto !important;
-          margin: 0 auto !important;
-          width: 100% !important;
-          font-family: Roboto, ui-sans-serif, system-ui !important;
-          font-size: clamp(0.95rem, 1.2vw, 1.05rem) !important;
-          line-height: 1.7 !important;
-          color: #ECECEC !important;
-          text-align: center !important;
-          letter-spacing: .1px !important;
+          .it-head__heroTitle {
+            font-size: 5rem !important;
+            padding-bottom: 80px !important;
+          }
 
-          border-top: 2px solid rgba(255,255,255,.22) !important;
-          border-left: 0 !important;
-          border-right: 0 !important;
+          .it-head__dekWrap{
+            position: absolute !important;
+            z-index: 2 !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            bottom: clamp(18px, 6vh, 0px) !important;
+            width: min(150ch, 100vw) !important;
+            max-width: min(250ch, 100vw) !important;
+            pointer-events: none !important;
+            text-align: center !important;
+          }
+          .it-head__dek{
+            position: relative !important;
+            pointer-events: auto !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            font-family: Roboto, ui-sans-serif, system-ui !important;
+            font-size: clamp(0.95rem, 1.2vw, 1.05rem) !important;
+            line-height: 1.7 !important;
+            color: #ECECEC !important;
+            text-align: center !important;
+            letter-spacing: .1px !important;
 
-          padding: 0.85rem 1.15rem !important;
-          background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.28)) !important;
-          backdrop-filter: blur(2px);
-          border-radius: 0px !important;
-          box-shadow: 0 12px 30px rgba(0,0,0,.18);
-        }
+            border-top: 2px solid rgba(255,255,255,.22) !important;
+            border-left: 0 !important;
+            border-right: 0 !important;
 
-        .it-head__section::before {
-          content: "" !important;
-          position: absolute !important;
-          inset: 0 !important;
-          background-image: url('/assets/magazine/highlightMagazine.png') !important;
-          background-position: start !important;
-          background-repeat: no-repeat !important;
-          background-size: cover !important;
-          pointer-events: none !important;
-          z-index: 0 !important;
-        }
+            padding: 0.85rem 1.15rem !important;
+            background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.28)) !important;
+            backdrop-filter: blur(2px);
+            border-radius: 0px !important;
+            box-shadow: 0 12px 30px rgba(0,0,0,.18);
+          }
 
-        .ith__nav{
-          position:absolute !important; top:50% !important; transform:translateY(-50%) !important; z-index:10 !important;
-          display:flex !important; align-items:center !important; justify-content:center !important;
-          width:60px !important; height:60px !important; border-radius:9999px !important;
-          border:2px solid rgba(255,255,255,0.3) !important; background:rgba(255,255,255,0.1) !important;
-          color:#ffffff !important; font-size:1.5rem !important; line-height:1 !important;
-          transition:transform .2s ease, background-color .2s ease, opacity .2s ease, filter .2s ease !important;
-        }
-        .ith__nav:hover{ transform:translateY(-50%) scale(1.10) !important; background:rgba(255,255,255,0.2) !important; }
-        .ith__nav--left{ left:40px !important; }
-        .ith__nav--right{ right:40px !important; }
-        .ith__nav[disabled],
-        .ith__nav[aria-disabled="true"]{
-          opacity:.4 !important; cursor:not-allowed !important; filter:grayscale(40%) !important;
-        }
+          .it-head__ledeTrigger{
+            display: none !important;
+            pointer-events: auto !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            font-family: Roboto, ui-sans-serif, system-ui !important;
+            border: 0 !important;
+            outline: 0 !important;
+            cursor: pointer !important;
 
-        .it-slider {
-          --card-w: 1029px;
-          --card-gap: 30px;
-          transform: translateX(
-            calc(50% - (var(--card-w) / 2) - (var(--current-index) * (var(--card-w) + var(--card-gap))))
-          ) !important;
-        }
-        @media (max-width: 1200px) {
-          .it-slider { --card-w: 90vw; --card-gap: 20px; }
-        }
-        @media (max-width: 768px) {
-          .it-slider { --card-w: 95vw; --card-gap: 15px; }
-          .ith__nav{ width:45px !important; height:45px !important; font-size:1.2rem !important; }
-          .ith__nav--left{ left:0.5rem !important; }
-          .ith__nav--right{ right:0.5rem !important; }
-        }
+            color: #ECECEC !important;
+            text-align: center !important;
+            letter-spacing: .1px !important;
 
-        .it-desc {
-          font-size: 1rem !important;
-          line-height: 1.5 !important;
-          opacity: 0.9 !important;
-          max-width: 450px !important;
-          display: -webkit-box !important;
-          -webkit-line-clamp: 7 !important;
-          -webkit-box-orient: vertical !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-        }
-      `}</style>
+            border-top: 1px solid rgba(255,255,255,.18) !important;
+            padding: .55rem .85rem !important;
+            background: linear-gradient(180deg, rgba(0,0,0,.40), rgba(0,0,0,.18)) !important;
+            backdrop-filter: blur(2px);
+            box-shadow: 0 10px 26px rgba(0,0,0,.18);
+          }
+          .it-head__ledeTriggerTop{
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            font-size: 0.85rem !important;
+            opacity: .92 !important;
+            margin-bottom: 6px !important;
+            text-decoration: underline !important;
+            text-underline-offset: 4px !important;
+            text-decoration-color: rgba(255,255,255,.55) !important;
+          }
+          .it-head__ledeTriggerText{
+            display: block !important;
+            font-size: 0.9rem !important;
+            line-height: 1.45 !important;
+            opacity: .95 !important;
+          }
 
-      <section
-        aria-label="Ideas highlight hero"
-        className="relative w-screen h-[60vh] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-black bg-cover bg-center flex items-center justify-center"
-        style={{
-          backgroundImage: `url('${heroImageUrl}')`,
-          backgroundPosition: "start",
-          height: "58vh",
-          filter: "grayscale(100%)",
-          mixBlendMode: "luminosity",
-        }}
-      >
-        <div
-          aria-hidden
-          className="absolute inset-0 z-[1]"
-          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)" }}
-        />
-        <h1 className="it__bebas it__heroTitle relative z-[2] uppercase text-center text-white pb-20">
-          {title}
-        </h1>
+          @media (max-width: 968px) {
+            .it-head__dekWrap{
+              left: 50% !important;
+              transform: translateX(-50%) !important;
+              right: auto !important;
+              width: auto !important;
+              max-width: min(86vw, 78ch) !important;
+              bottom: 20px !important;
+            }
+            .it-head__dek{
+              border-top-width: 1px !important;
+              padding: .7rem .9rem !important;
+            }
+          }
 
-        <div className="it-head__dekWrap">
-          <p className="it-head__dek">{LEDE}</p>
-        </div>
-      </section>
+          @media (max-width: 640px) {
+            .it-head__heroTitle{
+              font-size: 2.4rem !important;
+              padding-bottom: 56px !important;
+            }
 
-      <section className="it-head__section relative w-full py-5 bg-black overflow-hidden mt-8">
-        <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
-          <button
-            type="button"
-            aria-label="Previous article"
-            onClick={goPrev}
-            disabled={isNavDisabled}
-            aria-disabled={isNavDisabled}
-            className="ith__nav ith__nav--left"
-          >
-            &#8249;
-          </button>
+            .it-head__dekWrap{
+              width: min(90vw, 62ch) !important;
+              max-width: min(90vw, 62ch) !important;
+              bottom: 14px !important;
+            }
 
-          <div className="relative h-[417px] w-full overflow-visible">
-            <div
-              className="it-slider flex h-full items-center gap-[30px] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
-              style={sliderVars}
+            .it-head__dek{ display: none !important; }
+
+            .it-head__ledeTrigger{ display: block !important; border-radius: 14px !important; }
+
+            .it-head__hero{
+              height: 48vh !important;
+            }
+          }
+
+          @media (max-width: 420px) {
+            .it-head__hero{
+              height: 46vh !important;
+            }
+            .it-head__ledeTriggerText{ font-size: 0.88rem !important; }
+          }
+
+          .it-head__ledeOverlay{
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 80 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 18px 14px !important;
+            background: rgba(0,0,0,.55) !important;
+            backdrop-filter: blur(18px) !important;
+            -webkit-backdrop-filter: blur(18px) !important;
+          }
+          .it-head__ledeModal{
+            width: min(92vw, 560px) !important;
+            max-height: 70vh !important;
+            overflow: auto !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(255,255,255,.12) !important;
+            background: rgba(17,17,17,.92) !important;
+            box-shadow: 0 18px 55px rgba(0,0,0,.55) !important;
+            padding: 14px 14px 12px 14px !important;
+          }
+          .it-head__ledeModalTop{
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 12px !important;
+            margin-bottom: 10px !important;
+          }
+          .it-head__ledeModalTitle{
+            font-family: Roboto, ui-sans-serif, system-ui !important;
+            font-size: 0.98rem !important;
+            font-weight: 600 !important;
+            color: #fff !important;
+            margin: 0 !important;
+            letter-spacing: .2px !important;
+          }
+          .it-head__ledeClose{
+            border: 1px solid rgba(255,255,255,.18) !important;
+            background: rgba(0,0,0,.25) !important;
+            color: #fff !important;
+            border-radius: 999px !important;
+            width: 34px !important;
+            height: 34px !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            cursor: pointer !important;
+            line-height: 1 !important;
+            font-size: 18px !important;
+          }
+          .it-head__ledeBody{
+            font-family: Roboto, ui-sans-serif, system-ui !important;
+            font-size: 0.98rem !important;
+            line-height: 1.65 !important;
+            color: rgba(255,255,255,.9) !important;
+            margin: 0 !important;
+          }
+
+          .it-head__section::before {
+            content: "" !important;
+            position: absolute !important;
+            inset: 0 !important;
+            background-image: url('/assets/magazine/highlightMagazine.png') !important;
+            background-position: start !important;
+            background-repeat: no-repeat !important;
+            background-size: cover !important;
+            pointer-events: none !important;
+            z-index: 0 !important;
+          }
+
+          .ith__nav{
+            position:absolute !important; top:50% !important; transform:translateY(-50%) !important; z-index:10 !important;
+            display:flex !important; align-items:center !important; justify-content:center !important;
+            width:60px !important; height:60px !important; border-radius:9999px !important;
+            border:2px solid rgba(255,255,255,0.3) !important; background:rgba(255,255,255,0.1) !important;
+            color:#ffffff !important; font-size:1.5rem !important; line-height:1 !important;
+            transition:transform .2s ease, background-color .2s ease, opacity .2s ease, filter .2s ease !important;
+          }
+          .ith__nav:hover{ transform:translateY(-50%) scale(1.10) !important; background:rgba(255,255,255,0.2) !important; }
+          .ith__nav--left{ left:40px !important; }
+          .ith__nav--right{ right:40px !important; }
+          .ith__nav[disabled],
+          .ith__nav[aria-disabled="true"]{
+            opacity:.4 !important; cursor:not-allowed !important; filter:grayscale(40%) !important;
+          }
+
+          .it-slider {
+            --card-w: 1029px;
+            --card-gap: 30px;
+            transform: translateX(
+              calc(50% - (var(--card-w) / 2) - (var(--current-index) * (var(--card-w) + var(--card-gap))))
+            ) !important;
+          }
+          @media (max-width: 1200px) {
+            .it-slider { --card-w: 90vw; --card-gap: 20px; }
+          }
+          @media (max-width: 768px) {
+            .it-slider { --card-w: 95vw; --card-gap: 15px; }
+            .ith__nav{ width:45px !important; height:45px !important; font-size:1.2rem !important; }
+            .ith__nav--left{ left:0.5rem !important; }
+            .ith__nav--right{ right:0.5rem !important; }
+          }
+
+          .it-desc {
+            font-size: 1rem !important;
+            line-height: 1.5 !important;
+            opacity: 0.9 !important;
+            max-width: 450px !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 7 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+        `}</style>
+
+        <section
+          aria-label="Ideas highlight hero"
+          className="it-head__hero relative w-screen h-[60vh] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-black bg-cover bg-center flex items-center justify-center"
+          style={{
+            backgroundImage: `url('${heroImageUrl}')`,
+            backgroundPosition: "start",
+            height: "58vh",
+            filter: "grayscale(100%)",
+            mixBlendMode: "luminosity",
+          }}
+        >
+          <div
+            aria-hidden
+            className="absolute inset-0 z-[1]"
+            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)" }}
+          />
+
+          <h1 className="it__bebas it-head__heroTitle relative z-[2] uppercase text-center text-white">
+            {title}
+          </h1>
+
+          <div className="it-head__dekWrap">
+            <p className="it-head__dek">{LEDE}</p>
+
+            <button
+              type="button"
+              className="it-head__ledeTrigger"
+              onClick={openLedeModal}
+              aria-label="Buka teks pengantar Ideas & Tradition"
+              aria-haspopup="dialog"
+              aria-expanded={ledeOpen}
             >
-              {(items.length ? items : loading ? [{ id: "skeleton", title: "", image: "", author: "Ardhianzy", desc: "" }] : []).map(
-                (article: any, idx: number) => {
+              <span className="it-head__ledeTriggerTop">
+                Tap to read intro <span aria-hidden>↗</span>
+              </span>
+              <span className="it-head__ledeTriggerText">{ledeTeaser}</span>
+            </button>
+          </div>
+        </section>
+
+        {ledeOpen ? (
+          <div
+            className="it-head__ledeOverlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Pengantar Ideas & Tradition"
+            onClick={closeLedeModal}
+          >
+            <div className="it-head__ledeModal" onClick={(e) => e.stopPropagation()}>
+              <div className="it-head__ledeModalTop">
+                <p className="it-head__ledeModalTitle">Introduction</p>
+                <button
+                  type="button"
+                  className="it-head__ledeClose"
+                  onClick={closeLedeModal}
+                  aria-label="Tutup"
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="it-head__ledeBody">{LEDE}</p>
+            </div>
+          </div>
+        ) : null}
+
+        <section className="it-head__section relative w-full py-5 bg-black overflow-hidden mt-8">
+          <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
+            <button
+              type="button"
+              aria-label="Previous article"
+              onClick={goPrev}
+              disabled={isNavDisabled}
+              aria-disabled={isNavDisabled}
+              className="ith__nav ith__nav--left"
+            >
+              &#8249;
+            </button>
+
+            <div className="relative h-[417px] w-full overflow-visible">
+              <div
+                className="it-slider flex h-full items-center gap-[30px] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                style={sliderVars}
+              >
+                {(items.length
+                  ? items
+                  : loading
+                    ? [{ id: "skeleton", title: "", image: "", author: "Ardhianzy", desc: "" }]
+                    : []
+                ).map((article: any, idx: number) => {
                   const isActive = idx === currentIndex;
 
                   const { preview, truncated } = makePreviewByWords(article.desc ?? "", 45);
@@ -327,7 +554,7 @@ export default function HighlightSection({
                           {article.title}
                         </h3>
 
-                        {(article.author || dateHuman) ? (
+                        {article.author || dateHuman ? (
                           <p className="it__roboto mb-[12px] !text-[0.95rem] leading-[1.4] opacity-80">
                             {article.author ?? "Ardhianzy"}
                             {article.author && dateHuman ? " • " : ""}
@@ -379,23 +606,23 @@ export default function HighlightSection({
                       {CardInner}
                     </Link>
                   );
-                }
-              )}
+                })}
+              </div>
             </div>
-          </div>
 
-          <button
-            type="button"
-            aria-label="Next article"
-            onClick={goNext}
-            disabled={isNavDisabled}
-            aria-disabled={isNavDisabled}
-            className="ith__nav ith__nav--right"
-          >
-            &#8250;
-          </button>
-        </div>
-      </section>
-    </div>
+            <button
+              type="button"
+              aria-label="Next article"
+              onClick={goNext}
+              disabled={isNavDisabled}
+              aria-disabled={isNavDisabled}
+              className="ith__nav ith__nav--right"
+            >
+              &#8250;
+            </button>
+          </div>
+        </section>
+      </div>
+    </>
   );
 }

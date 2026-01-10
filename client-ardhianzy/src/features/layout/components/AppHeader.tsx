@@ -1,6 +1,6 @@
 // src/features/layout/components/AppHeader.tsx
 import { Link, NavLink } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 // import UserProfile from "@/features/user/components/UserProfile";
 
 interface AppHeaderProps {
@@ -21,7 +21,7 @@ const LOGO_DISCORD = "/assets/icon/discord.png";
 
 const SHOP_URL = "";
 
-export default function AppHeader({ }: AppHeaderProps) {
+export default function AppHeader({}: AppHeaderProps) {
   const NAV_ITEMS: NavItem[] = [
     { kind: "route", to: "/magazine", label: "MAGAZINE" },
     { kind: "route", to: "/research", label: "RESEARCH" },
@@ -37,6 +37,32 @@ export default function AppHeader({ }: AppHeaderProps) {
   const [showCourse, setShowCourse] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
   const [showShop, setShowShop] = useState(false);
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileOpen]);
+
+  const openModal = (modal: "course" | "community" | "shop") => {
+    setMobileOpen(false);
+    if (modal === "course") setShowCourse(true);
+    if (modal === "community") setShowCommunity(true);
+    if (modal === "shop") setShowShop(true);
+  };
 
   return (
     <div className="fixed top-0 left-0 w-full z-[1000]">
@@ -59,6 +85,40 @@ export default function AppHeader({ }: AppHeaderProps) {
         @keyframes pdpSlideUp { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
         .pdp-fade-in { animation: pdpFadeIn .3s ease-out }
         .pdp-slide-up { animation: pdpSlideUp .4s ease-out }
+
+        .secnav-mobile-title {
+          font-family: 'Bebas Neue', sans-serif;
+          letter-spacing: 1px;
+          font-size: 18px;
+          color: #000;
+        }
+        @media (max-width: 420px) {
+          .secnav-mobile-title { font-size: 16px; }
+        }
+
+        .secnav-mobile-item {
+          font-family: 'Bebas Neue', sans-serif;
+          letter-spacing: 1px;
+          font-size: 20px;
+          color: #000;
+          text-decoration: none;
+        }
+        @media (max-width: 420px) {
+          .secnav-mobile-item { font-size: 18px; }
+        }
+
+        .appheader-wordmark {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 48px;
+          letter-spacing: 1px;
+          white-space: nowrap;
+        }
+        @media (max-width: 768px) {
+          .appheader-wordmark { font-size: 40px !important; }
+        }
+        @media (max-width: 420px) {
+          .appheader-wordmark { font-size: 34px !important; }
+        }
       `}</style>
 
       <header
@@ -67,10 +127,14 @@ export default function AppHeader({ }: AppHeaderProps) {
       >
         <div className="flex justify-center">
           <Link to="/" className="flex items-center text-white no-underline" aria-label="Go to homepage">
-            <img src="/assets/icon/Ardhianzy_Logo_2.png" alt="Ardhianzy Logo" className="w-10 h-auto mr-2" />
+            <img
+              src="/assets/icon/Ardhianzy_Logo_2.png"
+              alt="Ardhianzy Logo"
+              className="w-[40px] h-auto mr-2 max-md:w-[36px] max-[420px]:w-[32px]"
+            />
             <span
-              className="text-white"
-              style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "48px", letterSpacing: "1px" }}
+              className="text-white appheader-wordmark"
+              style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "1px" }}
             >
               ARDHIANZY
             </span>
@@ -79,11 +143,44 @@ export default function AppHeader({ }: AppHeaderProps) {
       </header>
 
       <nav
-        className="w-full bg-white flex justify-center py-[10px]"
+        className="w-full bg-white flex justify-center py-[10px] relative"
         style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
         aria-label="Primary sections"
       >
-        <ul className="flex list-none m-0 p-0 justify-center max-w-[1439px] w-full">
+        <div className="md:hidden flex items-center justify-between w-full max-w-[1439px] px-4">
+          <span className="secnav-mobile-title">EXPLORE</span>
+
+          <button
+            type="button"
+            aria-label="Open menu"
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen((v) => !v)}
+            className="inline-flex items-center justify-center h-10 w-10 rounded-md border border-black/10 bg-white text-black transition hover:bg-black/5"
+          >
+            <span className="relative block w-5 h-4">
+              <span
+                className={[
+                  "absolute left-0 top-0 h-[2px] w-full bg-black transition-transform duration-200",
+                  mobileOpen ? "translate-y-[7px] rotate-45" : "",
+                ].join(" ")}
+              />
+              <span
+                className={[
+                  "absolute left-0 top-[7px] h-[2px] w-full bg-black transition-opacity duration-200",
+                  mobileOpen ? "opacity-0" : "opacity-100",
+                ].join(" ")}
+              />
+              <span
+                className={[
+                  "absolute left-0 bottom-0 h-[2px] w-full bg-black transition-transform duration-200",
+                  mobileOpen ? "translate-y-[-7px] -rotate-45" : "",
+                ].join(" ")}
+              />
+            </span>
+          </button>
+        </div>
+
+        <ul className="hidden md:flex list-none m-0 p-0 justify-center max-w-[1439px] w-full">
           {NAV_ITEMS.map((item) => (
             <li key={item.label} className="mx-[15px] whitespace-nowrap">
               {item.kind === "route" ? (
@@ -108,6 +205,55 @@ export default function AppHeader({ }: AppHeaderProps) {
           ))}
         </ul>
       </nav>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[4002] md:hidden" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setMobileOpen(false)} />
+          <div className="absolute top-[72px] left-0 right-0 bg-white text-black border-t border-[#eee] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+            <div className="max-h-[calc(100vh-72px)] overflow-auto">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[#eee]">
+                <span className="secnav-mobile-title">MENU</span>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={() => setMobileOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white text-xl leading-none transition hover:bg-black/5"
+                >
+                  <span className="block translate-y-[-1px]">×</span>
+                </button>
+              </div>
+
+              <ul className="list-none m-0 p-0">
+                {NAV_ITEMS.map((item) => (
+                  <li key={`m-${item.label}`} className="border-b border-[#f0f0f0]">
+                    {item.kind === "route" ? (
+                      <NavLink
+                        to={item.to}
+                        onClick={() => setMobileOpen(false)}
+                        className={({ isActive }) =>
+                          ["block px-5 py-4", "secnav-mobile-item", isActive ? "bg-black/5" : "bg-white"].join(" ")
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openModal(item.modal)}
+                        className="w-full text-left block px-5 py-4 secnav-mobile-item bg-white hover:bg-black/5"
+                      >
+                        {item.label}
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="px-5 py-4 text-[12px] text-black/60">Tap a section to navigate.</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCourse && (
         <GenericCtaModal
@@ -272,7 +418,12 @@ function GenericCtaModal({
                 type="button"
                 onClick={onCta}
                 className="inline-flex items-center justify-center gap-[8px] !rounded-[30px] border !border-[#F5F5F5] px-[26px] py-[14px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black"
-                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", lineHeight: "22px", letterSpacing: "0.02em" }}
+                style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: "18px",
+                  lineHeight: "22px",
+                  letterSpacing: "0.02em",
+                }}
               >
                 {ctaLabel} <span>&rarr;</span>
               </button>

@@ -1,3 +1,4 @@
+// src/features/ideas-tradition/pages/IdeasTraditionPage.tsx
 import HighlightSection from "@/features/ideas-tradition/components/HighlightSection";
 import ArticleSection from "@/features/ideas-tradition/components/ArticleSection";
 

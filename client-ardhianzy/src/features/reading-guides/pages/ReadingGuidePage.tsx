@@ -1,3 +1,4 @@
+// src/features/reading-guides/pages/ReadingGuidePage.tsx
 import ReadingGuideHighlightSection from "@/features/reading-guides/components/ReadingGuideHighlightSection";
 import ReadingGuideCollectionSection from "@/features/reading-guides/components/ReadingGuideCollectionSection";
 

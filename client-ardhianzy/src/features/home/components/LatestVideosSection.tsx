@@ -1,3 +1,4 @@
+// src/features/home/components/LatestVideosSection.tsx
 import { useEffect, useRef, useState, type FC, useCallback } from "react";
 import { contentApi } from "@/lib/content/api";
 import type { LatestYoutubeDTO } from "@/lib/content/types";
@@ -22,7 +23,6 @@ function extractYouTubeId(url: string): string {
   return m?.[1] ?? "";
 }
 
-/** Pastikan URL valid (tambahkan https:// bila backend mengirim tanpa skema) */
 function normalizeUrl(raw?: string): string {
   const url = (raw ?? "").trim();
   if (!url) return "";
@@ -56,36 +56,58 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
 
   const [videos, setVideos] = useState<VideoItem[]>([]);
 
-  // === Tambahan untuk beda-in drag vs click ===
+  const [vw, setVw] = useState<number>(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1920
+  );
+  const isMobile = vw < 768;
+
+  const [activeDot, setActiveDot] = useState(0);
+  const dotCount = Math.max(1, videos.length || 0);
+
   const dragging = useRef(false);
   const dragMoved = useRef(false);
   const dragStartX = useRef(0);
   const dragStartLeft = useRef(0);
-  const CLICK_MOVE_THRESHOLD = 6; // px
+  const CLICK_MOVE_THRESHOLD = 6;
 
   useEffect(() => {
-    const abort = new AbortController();
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    const canAbort = typeof AbortController !== "undefined";
+    const abort = canAbort ? new AbortController() : null;
+
     (async () => {
       try {
-        const rows = await contentApi.youtube.latest(abort.signal);
-        const mapped: VideoItem[] = (rows || []).map((it: LatestYoutubeDTO, idx) => {
-          const link = normalizeUrl(it.url);
+        const rows = await contentApi.youtube.latest((abort?.signal as any) ?? undefined);
+
+        const safeRows: LatestYoutubeDTO[] = Array.isArray(rows) ? rows : [];
+
+        const mapped: VideoItem[] = safeRows.map((it: LatestYoutubeDTO, idx) => {
+          const link = normalizeUrl((it as any).url);
           const vid = extractYouTubeId(link);
           const thumb = vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : "/assets/course/01.png";
           return {
             id: idx + 1,
             thumb,
-            title: it.title ?? "",
-            date: formatDateShort(it.created_at),
+            title: (it as any).title ?? "",
+            date: formatDateShort((it as any).created_at),
             link,
           };
         });
+
         setVideos(mapped);
       } catch {
         setVideos([]);
       }
     })();
-    return () => abort.abort();
+
+    return () => {
+      abort?.abort();
+    };
   }, []);
 
   const updateArrows = useCallback(() => {
@@ -94,6 +116,15 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
     setCanLeft(el.scrollLeft > 0);
     setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth);
   }, []);
+
+  const updateActiveDot = useCallback(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const p = panSize || 300;
+    const idx = Math.round(el.scrollLeft / p);
+    const max = Math.max(0, dotCount - 1);
+    setActiveDot(Math.max(0, Math.min(max, idx)));
+  }, [panSize, dotCount]);
 
   const updatePanSize = useCallback(() => {
     setPanSize(getPanSize(carouselRef.current));
@@ -104,18 +135,31 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
     if (!el) return;
     updatePanSize();
     updateArrows();
-    const onScroll = () => updateArrows();
-    const onResize = () => { updatePanSize(); updateArrows(); };
+    updateActiveDot();
+
+    const onScroll = () => {
+      updateArrows();
+      updateActiveDot();
+    };
+
+    const onResize = () => {
+      updatePanSize();
+      updateArrows();
+      updateActiveDot();
+    };
+
     el.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });
+
     const ro = "ResizeObserver" in window ? new ResizeObserver(onResize) : null;
     if (ro) ro.observe(el);
+
     return () => {
       el.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       if (ro) ro.disconnect();
     };
-  }, [updateArrows, updatePanSize]);
+  }, [updateArrows, updatePanSize, updateActiveDot]);
 
   const pan = (dir: "left" | "right") => {
     const el = carouselRef.current;
@@ -124,19 +168,33 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
     el.scrollBy({ left: offset, behavior: "smooth" });
   };
 
+  const goToDot = (idx: number) => {
+    const el = carouselRef.current;
+    if (!el) return;
+    el.scrollTo({ left: idx * (panSize || 300), behavior: "smooth" });
+  };
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowLeft") { e.preventDefault(); pan("left"); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); pan("right"); }
-    else if (e.key === "Home") { e.preventDefault(); carouselRef.current?.scrollTo({ left: 0, behavior: "smooth" }); }
-    else if (e.key === "End") {
+    if (e.key === "ArrowLeft") {
       e.preventDefault();
-      const el = carouselRef.current; if (!el) return;
+      pan("left");
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      pan("right");
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      carouselRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+    } else if (e.key === "End") {
+      e.preventDefault();
+      const el = carouselRef.current;
+      if (!el) return;
       el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
     }
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = carouselRef.current; if (!el) return;
+    const el = carouselRef.current;
+    if (!el) return;
     dragging.current = true;
     dragMoved.current = false;
     dragStartX.current = e.clientX;
@@ -145,17 +203,20 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = carouselRef.current; if (!el || !dragging.current) return;
+    const el = carouselRef.current;
+    if (!el || !dragging.current) return;
     const dx = e.clientX - dragStartX.current;
     if (!dragMoved.current && Math.abs(dx) > CLICK_MOVE_THRESHOLD) dragMoved.current = true;
     el.scrollLeft = dragStartLeft.current - dx;
   };
 
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = carouselRef.current; if (!el) return;
+    const el = carouselRef.current;
+    if (!el) return;
     dragging.current = false;
     el.releasePointerCapture?.(e.pointerId);
     updateArrows();
+    updateActiveDot();
   };
 
   const openVideo = (url: string) => {
@@ -179,7 +240,7 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
               draggable={false}
             />
             <h2
-              className="ml-4 text-[3rem] text-white"
+              className="ml-4 text-[3rem] max-[768px]:text-[2.4rem] text-white"
               style={{ fontFamily: "'Bebas Neue', sans-serif" }}
             >
               Check Our Latest Videos
@@ -188,7 +249,7 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
 
           <a
             href="https://www.youtube.com/@ardhianzy/videos"
-            className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
+            className="hidden min-[768px]:inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
             style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
             aria-label="See all videos on YouTube"
             target="_blank"
@@ -238,14 +299,10 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
                 role="listitem"
                 key={v.id}
                 data-video-card
-                className="flex w-[260px] snap-start flex-col overflow-hidden rounded-b-[1rem] bg-transparent"
+                className="flex w-[260px] shrink-0 snap-start flex-col overflow-hidden rounded-b-[1rem] bg-transparent"
                 style={{ boxShadow: "0 4px 6px rgba(0,0,0,0.3)" }}
                 title={v.title}
               >
-                {/* Klik seluruh kartu → buka link video
-                    - onClick: fallback agar tetap buka meski parent menangkap pointer (drag)
-                    - Cegah buka saat drag (dragMoved.current = true)
-                */}
                 <a
                   href={v.link}
                   target="_blank"
@@ -254,12 +311,10 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
                   aria-label={`Open video: ${v.title}`}
                   style={{ textDecoration: "none" }}
                   onClick={(e) => {
-                    // Jika drag terjadi, jangan buka link
                     if (dragMoved.current) {
                       e.preventDefault();
                       return;
                     }
-                    // Paksa buka via JS supaya tidak terganggu handler parent
                     e.preventDefault();
                     e.stopPropagation();
                     openVideo(v.link);
@@ -267,7 +322,12 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
                 >
                   <div className="relative mb-6 block aspect-video w-full overflow-hidden hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow">
                     <img src={v.thumb} alt="" className="h-full w-full object-cover" />
-                    <span aria-hidden className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[2rem] text-white/80">▶</span>
+                    <span
+                      aria-hidden
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[2rem] text-white/80"
+                    >
+                      ▶
+                    </span>
                   </div>
 
                   <div className="flex flex-col items-start px-4 pb-4 text-left">
@@ -294,6 +354,39 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
             >
               ›
             </button>
+          )}
+
+          <div className="mt-6 flex justify-center gap-2" aria-label="Latest videos slider pagination">
+            {Array.from({ length: dotCount }).map((_, idx) => {
+              const active = idx === activeDot;
+              return (
+                <button
+                  key={`video-dot-${idx}`}
+                  type="button"
+                  aria-label={`Go to video ${idx + 1}`}
+                  onClick={() => goToDot(idx)}
+                  className={[
+                    "h-2 w-2 rounded-full transition-opacity",
+                    active ? "bg-white opacity-100" : "bg-white/40 opacity-60",
+                  ].join(" ")}
+                />
+              );
+            })}
+          </div>
+
+          {isMobile && (
+            <div className="mt-6 flex justify-center">
+              <a
+                href="https://www.youtube.com/@ardhianzy/videos"
+                className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
+                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1rem", textDecoration: "none" }}
+                aria-label="See all videos on YouTube"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                SEE ALL <span className="ml-[0.3rem]">→</span>
+              </a>
+            </div>
           )}
         </div>
       </div>

@@ -687,9 +687,25 @@ export function normalizeBackendHtml(raw: string | null | undefined): string {
     .replace(/\\n/g, "\n")
     .replace(/\\t/g, "\t");
 
-  html = html
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+  const decodeUnicodeEscapes = (s: string) =>
+    s.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    );
+
+  html = decodeUnicodeEscapes(decodeUnicodeEscapes(html));
+
+  const decodeHtmlEntitiesSafely = (s: string) => {
+    if (typeof window === "undefined") return s;
+    if (!s.includes("&")) return s;
+
+    return s.replace(/&(#\d+|#x[0-9a-fA-F]+|[a-zA-Z]+);/g, (ent) => {
+      const ta = document.createElement("textarea");
+      ta.innerHTML = ent;
+      return ta.value;
+    });
+  };
+
+  html = decodeHtmlEntitiesSafely(decodeHtmlEntitiesSafely(html));
 
   if (typeof window === "undefined" || typeof DOMParser === "undefined") {
     return html;
@@ -697,18 +713,17 @@ export function normalizeBackendHtml(raw: string | null | undefined): string {
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
+  repairLists(doc);
 
   const body = doc.body || doc.getElementsByTagName("body")[0];
-  if (!body) {
-    return html.trim();
-  }
+  if (!body) return html.trim();
 
   const allowedTags = new Set<string>([
     "body",
-
     "p",
     "br",
     "strong",
+    "b",
     "em",
     "i",
     "u",
@@ -772,7 +787,67 @@ export function normalizeBackendHtml(raw: string | null | undefined): string {
     span: new Set(["class"]),
     i: new Set(["class"]),
     em: new Set(["class"]),
+    strong: new Set(["class"]),
   };
+
+  function replaceTag(el: HTMLElement, newTag: string): HTMLElement {
+    const next = doc.createElement(newTag);
+    Array.from(el.attributes).forEach((a) => next.setAttribute(a.name, a.value));
+    while (el.firstChild) next.appendChild(el.firstChild);
+    el.parentNode?.replaceChild(next, el);
+    return next;
+  }
+
+  function replaceSpanStyleToSemantic(el: HTMLElement): HTMLElement | null {
+    const style = el.getAttribute("style") ?? "";
+    if (!style) return null;
+
+    const italic = /font-style\s*:\s*italic/i.test(style);
+    const bold = /font-weight\s*:\s*(bold|[6-9]00)/i.test(style);
+
+    if (!italic && !bold) return null;
+
+    if (italic && bold) {
+      const strong = doc.createElement("strong");
+      const em = doc.createElement("em");
+
+      while (el.firstChild) em.appendChild(el.firstChild);
+      strong.appendChild(em);
+
+      el.parentNode?.replaceChild(strong, el);
+      return strong;
+    }
+
+    const next = replaceTag(el, bold ? "strong" : "em");
+    return next;
+  }
+
+  function repairLists(doc: Document) {
+    const lists = Array.from(doc.querySelectorAll("ol, ul"));
+
+    for (const list of lists) {
+      // Snapshot supaya iterasi stabil walaupun DOM berubah
+      const children = Array.from(list.childNodes);
+
+      for (const child of children) {
+        // Hapus whitespace text node agar tidak bikin <li> kosong
+        if (child.nodeType === Node.TEXT_NODE && !(child.textContent ?? "").trim()) {
+          child.remove();
+          continue;
+        }
+
+        const isLi =
+          child.nodeType === Node.ELEMENT_NODE &&
+          (child as HTMLElement).tagName.toLowerCase() === "li";
+        if (isLi) continue;
+
+        // Bungkus node non-<li> menjadi <li> di posisi yang sama (order terjaga)
+        const li = doc.createElement("li");
+        list.insertBefore(li, child);
+        li.appendChild(child);
+      }
+    }
+  }
 
   function sanitizeNode(node: Node | null): void {
     if (!node) return;
@@ -786,28 +861,42 @@ export function normalizeBackendHtml(raw: string | null | undefined): string {
         return;
       }
 
+      if (tag === "span") {
+        const replaced = replaceSpanStyleToSemantic(el);
+        if (replaced) {
+          sanitizeNode(replaced);
+          return;
+        }
+      }
+
+      if (tag === "i") {
+        const emEl = replaceTag(el, "em");
+        sanitizeNode(emEl);
+        return;
+      }
+
+      if (tag === "b") {
+        const strongEl = replaceTag(el, "strong");
+        sanitizeNode(strongEl);
+        return;
+      }
+
       if (unwrapTags.has(tag) && !allowedTags.has(tag)) {
         const parent = el.parentNode;
-        while (el.firstChild) {
-          parent?.insertBefore(el.firstChild, el);
-        }
+        while (el.firstChild) parent?.insertBefore(el.firstChild, el);
         el.remove();
         return;
       }
 
       if (!allowedTags.has(tag)) {
         const parent = el.parentNode;
-        while (el.firstChild) {
-          parent?.insertBefore(el.firstChild, el);
-        }
+        while (el.firstChild) parent?.insertBefore(el.firstChild, el);
         el.remove();
         return;
       }
 
-      if (tag === "i" || tag === "em") {
-        if (!el.classList.contains("italic")) {
-          el.classList.add("italic");
-        }
+      if (tag === "em") {
+        if (!el.classList.contains("italic")) el.classList.add("italic");
       }
 
       const allowedAttrs = allowedAttrsByTag[tag] ?? new Set<string>();
@@ -858,7 +947,6 @@ export function normalizeBackendHtml(raw: string | null | undefined): string {
   }
 
   sanitizeNode(body);
-
   return body.innerHTML.trim();
 }
 

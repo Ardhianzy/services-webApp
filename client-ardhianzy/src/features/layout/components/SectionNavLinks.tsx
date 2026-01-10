@@ -63,6 +63,32 @@ export default function SectionNavLinks() {
   const [showCommunity, setShowCommunity] = useState(false);
   const [showShop, setShowShop] = useState(false);
 
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileOpen]);
+
+  const openModal = (modal: "course" | "community" | "shop") => {
+    setMobileOpen(false);
+    if (modal === "course") setShowCourse(true);
+    if (modal === "community") setShowCommunity(true);
+    if (modal === "shop") setShowShop(true);
+  };
+
   const itemSpacing =
     "mx-[15px] max-[1200px]:mx-[10px] max-[960px]:mx-[8px] whitespace-nowrap";
 
@@ -75,6 +101,7 @@ export default function SectionNavLinks() {
           "w-full bg-white flex justify-center z-[999] py-[10px]",
           "sticky top-[72px]",
           isStuck ? "border-t border-[#eee]" : "",
+          "relative",
         ].join(" ")}
         style={{ boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)" }}
       >
@@ -95,9 +122,64 @@ export default function SectionNavLinks() {
           @keyframes pdpSlideUp { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
           .pdp-fade-in { animation: pdpFadeIn .3s ease-out }
           .pdp-slide-up { animation: pdpSlideUp .4s ease-out }
+
+          /* Tambahan khusus mobile (tidak menyentuh desktop) */
+          .secnav-mobile-title {
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 1px;
+            font-size: 18px;
+            color: #000;
+          }
+          @media (max-width: 420px) {
+            .secnav-mobile-title { font-size: 16px; }
+          }
+          .secnav-mobile-item {
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 1px;
+            font-size: 20px;
+            color: #000;
+            text-decoration: none;
+          }
+          @media (max-width: 420px) {
+            .secnav-mobile-item { font-size: 18px; }
+          }
         `}</style>
 
-        <ul className="flex list-none m-0 p-0 justify-center max-w-[1439px] w-full">
+        <div className="md:hidden flex items-center justify-between w-full max-w-[1439px] px-4">
+          <span className="secnav-mobile-title">EXPLORE</span>
+
+          <button
+            type="button"
+            aria-label="Open menu"
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen((v) => !v)}
+            className="inline-flex items-center justify-center h-10 w-10 rounded-md border border-black/10 bg-white text-black transition hover:bg-black/5"
+          >
+            {/* hamburger icon (tanpa library) */}
+            <span className="relative block w-5 h-4">
+              <span
+                className={[
+                  "absolute left-0 top-0 h-[2px] w-full bg-black transition-transform duration-200",
+                  mobileOpen ? "translate-y-[7px] rotate-45" : "",
+                ].join(" ")}
+              />
+              <span
+                className={[
+                  "absolute left-0 top-[7px] h-[2px] w-full bg-black transition-opacity duration-200",
+                  mobileOpen ? "opacity-0" : "opacity-100",
+                ].join(" ")}
+              />
+              <span
+                className={[
+                  "absolute left-0 bottom-0 h-[2px] w-full bg-black transition-transform duration-200",
+                  mobileOpen ? "translate-y-[-7px] -rotate-45" : "",
+                ].join(" ")}
+              />
+            </span>
+          </button>
+        </div>
+
+        <ul className="hidden md:flex list-none m-0 p-0 justify-center max-w-[1439px] w-full">
           {NAV_ITEMS.map((item) => (
             <li key={item.label} className={itemSpacing}>
               {item.kind === "route" ? (
@@ -127,6 +209,64 @@ export default function SectionNavLinks() {
           ))}
         </ul>
       </nav>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[4002] md:hidden" role="dialog" aria-modal="true">
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="absolute top-[72px] left-0 right-0 bg-white text-black border-t border-[#eee] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+            <div className="max-h-[calc(100vh-72px)] overflow-auto">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[#eee]">
+                <span className="secnav-mobile-title">MENU</span>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={() => setMobileOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white text-xl leading-none transition hover:bg-black/5"
+                >
+                  <span className="block translate-y-[-1px]">×</span>
+                </button>
+              </div>
+
+              <ul className="list-none m-0 p-0">
+                {NAV_ITEMS.map((item) => (
+                  <li key={`m-${item.label}`} className="border-b border-[#f0f0f0]">
+                    {item.kind === "route" ? (
+                      <NavLink
+                        to={item.to}
+                        onClick={() => setMobileOpen(false)}
+                        className={({ isActive }) =>
+                          [
+                            "block px-5 py-4",
+                            "secnav-mobile-item",
+                            isActive ? "bg-black/5" : "bg-white",
+                          ].join(" ")
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openModal(item.modal)}
+                        className="w-full text-left block px-5 py-4 secnav-mobile-item bg-white hover:bg-black/5"
+                      >
+                        {item.label}
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="px-5 py-4 text-[12px] text-black/60">
+                Tap a section to navigate.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCourse && (
         <GenericCtaModal
@@ -218,7 +358,7 @@ function GenericCtaModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="pdp-slide-up relative mx-4 w-[82%] max-w-[980px] rounded-md p-10 text-white flex gap-10 max-lg:flex-col max-lg:gap-8"
+        className="pdp-slide-up relative mx-4 w-[82%] max-w-[980px] rounded-md p-10 text-white flex gap-10 max-lg:flex-col max-lg:gap-8 max-sm:w-[92%] max-sm:p-6 max-sm:gap-6"
         style={bgStyle}
       >
         <button
@@ -260,7 +400,12 @@ function GenericCtaModal({
           {subheading ? (
             <p
               className="mt-2 mb-6 text-[#F5F5F5]"
-              style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: "16px", letterSpacing: "0.01em" }}
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontWeight: 700,
+                fontSize: "16px",
+                letterSpacing: "0.01em",
+              }}
             >
               {subheading}
             </p>
@@ -279,7 +424,12 @@ function GenericCtaModal({
                 type="button"
                 onClick={onCta}
                 className="inline-flex items-center justify-center gap-[8px] rounded-[30px] border border-[#F5F5F5] px-[26px] py-[14px] text-[#F5F5F5] transition-colors hover:border-black hover:bg-[#F5F5F5] hover:text-black"
-                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", lineHeight: "22px", letterSpacing: "0.02em" }}
+                style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: "18px",
+                  lineHeight: "22px",
+                  letterSpacing: "0.02em",
+                }}
               >
                 {ctaLabel} <span>&rarr;</span>
               </button>
@@ -290,210 +440,3 @@ function GenericCtaModal({
     </div>
   );
 }
-
-// // src/features/layout/components/SectionNavLinks.tsx
-// import { useEffect, useRef, useState } from "react";
-// import { NavLink, useLocation } from "react-router-dom";
-
-// type NavItem =
-//   | { kind: "route"; to: string; label: string }
-//   | { kind: "hash"; href: string; label: string };
-
-// const NAV_ITEMS: NavItem[] = [
-//   { kind: "route", to: "/magazine", label: "MAGAZINE" },
-//   { kind: "route", to: "/research", label: "RESEARCH" },
-//   { kind: "hash",  href: "#course", label: "COURSE" },
-//   { kind: "route", to: "/monologues", label: "MONOLOGUES" },
-//   { kind: "route", to: "/ReadingGuide", label: "READING GUIDE" },
-//   { kind: "route", to: "/IdeasTradition", label: "IDEAS & TRADITION" },
-//   { kind: "route", to: "/PopCultureReview", label: "POPSOPHIA" },
-//   { kind: "route", to: "/shop", label: "SHOPS" },
-//   { kind: "hash",  href: "#community", label: "COMMUNITY" },
-// ];
-
-// const HOME_SECTION_MAP: Record<string, string> = {
-//   "/magazine": "magazine",
-//   "/research": "research",
-//   "/monologues": "monologues",
-//   "/ReadingGuide": "reading-guide",
-//   "/reading-guide": "reading-guide",
-//   "/IdeasTradition": "ideas",
-//   "/ideas-tradition": "ideas",
-//   "/PopCultureReview": "popsophia",
-//   "/pop-culture-review": "popsophia",
-//   "/shop": "shops",
-// };
-
-// export default function SectionNavLinks() {
-//   const navRef = useRef<HTMLElement>(null);
-//   const { pathname, hash } = useLocation();
-//   const isHome = pathname === "/";
-
-//   const [isStuck, setIsStuck] = useState(false);
-
-//   useEffect(() => {
-//     const onScroll = () => {
-//       const mainNav = document.querySelector<HTMLElement>('nav[role="navigation"]');
-//       const mainH = mainNav?.offsetHeight ?? 0;
-//       const top = navRef.current?.getBoundingClientRect().top ?? Infinity;
-//       setIsStuck(top <= mainH + 0.5);
-//     };
-//     onScroll();
-//     window.addEventListener("scroll", onScroll, { passive: true });
-//     window.addEventListener("resize", onScroll);
-//     return () => {
-//       window.removeEventListener("scroll", onScroll);
-//       window.removeEventListener("resize", onScroll);
-//     };
-//   }, []);
-
-//   const getOverlayHeight = () => {
-//     const mainNav = document.querySelector<HTMLElement>('nav[role="navigation"]');
-//     const mainH   = mainNav?.offsetHeight ?? 0;
-//     const stuck   = (() => {
-//       if (!navRef.current) return false;
-//       const top = navRef.current.getBoundingClientRect().top;
-//       return top <= mainH + 0.5;
-//     })();
-//     const secH    = stuck ? (navRef.current?.offsetHeight ?? 0) : 0;
-//     return mainH + secH;
-//   };
-
-//   const scrollToIdCentered = (id: string, behavior: ScrollBehavior = "smooth") => {
-//     const el = document.getElementById(id);
-//     if (!el) return;
-
-//     const overlay = getOverlayHeight();
-//     const areaH = window.innerHeight - overlay;
-
-//     const rect = el.getBoundingClientRect();
-//     const topDoc = rect.top + window.scrollY;
-//     const elH = rect.height;
-
-//     const targetY = topDoc - overlay + (elH - areaH) / 2;
-
-//     window.scrollTo({
-//       top: Math.max(0, Math.min(targetY, document.body.scrollHeight)),
-//       behavior,
-//     });
-//   };
-
-//   const onHashClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
-//     const href = (e.currentTarget.getAttribute("href") || "").trim();
-//     if (!href.startsWith("#")) return;
-//     const id = href.slice(1);
-//     e.preventDefault();
-//     sessionStorage.setItem("lastHomeSection", id);
-//     history.pushState(null, "", href);
-//     scrollToIdCentered(id);
-//   };
-
-//   const onHomeRouteClick = (e: React.MouseEvent, routePath: string) => {
-//     if (!isHome) return;
-//     const targetId = HOME_SECTION_MAP[routePath];
-//     if (!targetId) return;
-//     e.preventDefault();
-//     sessionStorage.setItem("lastHomeSection", targetId);
-//     history.pushState(null, "", `#${targetId}`);
-//     scrollToIdCentered(targetId);
-//   };
-
-//   useEffect(() => {
-//     if (!isHome) return;
-//     const idFromHash = (hash || "").replace(/^#/, "");
-//     const last = sessionStorage.getItem("lastHomeSection") || "";
-//     const targetId = idFromHash || last;
-//     if (!targetId) return;
-
-//     requestAnimationFrame(() => {
-//       requestAnimationFrame(() => {
-//         scrollToIdCentered(targetId, "auto");
-//       });
-//     });
-//   }, [isHome, hash]);
-
-//   useEffect(() => {
-//     if (!isHome) return;
-//     const onHashChange = () => {
-//       const id = location.hash.replace("#", "");
-//       if (id) {
-//         sessionStorage.setItem("lastHomeSection", id);
-//         scrollToIdCentered(id);
-//       }
-//     };
-//     window.addEventListener("hashchange", onHashChange);
-//     return () => window.removeEventListener("hashchange", onHashChange);
-//   }, [isHome]);
-
-//   const itemSpacing =
-//     "mx-[15px] max-[1200px]:mx-[10px] max-[960px]:mx-[8px] whitespace-nowrap";
-
-//   return (
-//     <nav
-//       ref={navRef}
-//       aria-label="Section navigation"
-//       className={[
-//         "w-full bg-white flex justify-center z-[999] py-[10px]",
-//         "sticky top-[72px]",
-//         isStuck ? "border-t border-[#eee]" : "",
-//       ].join(" ")}
-//       style={{ boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)" }}
-//     >
-//       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');`}</style>
-
-//       <style>{`
-//         .secnav-link {
-//           font-family: 'Bebas Neue', sans-serif;
-//           font-size: 18px;
-//           letter-spacing: 1px;
-//           color: #000000;
-//           text-decoration: none;
-//           transition: color .3s ease;
-//         }
-//         // .secnav-link:hover { color: #4249CA !important; }
-//         @media (max-width: 1200px) { .secnav-link { font-size: 16px; } }
-//         @media (max-width: 960px)  { .secnav-link { font-size: 14px; } }
-//       `}</style>
-
-//       <ul className="flex list-none m-0 p-0 justify-center max-w-[1439px] w-full">
-//         {NAV_ITEMS.map((item) => (
-//           <li key={item.label} className={itemSpacing}>
-//             {isHome && item.kind === "route" ? (
-//               HOME_SECTION_MAP[item.to] ? (
-//                 <a
-//                   href={`#${HOME_SECTION_MAP[item.to]}`}
-//                   className="secnav-link"
-//                   onClick={(e) => onHomeRouteClick(e, item.to)}
-//                 >
-//                   {item.label}
-//                 </a>
-//               ) : (
-//                 <NavLink
-//                   to={item.to}
-//                   className={({ isActive }) =>
-//                     ["secnav-link", isActive ? "active" : ""].join(" ")
-//                   }
-//                 >
-//                   {item.label}
-//                 </NavLink>
-//               )
-//             ) : item.kind === "route" ? (
-//               <NavLink
-//                 to={item.to}
-//                 className={({ isActive }) =>
-//                   ["secnav-link", isActive ? "active" : ""].join(" ")
-//                 }
-//               >
-//                 {item.label}
-//               </NavLink>
-//             ) : (
-//               <a href={item.href} className="secnav-link" onClick={onHashClick}>
-//                 {item.label}
-//               </a>
-//             )}
-//           </li>
-//         ))}
-//       </ul>
-//     </nav>
-//   );
-// }

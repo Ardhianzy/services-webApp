@@ -17,7 +17,7 @@ export const Footer: React.FC = () => {
   const [showShop, setShowShop] = useState(false);
 
   return (
-    <footer className="bg-black text-white pt-[3rem] pb-[2rem]">
+    <footer className="bg-black text-white pt-[3rem] pb-[2rem] max-[768px]:pt-[2rem] max-[768px]:pb-[1.5rem]">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400&family=Roboto:wght@400;500;700&display=swap');
 
@@ -48,10 +48,13 @@ export const Footer: React.FC = () => {
         @media (max-width: 768px) {
           .footer-links { flex-direction: column; gap: 2rem; }
           .footer-col { width: 100%; }
+
+          .footer-link { font-size: .82rem; }
+          .footer-social { width: 28px; height: 28px; }
         }
       `}</style>
 
-      <div className="footer-container max-w-[1400px] mx-auto px-8 flex items-start justify-between">
+      <div className="footer-container max-w-[1400px] mx-auto px-8 max-[768px]:px-5 flex items-start justify-between">
         <div
           className="footer-logo flex flex-col items-start shrink-0"
           style={{ marginTop: "120px", marginRight: "0px", marginBottom: "0px", marginLeft: "150px" }}
@@ -59,19 +62,26 @@ export const Footer: React.FC = () => {
           <img
             src="/assets/icon/Ardhianzy_Logo_2.png"
             alt="Ardhianzy Logo"
-            className="w-[150px] h-auto object-contain mb-4"
+            className="w-[150px] max-[768px]:w-[120px] h-auto object-contain mb-4 max-[768px]:mb-3"
           />
         </div>
 
-        <div className="footer-links flex gap-[6rem] flex-1 justify-end pl-[4rem]">
+        <div className="footer-links flex gap-[6rem] flex-1 justify-end pl-[4rem] max-[768px]:pl-0">
           <div className="footer-col text-left">
-            <h4 className="text-white mb-4" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.25rem" }}>
+            <h4
+              className="text-white mb-4 max-[768px]:mb-3"
+              style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.25rem" }}
+            >
               INSIDE ARDHIANZY
             </h4>
             <ul className="list-none p-0 m-0">
-              <li className="mb-3 text-left"><Link to="/magazine"         className="footer-link">Magazine</Link></li>
-              <li className="mb-3 text-left"><Link to="/research"         className="footer-link">Research</Link></li>
-              <li className="mb-3 text-left">
+              <li className="mb-3 text-left max-[768px]:mb-2">
+                <Link to="/magazine" className="footer-link">Magazine</Link>
+              </li>
+              <li className="mb-3 text-left max-[768px]:mb-2">
+                <Link to="/research" className="footer-link">Research</Link>
+              </li>
+              <li className="mb-3 text-left max-[768px]:mb-2">
                 <a
                   href="/"
                   onClick={(e) => { e.preventDefault(); setShowCourse(true); }}
@@ -80,11 +90,19 @@ export const Footer: React.FC = () => {
                   Course
                 </a>
               </li>
-              <li className="mb-3 text-left"><Link to="/monologues"       className="footer-link">Monologues</Link></li>
-              <li className="mb-3 text-left"><Link to="/ReadingGuide"     className="footer-link">Reading Guide</Link></li>
-              <li className="mb-3 text-left"><Link to="/IdeasTradition"   className="footer-link">Ideas & Tradition</Link></li>
-              <li className="mb-3 text-left"><Link to="/PopCultureReview" className="footer-link">Pop-Culture Review</Link></li>
-              <li className="mb-3 text-left">
+              <li className="mb-3 text-left max-[768px]:mb-2">
+                <Link to="/monologues" className="footer-link">Monologues</Link>
+              </li>
+              <li className="mb-3 text-left max-[768px]:mb-2">
+                <Link to="/ReadingGuide" className="footer-link">Reading Guide</Link>
+              </li>
+              <li className="mb-3 text-left max-[768px]:mb-2">
+                <Link to="/IdeasTradition" className="footer-link">Ideas & Tradition</Link>
+              </li>
+              <li className="mb-3 text-left max-[768px]:mb-2">
+                <Link to="/PopCultureReview" className="footer-link">Pop-Culture Review</Link>
+              </li>
+              <li className="mb-3 text-left max-[768px]:mb-2">
                 <a
                   href="/"
                   onClick={(e) => { e.preventDefault(); setShowShop(true); }}
@@ -93,7 +111,7 @@ export const Footer: React.FC = () => {
                   Shops
                 </a>
               </li>
-              <li className="mb-3 text-left">
+              <li className="mb-3 text-left max-[768px]:mb-2">
                 <a
                   href="/"
                   onClick={(e) => { e.preventDefault(); setShowCommunity(true); }}
@@ -106,28 +124,34 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="footer-col text-left">
-            <h4 className="text-white mb-4" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.25rem" }}>
+            <h4
+              className="text-white mb-4 max-[768px]:mb-3"
+              style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.25rem" }}
+            >
               CUSTOMER CARE
             </h4>
             <ul className="list-none p-0 m-0">
-              <li className="mb-3 text-left"><a href="#terms"   className="footer-link">Term & Condition</a></li>
-              <li className="mb-3 text-left"><a href="#privacy" className="footer-link">Privacy Policy</a></li>
-              <li className="mb-3 text-left"><a href="#faqs"    className="footer-link">FAQs</a></li>
+              <li className="mb-3 text-left max-[768px]:mb-2"><a href="#terms" className="footer-link">Term & Condition</a></li>
+              <li className="mb-3 text-left max-[768px]:mb-2"><a href="#privacy" className="footer-link">Privacy Policy</a></li>
+              <li className="mb-3 text-left max-[768px]:mb-2"><a href="#faqs" className="footer-link">FAQs</a></li>
             </ul>
           </div>
 
           <div className="footer-col text-left">
-            <h4 className="text-white mb-4" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.25rem" }}>
+            <h4
+              className="text-white mb-4 max-[768px]:mb-3"
+              style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.25rem" }}
+            >
               GET IN TOUCH
             </h4>
 
             <ul className="list-none p-0 m-0">
-              <li className="mb-3 text-left">
+              <li className="mb-3 text-left max-[768px]:mb-2">
                 <p className="footer-link">Contact Us</p>
               </li>
             </ul>
 
-            <div className="mt-6 flex gap-4 items-center flex-wrap">
+            <div className="mt-6 flex gap-4 items-center flex-wrap max-[768px]:mt-4 max-[768px]:gap-3">
               {[
                 ["https://www.youtube.com/@ardhianzy/", "/assets/icon/youtube.svg", "YouTube"],
                 ["instagram.com/ardhianzy", "/assets/icon/instagram.svg", "Instagram"],
@@ -137,7 +161,12 @@ export const Footer: React.FC = () => {
                 ["businesswithardhianzy@gmail.com", "/assets/icon/gmail.svg", "Email"],
               ].map(([href, src, label]) => (
                 <a key={label} href={href} aria-label={label} className="footer-social">
-                  <img src={src} alt={label} className="w-[18px] h-[18px]" style={{ filter: "brightness(0) invert(1)" }} />
+                  <img
+                    src={src}
+                    alt={label}
+                    className="w-[18px] h-[18px] max-[768px]:w-[16px] max-[768px]:h-[16px]"
+                    style={{ filter: "brightness(0) invert(1)" }}
+                  />
                 </a>
               ))}
             </div>
@@ -247,27 +276,27 @@ function GenericCtaModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="pdp-slide-up relative mx-4 w-[82%] max-w-[980px] rounded-md p-10 text-white flex gap-10 max-lg:flex-col max-lg:gap-8"
+        className="pdp-slide-up relative mx-4 w-[82%] max-w-[980px] rounded-md p-10 text-white flex gap-10 max-lg:flex-col max-lg:gap-8 max-[768px]:p-6 max-[768px]:gap-6"
         style={bgStyle}
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="absolute top-4 right-8 inline-flex !h-9 !w-9 !items-center !justify-center !rounded-full border !border-white/40 hover:!border-transparent !bg-transparent text-xl leading-none transition hover:bg-[#151515] cursor-pointer"
+          className="absolute top-4 right-8 max-[768px]:right-4 inline-flex !h-9 !w-9 !items-center !justify-center !rounded-full border !border-white/40 hover:!border-transparent !bg-transparent text-xl leading-none transition hover:bg-[#151515] cursor-pointer"
         >
           <span className="block translate-x-[-0.5px] !text-white">×</span>
         </button>
 
         <div className="flex-1 flex flex-col justify-center">
           {!!logos.length && (
-            <div className="mb-6 flex items-center gap-4">
+            <div className="mb-6 max-[768px]:mb-4 flex items-center gap-4 max-[768px]:gap-3">
               {logos.map((l, i) => (
                 <img
                   key={i}
                   src={l.src}
                   alt={l.alt}
-                  className="h-10 w-auto object-contain opacity-90"
+                  className="h-10 max-[768px]:h-8 w-auto object-contain opacity-90"
                   onError={(e) => ((e.currentTarget.style.display = "none"))}
                 />
               ))}
@@ -276,23 +305,37 @@ function GenericCtaModal({
 
           <h2
             className="m-0 text-[#F5F5F5]"
-            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "56px", lineHeight: 1, letterSpacing: "0.02em" }}
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: "clamp(34px, 6vw, 56px)",
+              lineHeight: 1,
+              letterSpacing: "0.02em",
+            }}
           >
             {heading}
           </h2>
 
           {subheading ? (
             <p
-              className="mt-2 mb-6 text-[#F5F5F5]"
-              style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: "16px", letterSpacing: "0.01em" }}
+              className="mt-2 mb-6 max-[768px]:mb-4 text-[#F5F5F5]"
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontWeight: 700,
+                fontSize: "clamp(14px, 2.2vw, 16px)",
+                letterSpacing: "0.01em",
+              }}
             >
               {subheading}
             </p>
           ) : null}
 
           <p
-            className="mb-8 max-w-[640px] text-[#F5F5F5]"
-            style={{ fontFamily: "'Roboto', sans-serif", fontSize: "14px", lineHeight: 1.5 }}
+            className="mb-8 max-[768px]:mb-6 max-w-[640px] text-[#F5F5F5]"
+            style={{
+              fontFamily: "'Roboto', sans-serif",
+              fontSize: "clamp(13px, 2.1vw, 14px)",
+              lineHeight: 1.5,
+            }}
           >
             {description}
           </p>
@@ -302,8 +345,13 @@ function GenericCtaModal({
               <button
                 type="button"
                 onClick={onCta}
-                className="inline-flex items-center justify-center gap-[8px] !rounded-[30px] border !border-[#F5F5F5] px-[26px] py-[14px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black"
-                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", lineHeight: "22px", letterSpacing: "0.02em" }}
+                className="inline-flex items-center justify-center gap-[8px] !rounded-[30px] border !border-[#F5F5F5] px-[26px] py-[14px] max-[768px]:px-[20px] max-[768px]:py-[12px] !text-[#F5F5F5] transition-colors hover:!border-black hover:!bg-[#F5F5F5] hover:!text-black"
+                style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: "clamp(16px, 2.6vw, 18px)",
+                  lineHeight: "22px",
+                  letterSpacing: "0.02em",
+                }}
               >
                 {ctaLabel} <span>&rarr;</span>
               </button>

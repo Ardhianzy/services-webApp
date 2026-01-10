@@ -58,17 +58,21 @@ const HighlightSection: FC = () => {
           WebkitMaskImage: MASK_GRADIENT,
         }}
       />
-      <div aria-hidden className="absolute inset-y-0 left-0 z-[1] w-1/2" style={{ background: DARK_GRADIENT }} />
+      <div
+        aria-hidden
+        className="absolute inset-y-0 left-0 z-[1] w-1/2"
+        style={{ background: DARK_GRADIENT }}
+      />
 
       <div
         className={[
           "relative z-[2] text-white",
+          "!text-left",
           "!max-w-[60%] !pl-[50px]",
           "max-[1440px]:!pl-[200px]",
           "max-[1024px]:!pl-[150px]",
-          "max-[768px]:!pl-[100px]", 
-          "max-[480px]:!pl-[60px]",  
-          "!text-left",
+          "max-[768px]:!pl-[28px] max-[768px]:!pr-[14px] max-[768px]:!max-w-[440px] max-[768px]:!translate-y-[-6px]",
+          "max-[480px]:!pl-[18px] max-[480px]:!pr-[12px] max-[480px]:!max-w-[340px] max-[480px]:!translate-y-[-10px]",
           "!translate-y-[14px]",
         ].join(" ")}
       >

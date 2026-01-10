@@ -81,10 +81,16 @@ function ZoomButtons({ onSearchClick }: { onSearchClick: () => void }) {
     [-90, 180],
   ];
   
-  const btnClass = "flex h-10 w-10 items-center justify-center !border-b !border-b-white last:!border-b-0 text-white transition-colors !bg-black hover:bg-white/15 font-sans leading-none text-[18px] cursor-pointer";
+  const btnClass =
+    "flex h-10 w-10 items-center justify-center !border-b !border-b-white last:!border-b-0 text-white transition-colors !bg-black hover:bg-white/15 font-sans leading-none text-[18px] cursor-pointer";
 
   return (
-    <div className="absolute left-5 top-1/2 z-[1000] -translate-y-1/2 flex flex-col overflow-hidden rounded-[10px] text-[18px] border border-white bg-black shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
+    <div
+      className={[
+        "absolute left-5 top-1/2 z-[1000] -translate-y-1/2 flex flex-col overflow-hidden rounded-[10px] text-[18px] border border-white bg-black shadow-[0_4px_10px_rgba(0,0,0,0.3)]",
+        "max-md:left-3",
+      ].join(" ")}
+    >
       <button
         onClick={onSearchClick}
         className={btnClass}

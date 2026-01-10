@@ -51,7 +51,7 @@ function ArticleBody({ html }: { html: string }) {
         .article-typography h3 { font-size: clamp(1.4rem, 3.2vw, 1.9rem); }
 
         .article-typography p { margin: 0 0 1.05em; }
-        .article-typography p + p { text-indent: 0; } /* tetap lurus, tidak ada indent */
+        .article-typography p + p { text-indent: 0; }
 
         .article-typography blockquote {
           margin: 1.2em 0;
@@ -99,7 +99,8 @@ export default function PopCultureReviewDetailPage() {
   const title = (data as ArticleDTO | null)?.title ?? "Pop Culture Review";
   const contentHtml =
     normalizeBackendHtml((data as ArticleDTO | null)?.content) ||
-    ((data as ArticleDTO | null)?.meta_description ?? "");
+    normalizeBackendHtml((data as ArticleDTO | null)?.meta_description) ||
+    "";
 
   if (loading) {
     return (
@@ -143,9 +144,13 @@ export default function PopCultureReviewDetailPage() {
       <article className="w-full mx-auto py-[clamp(24px,4vw,64px)]">
         <div className="mx-auto maxw-desktop">
           <div className="mb-3 text-sm text-white/50">
-            <Link to="/" className="hover:opacity-80">Home</Link>
+            <Link to="/" className="hover:opacity-80">
+              Home
+            </Link>
             <span className="mx-2 opacity-50">/</span>
-            <Link to="/pop-culture-review" className="hover:opacity-80">Popsophia</Link>
+            <Link to="/pop-culture-review" className="hover:opacity-80">
+              Popsophia
+            </Link>
           </div>
 
           <h1

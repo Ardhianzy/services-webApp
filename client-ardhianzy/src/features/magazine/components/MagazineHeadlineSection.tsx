@@ -68,6 +68,38 @@ export default function MagazineHeadlineSection() {
   const [item, setItem] = useState<MagazineDTO | null>(null);
   const [, setLoading] = useState(true);
 
+  const [ledeOpen, setLedeOpen] = useState(false);
+
+  const isMobileNow = () => {
+    if (typeof window === "undefined") return false;
+    if (typeof window.matchMedia !== "function") return false;
+    return window.matchMedia("(max-width: 640px)").matches;
+  };
+
+  const openLedeModal = () => {
+    if (!isMobileNow()) return;
+    setLedeOpen(true);
+  };
+
+  const closeLedeModal = () => setLedeOpen(false);
+
+  useEffect(() => {
+    if (!ledeOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLedeModal();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [ledeOpen]);
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -85,7 +117,9 @@ export default function MagazineHeadlineSection() {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const featured = useMemo<FeaturedContent>(() => {
@@ -112,11 +146,13 @@ export default function MagazineHeadlineSection() {
   }, [item]);
 
   const dateHuman = formatDateISOToLong(featured.publishedAt);
-
   const { preview, truncated } = makePreviewByWords(featured.excerptPlain, 140);
 
   const LEDE =
     "Ardhianzy Magazine merupakan publikasi utama Ardhianzy yang dirilis setiap kuartal. Majalah ini menyatukan esai, refleksi, dan kritik budaya dalam satu edisi tematik yang utuh. Setiap edisi dikurasi secara filosofis dan estetik untuk menjadi dokumentasi pemikiran kolektif, sekaligus respons atas kegelisahan zaman";
+
+  const LEDE_TEASER = "Ardhianzy Magazine merupakan publikasi utama Ardhianzy...";
+  const ledeTeaser = useMemo(() => LEDE_TEASER, []);
 
   return (
     <>
@@ -193,6 +229,45 @@ export default function MagazineHeadlineSection() {
           backdrop-filter: blur(2px);
           border-radius: 0px !important;
           box-shadow: 0 12px 30px rgba(0,0,0,.18);
+        }
+
+        .mag-head__ledeTrigger{
+          display: none !important;
+          pointer-events: auto !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+          font-family: Roboto, ui-sans-serif, system-ui !important;
+          border: 0 !important;
+          outline: 0 !important;
+          cursor: pointer !important;
+
+          color: #ECECEC !important;
+          text-align: center !important;
+          letter-spacing: .1px !important;
+
+          border-top: 1px solid rgba(255,255,255,.18) !important;
+          padding: .55rem .85rem !important;
+          background: linear-gradient(180deg, rgba(0,0,0,.40), rgba(0,0,0,.18)) !important;
+          backdrop-filter: blur(2px);
+          box-shadow: 0 10px 26px rgba(0,0,0,.18);
+        }
+        .mag-head__ledeTriggerTop{
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 8px !important;
+          font-size: 0.85rem !important;
+          opacity: .92 !important;
+          margin-bottom: 6px !important;
+          text-decoration: underline !important;
+          text-underline-offset: 4px !important;
+          text-decoration-color: rgba(255,255,255,.55) !important;
+        }
+        .mag-head__ledeTriggerText{
+          display: block !important;
+          font-size: 0.9rem !important;
+          line-height: 1.45 !important;
+          opacity: .95 !important;
         }
 
         @media (max-width: 968px) {
@@ -291,11 +366,94 @@ export default function MagazineHeadlineSection() {
           .mag-head__h2 { font-size: 2.5rem !important; }
           .mag-head__desc { font-size: 1.1rem !important; }
         }
+
         @media (max-width: 640px) {
+          .mag-head__hero { height: 48vh !important; }
+          .mag-head__title {
+            font-size: 2.4rem !important;
+            padding-bottom: 56px !important;
+          }
+
+          .mag-head__dekWrap { width: min(90vw, 62ch) !important; max-width: min(90vw, 62ch) !important; bottom: 14px !important; }
+
+          .mag-head__dek { display: none !important; }
+
+          .mag-head__ledeTrigger { display: block !important; border-radius: 14px !important; }
+
           .mag-head__section { padding: 3rem 1rem !important; }
           .mag-head__article { padding: 1rem 0 !important; }
-          .mag-head__h2 { font-size: 2rem !important; }
-          .mag-head__desc { font-size: 1rem !important; }
+
+          .mag-head__h2 { font-size: 2.4rem !important; }
+          .mag-head__author { font-size: 1rem !important; margin-bottom: 1.4rem !important; }
+
+          .mag-head__desc {
+            font-size: 1rem !important;
+            -webkit-line-clamp: 8 !important;
+            margin-bottom: 2rem !important;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .mag-head__hero { height: 46vh !important; }
+          .mag-head__ledeTriggerText{ font-size: 0.88rem !important; }
+        }
+
+        .mag-head__ledeOverlay{
+          position: fixed !important;
+          inset: 0 !important;
+          z-index: 80 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 18px 14px !important;
+          background: rgba(0,0,0,.55) !important;
+          backdrop-filter: blur(18px) !important;
+          -webkit-backdrop-filter: blur(18px) !important;
+        }
+        .mag-head__ledeModal{
+          width: min(92vw, 560px) !important;
+          max-height: 70vh !important;
+          overflow: auto !important;
+          border-radius: 18px !important;
+          border: 1px solid rgba(255,255,255,.12) !important;
+          background: rgba(17,17,17,.92) !important;
+          box-shadow: 0 18px 55px rgba(0,0,0,.55) !important;
+          padding: 14px 14px 12px 14px !important;
+        }
+        .mag-head__ledeModalTop{
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          gap: 12px !important;
+          margin-bottom: 10px !important;
+        }
+        .mag-head__ledeModalTitle{
+          font-family: Roboto, ui-sans-serif, system-ui !important;
+          font-size: 0.98rem !important;
+          font-weight: 600 !important;
+          color: #fff !important;
+          margin: 0 !important;
+          letter-spacing: .2px !important;
+        }
+        .mag-head__ledeClose{
+          border: 1px solid rgba(255,255,255,.18) !important;
+          background: rgba(0,0,0,.25) !important;
+          color: #fff !important;
+          border-radius: 999px !important;
+          width: 34px !important;
+          height: 34px !important;
+          display: inline-grid !important;
+          place-items: center !important;
+          cursor: pointer !important;
+          line-height: 1 !important;
+          font-size: 18px !important;
+        }
+        .mag-head__ledeBody{
+          font-family: Roboto, ui-sans-serif, system-ui !important;
+          font-size: 0.98rem !important;
+          line-height: 1.65 !important;
+          color: rgba(255,255,255,.9) !important;
+          margin: 0 !important;
         }
       `}</style>
 
@@ -309,15 +467,52 @@ export default function MagazineHeadlineSection() {
 
         <div className="mag-head__dekWrap">
           <p className="mag-head__dek">{LEDE}</p>
+
+          <button
+            type="button"
+            className="mag-head__ledeTrigger"
+            onClick={openLedeModal}
+            aria-label="Buka teks pengantar majalah"
+            aria-haspopup="dialog"
+            aria-expanded={ledeOpen}
+          >
+            <span className="mag-head__ledeTriggerTop">
+              Tap to read intro <span aria-hidden>↗</span>
+            </span>
+            <span className="mag-head__ledeTriggerText">{ledeTeaser}</span>
+          </button>
         </div>
       </section>
 
-      <section className="mag-head__section">
-        <Link
-          to={`/magazine/${featured.slug || "rise-of-the-soul"}`}
-          className="mag-head__grid"
-          aria-label={featured.title}
+      {ledeOpen ? (
+        <div
+          className="mag-head__ledeOverlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pengantar Ardhianzy Magazine"
+          onClick={closeLedeModal}
         >
+          <div className="mag-head__ledeModal" onClick={(e) => e.stopPropagation()}>
+            <div className="mag-head__ledeModalTop">
+              <p className="mag-head__ledeModalTitle">Introduction</p>
+              <button
+                type="button"
+                className="mag-head__ledeClose"
+                onClick={closeLedeModal}
+                aria-label="Tutup"
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="mag-head__ledeBody">{LEDE}</p>
+          </div>
+        </div>
+      ) : null}
+
+      <section className="mag-head__section">
+        <Link to={`/magazine/${featured.slug || "rise-of-the-soul"}`} className="mag-head__grid" aria-label={featured.title}>
           <div className="mag-head__imgwrap" aria-hidden={false}>
             <img src={featured.image} alt={featured.title} className="mag-head__img" loading="eager" />
           </div>

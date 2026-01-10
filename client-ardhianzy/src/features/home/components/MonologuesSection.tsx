@@ -1,5 +1,5 @@
 // src/features/home/components/MonologuesSection.tsx
-import { type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { contentApi, normalizeBackendHtml } from "@/lib/content/api";
 import type { MonologueDTO, MonologueCardVM } from "@/lib/content/types";
@@ -94,6 +94,15 @@ function toCardVM(dto: MonologueDTO): MonologueCardVM {
 
 const BIG_MIN_H = 450;
 
+const getMonoPanSize = (container: HTMLElement | null) => {
+  if (!container || typeof window === "undefined") return 520;
+  const first = container.querySelector<HTMLElement>("[data-mono-card]");
+  if (!first) return 520;
+  const styles = window.getComputedStyle(container);
+  const gap = parseFloat((styles as any).gap || (styles as any).columnGap || "0") || 0;
+  return first.offsetWidth + gap;
+};
+
 const MonologuesSection: FC = () => {
   const [big, setBig] = useState<MonologueCardVM | null>(null);
   const [right, setRight] = useState<MonologueCardVM | null>(null);
@@ -105,6 +114,11 @@ const MonologuesSection: FC = () => {
     title: "PRODUCT: COMING SOON",
     description: "Rp. -",
   };
+
+  const mobileCarouselRef = useRef<HTMLDivElement | null>(null);
+  const [mobileActiveDot, setMobileActiveDot] = useState(0);
+  const mobileDotCount = 2;
+  const monoPanRef = useRef<number>(520);
 
   useEffect(() => {
     let alive = true;
@@ -181,12 +195,65 @@ const MonologuesSection: FC = () => {
     ? textWithParagraphs(right.description || "").split(/\s+/).slice(0, 28).join(" ")
     : RIGHT_CARD_PLACEHOLDER.description;
 
+  const clampDot = useCallback((idx: number) => {
+    const max = Math.max(0, mobileDotCount - 1);
+    return Math.max(0, Math.min(max, idx));
+  }, []);
+
+  const updateMonoPan = useCallback(() => {
+    monoPanRef.current = getMonoPanSize(mobileCarouselRef.current);
+  }, []);
+
+  const updateMonoActive = useCallback(() => {
+    const el = mobileCarouselRef.current;
+    if (!el) return;
+    const p = monoPanRef.current || 520;
+    const idx = Math.round(el.scrollLeft / p);
+    setMobileActiveDot(clampDot(idx));
+  }, [clampDot]);
+
+  useEffect(() => {
+    const el = mobileCarouselRef.current;
+    if (!el) return;
+
+    updateMonoPan();
+    updateMonoActive();
+
+    const onScroll = () => updateMonoActive();
+    const onResize = () => {
+      updateMonoPan();
+      updateMonoActive();
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+
+    const ro = "ResizeObserver" in window ? new ResizeObserver(onResize) : null;
+    if (ro) ro.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      if (ro) ro.disconnect();
+    };
+  }, [updateMonoPan, updateMonoActive]);
+
+  const goMonoDot = (idx: number) => {
+    const el = mobileCarouselRef.current;
+    if (!el) return;
+    const p = monoPanRef.current || 520;
+    el.scrollTo({ left: idx * p, behavior: "smooth" });
+  };
+
   return (
     <section id="monologues" aria-labelledby="mono_heading" className="relative mb-50">
       <div aria-hidden className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 bg-black" />
 
       <div className="relative z-[1] mx-auto max-w-[1560px] px-16 py-8 max-[768px]:px-4">
-        <div className="mb-[2.5rem] flex items-center justify-between">
+        {/* =========================
+            HEADER (DESKTOP/TABLET) 
+            ========================= */}
+        <div className="mb-[2.5rem] hidden min-[768px]:flex items-center justify-between">
           <div className="flex items-center">
             <img
               src="/assets/icon/Monologues_Logo.png"
@@ -212,169 +279,406 @@ const MonologuesSection: FC = () => {
           </a>
         </div>
 
-        <div
-          className={[
-            "relative z-[2] grid items-start",
-            "grid-cols-[2.4fr_1fr]",
-            "gap-[1.5rem]",
-            "max-[1200px]:gap-[1rem]",
-            "max-[992px]:grid-cols-1",
-          ].join(" ")}
-        >
-          {/* LEFT CARD */}
-          <Link
-            to={big ? `/monologues/${big.slug}` : ROUTES.MONOLOGUES}
+        {/* =========================
+            HEADER (MOBILE)
+            ========================= */}
+        <div className="mb-[2rem] flex min-[768px]:hidden items-center">
+          <img
+            src="/assets/icon/Monologues_Logo.png"
+            alt="Ardhianzy Monologues"
+            className="inline-block h-[clamp(34px,10vw,54px)] w-auto object-contain select-none"
+            draggable={false}
+          />
+          <h2
+            id="mono_heading"
+            className="ml-3 text-[2.4rem] text-white leading-none"
+            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+          >
+            Monologues
+          </h2>
+        </div>
+
+        {/* =========================
+            GRID (DESKTOP/TABLET)
+            ========================= */}
+        <div className="hidden min-[768px]:block">
+          <div
             className={[
-              "group relative overflow-hidden bg-transparent",
-              "flex max-[768px]:pl-0",
-              "transition duration-300 ease-out",
-              "shadow-[0_12px_40px_rgba(255,255,255,0.10)]",
-              "hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow",
-              "focus:outline-none0",
-              "max-[992px]:col-span-full max-[992px]:mb-[1.25rem]",
-              "max-[768px]:flex-col",
-              "max-[768px]:rounded-none",
+              "relative z-[2] grid items-start",
+              "grid-cols-[2.4fr_1fr]",
+              "gap-[1.5rem]",
+              "max-[1200px]:gap-[1rem]",
+              "max-[992px]:grid-cols-1",
             ].join(" ")}
           >
-            <div
-              aria-hidden
-              className="absolute right-0 top-0 z-0 h-full w-[180%]"
-              style={{
-                background: "linear-gradient(180deg, #000 100%)",
-                borderRadius: "inherit",
-                pointerEvents: "none",
-              }}
-            />
-
-            <div
-              className="z-[1] mr-[2rem] w-[43%] h-[614px] max-[768px]:mr-0 max-[768px]:w-full flex items-center justify-center bg-transparent"
-              style={{ minHeight: BIG_MIN_H }}
+            {/* LEFT CARD */}
+            <Link
+              to={big ? `/monologues/${big.slug}` : ROUTES.MONOLOGUES}
+              className={[
+                "group relative overflow-hidden bg-transparent",
+                "flex max-[768px]:pl-0",
+                "transition duration-300 ease-out",
+                "shadow-[0_12px_40px_rgba(255,255,255,0.10)]",
+                "hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow",
+                "focus:outline-none0",
+                "max-[992px]:col-span-full max-[992px]:mb-[1.25rem]",
+                "max-[768px]:flex-col",
+                "max-[768px]:rounded-none",
+              ].join(" ")}
             >
-              {loading ? (
-                <div className="h-full w-full animate-pulse rounded-xl bg-white/10" />
-              ) : (
-                <img
-                  loading="lazy"
-                  src={big?.imageUrl}
-                  alt={big?.title}
-                  className="max-h-full max-w-full object-contain transition duration-300 group-hover:saturate-[1.1]"
-                  style={{ mixBlendMode: "luminosity", filter: "grayscale(100%)" }}
-                  draggable={false}
-                />
-              )}
-            </div>
-
-            <div className="z-[1] w-1/2 pt-[80px] pb-[40px] pl-0 text-white text-left max-[768px]:w-full max-[768px]:px-[24px] max-[768px]:py-[32px]">
-              <h3
-                className="mb-[18px] text-white"
+              <div
+                aria-hidden
+                className="absolute right-0 top-0 z-0 h-full w-[180%]"
                 style={{
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: "clamp(2.1rem, 3.2vw, 2.8rem)",
-                  lineHeight: 1.1,
+                  background: "linear-gradient(180deg, #000 100%)",
+                  borderRadius: "inherit",
+                  pointerEvents: "none",
                 }}
+              />
+
+              <div
+                className="z-[1] mr-[2rem] w-[43%] h-[614px] max-[768px]:mr-0 max-[768px]:w-full flex items-center justify-center bg-transparent"
+                style={{ minHeight: BIG_MIN_H }}
               >
-                {loading ? "Loading..." : (big?.title ?? "Coming soon")}
-              </h3>
-
-              <p className="mb-[2rem] font-semibold text[1.1rem] text-[#aaa]">
-                Ardhianzy{dateHuman ? ` • ${dateHuman}` : ""}
-              </p>
-
-              <p className="mt-10 text-justify text-[1rem] leading-[1.5] text-white/80 line-clamp-14">
                 {loading ? (
-                  "Please wait while fetching the monologue..."
+                  <div className="h-full w-full animate-pulse rounded-xl bg-white/10" />
                 ) : (
-                  <span
-                    dangerouslySetInnerHTML={{
-                      __html: descPreviewHtml || "Content will be available soon.",
-                    }}
+                  <img
+                    loading="lazy"
+                    src={big?.imageUrl}
+                    alt={big?.title}
+                    className="max-h-full max-w-full object-contain transition duration-300 group-hover:saturate-[1.1]"
+                    style={{ mixBlendMode: "luminosity", filter: "grayscale(100%)" }}
+                    draggable={false}
                   />
                 )}
-                {!loading && isTruncated && (
-                  <>
-                    {"…"}<ContinueReadInline />
-                  </>
-                )}
-              </p>
-            </div>
-          </Link>
-
-          {/* RIGHT CARD */}
-          {right ? (
-            <a
-              href={right.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="
-                group relative overflow-hidden
-                shadow-[0_12px_40px_rgba(255,255,255,0.10)]
-                hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow
-                block
-                border-l-2 border-r-1 border-[#444444]
-              "
-              aria-label={rightTitle}
-              title={rightTitle}
-            >
-              <div className="relative w-full h-[clamp(240px,37vw,457px)] bg-black flex items-center justify-center">
-                <img
-                  src={rightImage}
-                  alt={rightTitle}
-                  className="max-h-full w-[40%] object-contain"
-                />
-                <div className="pointer-events-none absolute inset-0" />
               </div>
 
-              <div className="px-4 py-5 text-left ml-4">
+              <div className="z-[1] w-1/2 pt-[80px] pb-[40px] pl-0 text-white text-left max-[768px]:w-full max-[768px]:px-[24px] max-[768px]:py-[32px]">
                 <h3
-                  className="mt-[9px] text-white"
-                  style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
+                  className="mb-[18px] text-white"
+                  style={{
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: "clamp(2.1rem, 3.2vw, 2.8rem)",
+                    lineHeight: 1.1,
+                  }}
                 >
-                  {rightTitle}
+                  {loading ? "Loading..." : (big?.title ?? "Coming soon")}
                 </h3>
-                <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
-                  By {big?.author}
+
+                <p className="mb-[2rem] font-semibold text[1.1rem] text-[#aaa]">
+                  Ardhianzy{dateHuman ? ` • ${dateHuman}` : ""}
                 </p>
-                <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
-                  {rightDesc}
+
+                <p className="mt-10 text-justify text-[1rem] leading-[1.5] text-white/80 line-clamp-14">
+                  {loading ? (
+                    "Please wait while fetching the monologue..."
+                  ) : (
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: descPreviewHtml || "Content will be available soon.",
+                      }}
+                    />
+                  )}
+                  {!loading && isTruncated && (
+                    <>
+                      {"…"}<ContinueReadInline />
+                    </>
+                  )}
                 </p>
               </div>
-            </a>
-          ) : (
+            </Link>
+
+            {/* RIGHT CARD */}
+            {right ? (
+              <a
+                href={right.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="
+                  group relative overflow-hidden
+                  shadow-[0_12px_40px_rgba(255,255,255,0.10)]
+                  hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow
+                  block
+                  border-l-2 border-r-1 border-[#444444]
+                "
+                aria-label={rightTitle}
+                title={rightTitle}
+              >
+                <div className="relative w-full h-[clamp(240px,37vw,457px)] bg-black flex items-center justify-center">
+                  <img
+                    src={rightImage}
+                    alt={rightTitle}
+                    className="max-h-full w-[40%] object-contain"
+                  />
+                  <div className="pointer-events-none absolute inset-0" />
+                </div>
+
+                <div className="px-4 py-5 text-left ml-4">
+                  <h3
+                    className="mt-[9px] text-white"
+                    style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
+                  >
+                    {rightTitle}
+                  </h3>
+                  <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                    By {big?.author}
+                  </p>
+                  <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                    {rightDesc}
+                  </p>
+                </div>
+              </a>
+            ) : (
+              <div
+                className="
+                  group relative overflow-hidden
+                  shadow-[0_12px_40px_rgba(255,255,255,0.10)]
+                  hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow
+                  block
+                  border-l-2 border-r-1 border-[#444444]
+                "
+                aria-label={rightTitle}
+              >
+                <div className="relative w-full h-[clamp(240px,37vw,457px)] bg-black flex items-center justify-center">
+                  <img
+                    src={rightImage}
+                    alt={rightTitle}
+                    className="max-h-full w-[40%] object-contain"
+                  />
+                  <div className="pointer-events-none absolute inset-0" />
+                </div>
+
+                <div className="px-4 py-5 text-left ml-4">
+                  <h3
+                    className="mt-[9px] text-white"
+                    style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
+                  >
+                    {rightTitle}
+                  </h3>
+                  <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                    By {big?.author}
+                  </p>
+                  <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                    {rightDesc}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* =========================
+            MOBILE: 2 CARD SLIDER + DOTS ABOVE BUTTON
+            ========================= */}
+        <div className="min-[768px]:hidden">
+          <style>{`.no-scrollbar::-webkit-scrollbar{display:none}`}</style>
+
+          <div className="mono-carousel relative z-[2]">
             <div
-              className="
-                group relative overflow-hidden
-                shadow-[0_12px_40px_rgba(255,255,255,0.10)]
-                hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow
-                block
-                border-l-2 border-r-1 border-[#444444]
-              "
-              aria-label={rightTitle}
+              ref={mobileCarouselRef}
+              className={[
+                "no-scrollbar",
+                "flex gap-6 overflow-x-auto pb-4",
+                "snap-x snap-mandatory",
+              ].join(" ")}
+              aria-label="Monologues mobile carousel"
             >
-              <div className="relative w-full h-[clamp(240px,37vw,457px)] bg-black flex items-center justify-center">
-                <img
-                  src={rightImage}
-                  alt={rightTitle}
-                  className="max-h-full w-[40%] object-contain"
+              <Link
+                to={big ? `/monologues/${big.slug}` : ROUTES.MONOLOGUES}
+                data-mono-card
+                className={[
+                  "mx-auto",
+                  "w-[88vw] max-w-[520px]",
+                  "shrink-0 snap-start",
+                  "group relative overflow-hidden bg-transparent",
+                  "flex max-[768px]:pl-0",
+                  "border-l-2 border-[#444444]",
+                  "transition duration-300 ease-out",
+                  "shadow-[0_12px_40px_rgba(255,255,255,0.10)]",
+                  "hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow",
+                  "focus:outline-none0",
+                  "max-[768px]:flex-col",
+                  "max-[768px]:rounded-none",
+                ].join(" ")}
+              >
+                <div
+                  aria-hidden
+                  className="absolute right-0 top-0 z-0 h-full w-[180%]"
+                  style={{
+                    background: "linear-gradient(180deg, #000 100%)",
+                    borderRadius: "inherit",
+                    pointerEvents: "none",
+                  }}
                 />
-                <div className="pointer-events-none absolute inset-0" />
-              </div>
 
-              <div className="px-4 py-5 text-left ml-4">
-                <h3
-                  className="mt-[9px] text-white"
-                  style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
+                <div
+                  className="z-[1] mr-[2rem] w-[43%] h-[614px] max-[768px]:mr-0 max-[768px]:w-full flex items-center justify-center bg-transparent"
+                  style={{ minHeight: BIG_MIN_H }}
                 >
-                  {rightTitle}
-                </h3>
-                <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
-                  By {big?.author}
-                </p>
-                <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
-                  {rightDesc}
-                </p>
-              </div>
+                  {loading ? (
+                    <div className="h-full w-full animate-pulse rounded-xl bg-white/10" />
+                  ) : (
+                    <img
+                      loading="lazy"
+                      src={big?.imageUrl}
+                      alt={big?.title}
+                      className="max-h-full max-w-full object-contain transition duration-300 group-hover:saturate-[1.1]"
+                      style={{ mixBlendMode: "luminosity", filter: "grayscale(100%)" }}
+                      draggable={false}
+                    />
+                  )}
+                </div>
+
+                <div className="z-[1] w-1/2 pt-[80px] pb-[40px] pl-0 text-white text-left max-[768px]:w-full max-[768px]:px-[24px] max-[768px]:py-[32px]">
+                  <h3
+                    className="mb-[18px] text-white"
+                    style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: "clamp(2.1rem, 3.2vw, 2.8rem)",
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {loading ? "Loading..." : (big?.title ?? "Coming soon")}
+                  </h3>
+
+                  <p className="mb-[2rem] font-semibold text[1.1rem] text-[#aaa]">
+                    Ardhianzy{dateHuman ? ` • ${dateHuman}` : ""}
+                  </p>
+
+                  <p className="mt-10 text-justify text-[1rem] leading-[1.5] text-white/80 line-clamp-14">
+                    {loading ? (
+                      "Please wait while fetching the monologue..."
+                    ) : (
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: descPreviewHtml || "Content will be available soon.",
+                        }}
+                      />
+                    )}
+                    {!loading && isTruncated && (
+                      <>
+                        {"…"}<ContinueReadInline />
+                      </>
+                    )}
+                  </p>
+                </div>
+              </Link>
+
+              {right ? (
+                <a
+                  href={right.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-mono-card
+                  className={[
+                    "mx-auto",
+                    "w-[88vw] max-w-[520px]",
+                    "shrink-0 snap-start",
+                    "group relative overflow-hidden",
+                    "shadow-[0_12px_40px_rgba(255,255,255,0.10)]",
+                    "hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow",
+                    "block",
+                    "border-l-2 border-[#444444]",
+                  ].join(" ")}
+                  aria-label={rightTitle}
+                  title={rightTitle}
+                >
+                  <div className="relative w-full h-[614px] bg-black flex items-center justify-center">
+                    <img
+                      src={rightImage}
+                      alt={rightTitle}
+                      className="max-h-full w-[40%] object-contain"
+                    />
+                    <div className="pointer-events-none absolute inset-0" />
+                  </div>
+
+                  <div className="px-4 py-5 text-left ml-4">
+                    <h3
+                      className="mt-[9px] text-white"
+                      style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
+                    >
+                      {rightTitle}
+                    </h3>
+                    <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                      By {big?.author}
+                    </p>
+                    <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                      {rightDesc}
+                    </p>
+                  </div>
+                </a>
+              ) : (
+                <div
+                  data-mono-card
+                  className={[
+                    "mx-auto",
+                    "w-[88vw] max-w-[520px]",
+                    "shrink-0 snap-start",
+                    "group relative overflow-hidden",
+                    "shadow-[0_12px_40px_rgba(255,255,255,0.10)]",
+                    "hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow",
+                    "block",
+                    "border-l-2 border-[#444444]",
+                  ].join(" ")}
+                  aria-label={rightTitle}
+                >
+                  <div className="relative w-full h-[614px] bg-black flex items-center justify-center">
+                    <img
+                      src={rightImage}
+                      alt={rightTitle}
+                      className="max-h-full w-[40%] object-contain"
+                    />
+                    <div className="pointer-events-none absolute inset-0" />
+                  </div>
+
+                  <div className="px-4 py-5 text-left ml-4">
+                    <h3
+                      className="mt-[9px] text-white"
+                      style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.6rem,2.6vw,2.1rem)" }}
+                    >
+                      {rightTitle}
+                    </h3>
+                    <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                      By {big?.author}
+                    </p>
+                    <p className="mt-1 mb-0 text-white/85" style={{ fontFamily: "Roboto, sans-serif" }}>
+                      {rightDesc}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="mt-4 flex justify-center gap-2" aria-label="Monologues slider pagination">
+            {Array.from({ length: mobileDotCount }).map((_, idx) => {
+              const active = idx === mobileActiveDot;
+              return (
+                <button
+                  key={`mono-dot-${idx}`}
+                  type="button"
+                  aria-label={`Go to monologue card ${idx + 1}`}
+                  onClick={() => goMonoDot(idx)}
+                  className={[
+                    "h-2 w-2 rounded-full transition-opacity",
+                    active ? "bg-white opacity-100" : "bg-white/40 opacity-60",
+                  ].join(" ")}
+                />
+              );
+            })}
+          </div>
+
+          <div className="mt-[18px] flex justify-center">
+            <a
+              href={ROUTES.MONOLOGUES}
+              aria-label="Open monologues collection"
+              className="inline-flex items-center rounded-[50px] border border-white px-[1.5rem] py-[0.7rem] text-[1rem] text-white no-underline transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
+              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+            >
+              MORE MONOLOGUES <span className="ml-[0.3rem]">→</span>
+            </a>
+          </div>
         </div>
       </div>
     </section>

@@ -12,9 +12,29 @@ export default function ReadingGuideComingSoonPage() {
       <Navbar />
       <SectionNavLinks />
 
-      <main className="bg-black text-white min-h-screen left-0 pt-[70px] pb-[80px]">
+      <main className="bg-black text-white min-h-screen left-0 pt-[70px] pb-[80px] rg-coming-main">
+        <style>{`
+          @media (max-width: 768px) {
+            .rg-coming-main .rg-coming-hero {
+              height: 52vh !important;
+              max-height: 520px !important;
+              min-height: 280px !important;
+            }
+
+            .rg-coming-main .rg-coming-backbtn {
+              font-size: 13px !important;
+              line-height: 1.25 !important;
+              padding: 10px 14px !important;
+              gap: 10px !important;
+              white-space: normal !important;
+              flex-wrap: wrap !important;
+              max-width: calc(100vw - 32px) !important;
+            }
+          }
+        `}</style>
+
         <section
-          className="relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden"
+          className="relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden rg-coming-hero"
           aria-label="Reading Guide hero"
         >
           <img
@@ -41,6 +61,7 @@ export default function ReadingGuideComingSoonPage() {
               rounded-full px-4 py-2 text-[15px] font-semibold bg-transparent
               transition-colors hover:text-black hover:bg-white hover:border-black focus:bg-[#191919] active:bg-[#191919]
               border border-white
+              rg-coming-backbtn
             "
             aria-label="Go back"
             title="Back"
