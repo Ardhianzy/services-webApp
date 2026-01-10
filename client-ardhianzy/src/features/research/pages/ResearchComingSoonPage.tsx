@@ -12,8 +12,25 @@ export default function ResearchComingSoonPage() {
       <SectionNavLinks />
 
       <main className="bg-black text-white min-h-screen left-0 pt-[70px] pb-[80px]">
+        <style>{`
+          @media (max-width: 640px) {
+            .rs-cs__hero { height: 45vh !important; min-height: 260px !important; }
+            .rs-cs__h1 { bottom: 46% !important; }
+            .rs-cs__btnWrap { width: 92% !important; margin-left: auto !important; margin-right: auto !important; }
+            .rs-cs__back {
+              font-size: 14px !important;
+              padding: 10px 12px !important;
+              gap: 8px !important;
+              line-height: 1.15 !important;
+              flex-wrap: wrap !important;
+              max-width: 100% !important;
+            }
+            .rs-cs__backIcon { width: 22px !important; height: 22px !important; }
+          }
+        `}</style>
+
         <section
-          className="relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden"
+          className="rs-cs__hero relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden"
           aria-label="Research hero"
         >
           <img
@@ -24,17 +41,22 @@ export default function ResearchComingSoonPage() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
           <h1
-            className="absolute inset-x-0 bottom-[44%] m-0 text-center text-white"
-            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2.5rem,6vw,5rem)", lineHeight: 1.05 }}
+            className="rs-cs__h1 absolute inset-x-0 bottom-[44%] m-0 text-center text-white"
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: "clamp(2.4rem,6vw,5rem)",
+              lineHeight: 1.05,
+            }}
           >
             Coming Soon
           </h1>
         </section>
 
-        <section className="container-fluid mt-[32px]">
+        <section className="rs-cs__btnWrap container-fluid mt-[32px]">
           <button
             onClick={() => navigate(-1)}
             className="
+              rs-cs__back
               font-roboto mb-4 underline text-white cursor-pointer
               inline-flex items-center gap-[10px]
               rounded-full px-4 py-2 text-[15px] font-semibold bg-transparent
@@ -44,10 +66,13 @@ export default function ResearchComingSoonPage() {
             aria-label="Go back"
             title="Back"
           >
-            <span className="inline-grid place-items-center w-[24px] h-[24px] leading-none" aria-hidden>
+            <span
+              className="rs-cs__backIcon inline-grid place-items-center w-[24px] h-[24px] leading-none"
+              aria-hidden
+            >
               <span className="pointer-events-none select-none text-[20px]">←</span>
             </span>
-            Back to "Research Section"
+            <span>Back to "Research Section"</span>
           </button>
         </section>
 

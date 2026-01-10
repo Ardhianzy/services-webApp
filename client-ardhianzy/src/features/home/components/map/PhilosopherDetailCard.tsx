@@ -13,19 +13,37 @@ export type DetailPhilosopher = {
   detail_location?: string;
 };
 
-type Props = { philosopher?: DetailPhilosopher | null; onClose?: () => void; };
+type Props = { philosopher?: DetailPhilosopher | null; onClose?: () => void };
 
 const DEFAULT_HERO = "/assets/Group 5117.png";
 const MEA_ICON = "/assets/icon/MEA_icon_nt.png";
 
 export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
   const [loading, setLoading] = useState(false);
-  const [meta, setMeta] = useState<{ metafisika?: string; epsimologi?: string; aksiologi?: string; conclusion?: string; } | null>(null);
-  
+  const [meta, setMeta] = useState<{
+    metafisika?: string;
+    epsimologi?: string;
+    aksiologi?: string;
+    conclusion?: string;
+  } | null>(null);
+
   const cardRef = useRef<HTMLElement>(null);
 
+  const [vw, setVw] = useState<number>(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1920
+  );
+  const isMobile = vw < 768;
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose?.(); };
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -33,7 +51,10 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
   useEffect(() => {
     let alive = true;
     (async () => {
-      if (!philosopher?.id) { setMeta(null); return; }
+      if (!philosopher?.id) {
+        setMeta(null);
+        return;
+      }
       try {
         setLoading(true);
         const res = await contentApi.totMeta.byTotId(String(philosopher.id));
@@ -48,9 +69,13 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
           aksiologi: normalizeBackendHtml(res?.aksiologi),
           conclusion: normalizeBackendHtml(res?.conclusion),
         });
-      } finally { if (alive) setLoading(false); }
+      } finally {
+        if (alive) setLoading(false);
+      }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [philosopher?.id]);
 
   const scrollToSection = (id: string) => {
@@ -60,12 +85,11 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
     if (container && target) {
       const containerRect = container.getBoundingClientRect();
       const targetRect = target.getBoundingClientRect();
-      
       const offsetPosition = targetRect.top - containerRect.top + container.scrollTop;
 
       container.scrollTo({
-        top: offsetPosition - 20, 
-        behavior: "smooth"
+        top: offsetPosition - 16,
+        behavior: "smooth",
       });
     }
   };
@@ -77,6 +101,10 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
   const locationText = philosopher.detail_location || philosopher.geoorigin || "";
   const infoLine = [dateText, locationText].filter(Boolean).join(" | ");
 
+  const canMeta = !!meta?.metafisika;
+  const canEpi = !!meta?.epsimologi;
+  const canAxi = !!meta?.aksiologi;
+
   return (
     <aside
       ref={cardRef}
@@ -85,16 +113,19 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
       aria-modal={false}
       aria-live="polite"
       className={[
-        "absolute left-0 top-0 z-[1003] flex flex-col",
-        "border-r border-[#2a2a2a] shadow-[0_0_24px_rgba(0,0,0,6)]",
+        isMobile ? "fixed left-0 right-0 bottom-0" : "absolute left-0 top-0",
+        "z-[1003] flex flex-col",
+        isMobile ? "border-t border-[#2a2a2a]" : "border-r border-[#2a2a2a]",
+        "shadow-[0_0_24px_rgba(0,0,0,0.6)]",
         "text-white",
       ].join(" ")}
       style={{
-        width: "min(720px, 48vw)",
-        bottom: "150px",
+        width: isMobile ? "100vw" : "min(720px, 48vw)",
+        height: isMobile ? "78vh" : undefined,
+        bottom: isMobile ? "0px" : "150px",
         background: "linear-gradient(to top, #000 30%, #1a1a1a 70%, #2a2a2a 100%)",
-        padding: "16px 16px 12px",
-        gap: "14px",
+        padding: isMobile ? "12px 12px 10px" : "16px 16px 12px",
+        gap: isMobile ? "10px" : "14px",
         overflowY: "auto",
         scrollbarGutter: "stable both-edges" as any,
         overscrollBehavior: "contain",
@@ -105,34 +136,80 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         aria-label="Close"
         onClick={onClose}
         className={[
-          "sticky top-0 self-end mr-2 z-[3] inline-flex h-9 w-9 shrink-0 items-center justify-center cursor-pointer",
+          "sticky top-0 self-end z-[3] inline-flex shrink-0 items-center justify-center cursor-pointer",
           "rounded-full border border-[#666] bg-[#111] text-white",
-          "shadow-[0_4px_10px_rgba(0,0,0,4)] hover:bg-[#151515]",
+          "shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:bg-[#151515]",
+          isMobile ? "h-10 w-10" : "h-9 w-9 mr-2",
         ].join(" ")}
       >
         ×
       </button>
 
-      <div className="mt-4 grid grid-cols-2 gap-4">
+      <div className="mt-1 grid grid-cols-2 gap-4 max-[768px]:grid-cols-1 max-[768px]:gap-3">
         <div className="relative">
           <img
             src={hero}
             alt={philosopher.name || "philosopher"}
             draggable={false}
-            className="block w-full h-[260px] md:h-[300px] object-cover select-none rounded-br-[16px]"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_HERO; }}
+            className={[
+              "block w-full object-cover select-none",
+              "rounded-br-[16px]",
+              isMobile ? "h-[190px]" : "h-[260px] md:h-[300px]",
+            ].join(" ")}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = DEFAULT_HERO;
+            }}
           />
         </div>
 
         <div className="flex flex-col">
           <h3
-            className="text-center text-[36px] md:text-[40px] text-white"
+            className={[
+              "text-center text-white",
+              isMobile ? "text-[28px] leading-[1.05]" : "text-[36px] md:text-[40px]",
+            ].join(" ")}
             style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: ".3px" }}
           >
             {philosopher.name ?? "Unknown"}
           </h3>
 
-          <div className="mt-2 flex-1 grid place-items-center">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 min-[768px]:hidden">
+            <button
+              type="button"
+              onClick={() => canMeta && scrollToSection("section-metafisika")}
+              className={[
+                "rounded-full border px-3 py-1 text-[0.9rem]",
+                canMeta ? "border-white/60 text-white hover:bg-white/10" : "border-white/20 text-white/40",
+              ].join(" ")}
+              style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.8px" }}
+            >
+              METAFISIKA
+            </button>
+            <button
+              type="button"
+              onClick={() => canEpi && scrollToSection("section-epistemologi")}
+              className={[
+                "rounded-full border px-3 py-1 text-[0.9rem]",
+                canEpi ? "border-white/60 text-white hover:bg-white/10" : "border-white/20 text-white/40",
+              ].join(" ")}
+              style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.8px" }}
+            >
+              EPISTEMOLOGI
+            </button>
+            <button
+              type="button"
+              onClick={() => canAxi && scrollToSection("section-aksiologi")}
+              className={[
+                "rounded-full border px-3 py-1 text-[0.9rem]",
+                canAxi ? "border-white/60 text-white hover:bg-white/10" : "border-white/20 text-white/40",
+              ].join(" ")}
+              style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.8px" }}
+            >
+              AKSIOLOGI
+            </button>
+          </div>
+
+          <div className="mt-2 flex-1 grid place-items-center max-[768px]:hidden">
             <div className="relative ml-4 mt-5 w-full max-w-[250px]">
               <img
                 src={MEA_ICON}
@@ -180,7 +257,10 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
 
       {infoLine && (
         <p
-          className="mt-0 mb-0 text-left text-white/80 text-[26px]"
+          className={[
+            "mt-0 mb-0 text-left text-white/80",
+            isMobile ? "text-[18px]" : "text-[26px]",
+          ].join(" ")}
           style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         >
           {infoLine}
@@ -198,9 +278,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
           hyphens: auto;
           word-break: break-word;
         }
-        .card-typography em, .card-typography i {
-          font-style: italic;
-        }
+        .card-typography em, .card-typography i { font-style: italic; }
         .card-typography h1,.card-typography h2,.card-typography h3,.card-typography h4{
           font-family: Roboto, ui-sans-serif, system-ui;
           font-weight: 700;
@@ -213,7 +291,13 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         .card-typography h3{font-size:1.04rem}
         .card-typography h4{font-size:1.02rem}
         .card-typography p{margin:0 0 1em}
-        .card-typography blockquote{margin:1em 0;padding:.75em 1em;border-left:3px solid rgba(255,255,255,.35);background:rgba(255,255,255,.04);border-radius:8px}
+        .card-typography blockquote{
+          margin:1em 0;
+          padding:.75em 1em;
+          border-left:3px solid rgba(255,255,255,.35);
+          background:rgba(255,255,255,.04);
+          border-radius:8px
+        }
         .card-typography blockquote p{margin:.4em 0}
         .card-typography blockquote footer{margin-top:.55em;opacity:.85;font-size:.92em}
         .card-typography ul,.card-typography ol{margin:.6em 0 1.1em;padding-left:1.3em}
@@ -249,9 +333,13 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
 
         @media (max-width: 768px){
           .card-typography{
-            font-size:1rem;
-            line-height:1.8;
+            font-size: 0.95rem;
+            line-height: 1.65;
           }
+          .card-typography h1{font-size:1.05rem}
+          .card-typography h2{font-size:1.02rem}
+          .card-typography h3{font-size:1rem}
+          .card-typography h4{font-size:0.98rem}
           .card-typography table{
             display: block;
             width: 100%;
@@ -262,31 +350,67 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
       `}</style>
 
       <section id="section-metafisika" className="mt-2 mb-3">
-        <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+        <h4
+          className={[
+            "text-left font-semibold mb-1",
+            isMobile ? "text-[18px]" : "text-[24px]",
+          ].join(" ")}
+          style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+        >
           Metafisika
         </h4>
-        <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.metafisika || (loading ? "Loading..." : "—") }} />
+        <div
+          className="card-typography"
+          dangerouslySetInnerHTML={{ __html: meta?.metafisika || (loading ? "Loading..." : "—") }}
+        />
       </section>
 
       <section id="section-epistemologi" className="mb-3">
-        <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+        <h4
+          className={[
+            "text-left font-semibold mb-1",
+            isMobile ? "text-[18px]" : "text-[24px]",
+          ].join(" ")}
+          style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+        >
           Epistemologi
         </h4>
-        <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.epsimologi || (loading ? "Loading..." : "—") }} />
+        <div
+          className="card-typography"
+          dangerouslySetInnerHTML={{ __html: meta?.epsimologi || (loading ? "Loading..." : "—") }}
+        />
       </section>
 
       <section id="section-aksiologi" className="mb-3">
-        <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+        <h4
+          className={[
+            "text-left font-semibold mb-1",
+            isMobile ? "text-[18px]" : "text-[24px]",
+          ].join(" ")}
+          style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+        >
           Aksiologi
         </h4>
-        <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.aksiologi || (loading ? "Loading..." : "—") }} />
+        <div
+          className="card-typography"
+          dangerouslySetInnerHTML={{ __html: meta?.aksiologi || (loading ? "Loading..." : "—") }}
+        />
       </section>
 
       <section className="mb-1 pb-2">
-        <h4 className="text-left text-[24px] font-semibold mb-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+        <h4
+          className={[
+            "text-left font-semibold mb-1",
+            isMobile ? "text-[18px]" : "text-[24px]",
+          ].join(" ")}
+          style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+        >
           Kesimpulan
         </h4>
-        <div className="card-typography" dangerouslySetInnerHTML={{ __html: meta?.conclusion || (loading ? "Loading..." : "—") }} />
+        <div
+          className="card-typography"
+          dangerouslySetInnerHTML={{ __html: meta?.conclusion || (loading ? "Loading..." : "—") }}
+        />
       </section>
     </aside>
   );

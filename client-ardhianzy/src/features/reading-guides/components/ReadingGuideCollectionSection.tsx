@@ -127,20 +127,35 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap');
         .rgc__bebas { font-family: 'Bebas Neue', cursive !important; }
         .rgc__roboto { font-family: 'Roboto', sans-serif !important; }
+
         .rgc-grid { grid-template-columns: repeat(3, 1fr); gap: 80px 40px; }
         .rgc-card .rgc-img { transition: transform .4s ease, filter .4s ease; border-radius: 8px; }
         .rgc-card:hover .rgc-img { filter: saturate(1.2); }
+
         @media (max-width: 992px) { .rgc-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 768px) {
           .rgc-grid { grid-template-columns: 1fr; gap: 60px 0; }
           .rgc-img { height: 400px; }
           .rgc-title { font-size: 38px !important; }
         }
+
+        @media (max-width: 640px) {
+          .rgc-grid { gap: 52px 0 !important; }
+          .rgc-img { height: 320px !important; }
+          .rgc-title { font-size: 2.4rem !important; line-height: 1.05 !important; }
+          .rgc-meta { font-size: 0.95rem !important; line-height: 1.4 !important; margin-bottom: -16px !important; }
+          .rgc-descText { font-size: 0.95rem !important; line-height: 1.65 !important; max-width: 92% !important; }
+          .rgc-heading { font-size: 2.4rem !important; line-height: 1.05 !important; }
+        }
+        @media (max-width: 420px) {
+          .rgc-img { height: 280px !important; }
+          .rgc-title { font-size: 2.2rem !important; }
+        }
       `}</style>
 
       <div className="max-w-[1275px] mx-auto px-5 pb-40">
         <header className="border-t border-white !pt-5 !mb-[30px]">
-          <h2 className="rgc__bebas !font-normal !text-[48px] !leading-[58px] text-left m-0">
+          <h2 className="rgc__bebas rgc-heading !font-normal text-[48px] !leading-[58px] text-left m-0">
             OTHER READING GUIDE
           </h2>
         </header>
@@ -161,10 +176,9 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
               />
               <div className="flex flex-col items-center">
                 <p
-                  className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4"
+                  className="rgc__roboto rgc-meta text-[#B3B3B3] mb-[-23px] mt-4"
                   style={{ fontWeight: 300, fontSize: 17, lineHeight: "18px" }}
-                >
-                </p>
+                ></p>
                 <h3
                   className="rgc__bebas rgc-title mt-10"
                   style={{ fontWeight: 400, fontSize: 40, lineHeight: 1.1, textShadow: "0 4px 50px rgba(0,0,0,.25)" }}
@@ -172,7 +186,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                   COMING SOON
                 </h3>
                 <p
-                  className="rgc__roboto text-white/90 max-w-[90%] mx-auto"
+                  className="rgc__roboto rgc-descText text-white/90 max-w-[90%] mx-auto"
                   style={{ fontSize: 16, lineHeight: 1.5, marginTop: 10 }}
                 >
                   Our next reading guide is currently in preparation. Stay tuned!
@@ -188,9 +202,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
               {items.slice(0, 9).map((g) => {
                 const preview = truncateWords(g.desc, 45);
                 const showDots = (g.desc ?? "").trim().length > preview.trim().length;
-                const href = g.slug
-                  ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug)
-                  : ROUTES.READING_GUIDE;
+                const href = g.slug ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug) : ROUTES.READING_GUIDE;
 
                 return (
                   <Link key={g.id} to={href} className="block" style={{ textDecoration: "none" }}>
@@ -202,7 +214,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                       />
                       <div className="flex flex-col items-center">
                         <p
-                          className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4"
+                          className="rgc__roboto rgc-meta text-[#B3B3B3] mb-[-23px] mt-4"
                           style={{ fontWeight: 300, fontSize: 17, lineHeight: "18px" }}
                         >
                           {g.date}
@@ -214,7 +226,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                           {g.title}
                         </h3>
                         <p
-                          className="rgc__roboto text-white/90 max-w-[90%] mx-auto"
+                          className="rgc__roboto rgc-descText text-white/90 max-w-[90%] mx-auto"
                           style={{ fontSize: 16, lineHeight: 1.5, marginTop: 10 }}
                         >
                           {preview}
@@ -232,9 +244,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                 {items.slice(9).map((g) => {
                   const preview = truncateWords(g.desc, 45);
                   const showDots = (g.desc ?? "").trim().length > preview.trim().length;
-                  const href = g.slug
-                    ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug)
-                    : ROUTES.READING_GUIDE;
+                  const href = g.slug ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug) : ROUTES.READING_GUIDE;
 
                   return (
                     <Link key={g.id} to={href} className="block" style={{ textDecoration: "none" }}>
@@ -246,7 +256,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                         />
                         <div className="flex flex-col items-center">
                           <p
-                            className="rgc__roboto text-[#B3B3B3] mb-[-23px] mt-4"
+                            className="rgc__roboto rgc-meta text-[#B3B3B3] mb-[-23px] mt-4"
                             style={{ fontWeight: 300, fontSize: 15, lineHeight: "18px" }}
                           >
                             {g.date}
@@ -258,7 +268,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                             {g.title}
                           </h3>
                           <p
-                            className="rgc__roboto text-white/90 max-w-[90%] mx-auto"
+                            className="rgc__roboto rgc-descText text-white/90 max-w-[90%] mx-auto"
                             style={{ fontSize: 18, lineHeight: 1.5, marginTop: 10 }}
                           >
                             {preview}

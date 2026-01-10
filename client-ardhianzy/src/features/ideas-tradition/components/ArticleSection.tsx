@@ -89,10 +89,7 @@ export default function ArticleSection({ articles }: Props) {
             return c === "IDEAS_AND_TRADITIONS" || c === "IDEAS_AND_TRADITION";
           })
           .map((a: ArticleDTO) => {
-            const desc =
-              normalizeMetaText(a.meta_description) ||
-              (a.excerpt ?? "").trim() ||
-              stripHtml(a.content);
+            const desc = normalizeMetaText(a.meta_description) || (a.excerpt ?? "").trim() || stripHtml(a.content);
             return {
               id: a.id,
               title: a.title ?? "Untitled",
@@ -117,13 +114,12 @@ export default function ArticleSection({ articles }: Props) {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [articles]);
 
-  const items: ArticleCard[] = useMemo(
-    () => (articles?.length ? articles : remote),
-    [articles, remote]
-  );
+  const items: ArticleCard[] = useMemo(() => (articles?.length ? articles : remote), [articles, remote]);
 
   const showEmpty = !loading && onlyOne;
 
@@ -136,7 +132,7 @@ export default function ArticleSection({ articles }: Props) {
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap');
 
-        .it__bebas { font-family: 'Bebas Neue', cursive !important; }
+        .it__bebas { font-family: 'Bebas Neue', cursive !important; font-weight: 400 !important; }
         .it__roboto { font-family: 'Roboto', sans-serif !important; }
 
         .fx-curtainDown { position: relative !important; overflow: hidden !important; }
@@ -170,11 +166,40 @@ export default function ArticleSection({ articles }: Props) {
           .it-img { height: 400px; }
           .it-title { font-size: 38px !important; }
         }
+
+        @media (max-width: 640px) {
+          header.it-sec__header{ padding-top: 14px !important; margin-bottom: 2rem !important; }
+          header.it-sec__header h2.it-sec__title{
+            font-size: 2.4rem !important;
+            line-height: 1.1 !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .it-img { height: 320px !important; }
+
+          .it-card p.it__roboto:first-of-type{
+            font-size: 14px !important;
+            line-height: 16px !important;
+            margin-bottom: -18px !important;
+          }
+
+          .it-card h3.it-title{
+            font-size: 34px !important;
+            line-height: 1.08 !important;
+          }
+
+          .it-card p.it__roboto:last-of-type{
+            font-size: 15px !important;
+            line-height: 1.5 !important;
+            max-width: 92% !important;
+          }
+        }
       `}</style>
 
       <div className="mx-auto max-w-[1275px] px-5 pb-40">
-        <header className="border-t border-white !pt-5 !mb-[30px]">
-          <h2 className="it__bebas !font-normal !text-[48px] !leading-[58px] text-left m-0">
+        <header className="it-sec__header border-t border-white !pt-5 !mb-[30px]">
+          <h2 className="it-sec__title it__bebas !font-normal text-[48px] !leading-[58px] text-left m-0">
             OTHER IDEAS &amp; TRADITION
           </h2>
         </header>
@@ -198,17 +223,23 @@ export default function ArticleSection({ articles }: Props) {
                 <p
                   className="it__roboto text-[#B3B3B3] mb-[-23px] mt-4"
                   style={{ fontWeight: 300, fontSize: "17px", lineHeight: "18px" }}
-                >
-                </p>
+                ></p>
                 <h3
                   className="it__bebas it-title mt-10"
-                  style={{ fontWeight: 400, fontSize: "40px", lineHeight: 1.1, textShadow: "0px 4px 50px rgba(0,0,0,0.25)" }}
+                  style={{
+                    fontWeight: 400,
+                    fontSize: "40px",
+                    lineHeight: 1.1,
+                    textShadow: "0px 4px 50px rgba(0,0,0,0.25)",
+                  }}
                 >
                   COMING SOON
                 </h3>
 
-                <p className="it__roboto text-white/90 max-w-[90%] mx-auto"
-                  style={{ fontSize: "16px", lineHeight: 1.5, marginTop: "10px" }}>
+                <p
+                  className="it__roboto text-white/90 max-w-[90%] mx-auto"
+                  style={{ fontSize: "16px", lineHeight: 1.5, marginTop: "10px" }}
+                >
                   Our next ideas &amp; tradition article is currently in preparation. Stay tuned!
                 </p>
               </div>
@@ -220,16 +251,18 @@ export default function ArticleSection({ articles }: Props) {
               {first.map((article) => {
                 const preview = truncateByPhraseOrWords(article.desc ?? "", "menolak", 45);
                 const showEllipsis = (article.desc ?? "").trim().length > preview.trim().length;
-                const href = article.slug
-                  ? ROUTES.IDEAS_TRADITION_DETAIL.replace(":slug", article.slug)
-                  : ROUTES.IDEAS_TRADITION;
+                const href = article.slug ? ROUTES.IDEAS_TRADITION_DETAIL.replace(":slug", article.slug) : ROUTES.IDEAS_TRADITION;
 
                 return (
                   <Link key={article.id} to={href} className="block" style={{ textDecoration: "none" }}>
                     <article className="it-card text-center cursor-pointer mt-5">
                       <div
                         className="it-img w-full h-[470px] bg-cover bg-black mb-[10px]"
-                        style={{ backgroundImage: `url(${article.image})`, backgroundBlendMode: "luminosity", backgroundPosition: "top" }}
+                        style={{
+                          backgroundImage: `url(${article.image})`,
+                          backgroundBlendMode: "luminosity",
+                          backgroundPosition: "top",
+                        }}
                         aria-label={article.title}
                       />
                       <div className="flex flex-col items-center">
@@ -241,15 +274,26 @@ export default function ArticleSection({ articles }: Props) {
                         </p>
                         <h3
                           className="it__bebas it-title mt-10"
-                          style={{ fontWeight: 400, fontSize: "40px", lineHeight: 1.1, textShadow: "0px 4px 50px rgba(0,0,0,0.25)" }}
+                          style={{
+                            fontWeight: 400,
+                            fontSize: "40px",
+                            lineHeight: 1.1,
+                            textShadow: "0px 4px 50px rgba(0,0,0,0.25)",
+                          }}
                         >
                           {article.title}
                         </h3>
 
-                        <p className="it__roboto text-white/90 max-w-[90%] mx-auto"
-                          style={{ fontSize: "16px", lineHeight: 1.5, marginTop: "10px" }}>
+                        <p
+                          className="it__roboto text-white/90 max-w-[90%] mx-auto"
+                          style={{ fontSize: "16px", lineHeight: 1.5, marginTop: "10px" }}
+                        >
                           {preview}
-                          {showEllipsis && <>… <ContinueReadInline /></>}
+                          {showEllipsis && (
+                            <>
+                              … <ContinueReadInline />
+                            </>
+                          )}
                         </p>
                       </div>
                     </article>
@@ -262,16 +306,18 @@ export default function ArticleSection({ articles }: Props) {
               {extra.map((article) => {
                 const preview = truncateByPhraseOrWords(article.desc ?? "", null, 45);
                 const showEllipsis = (article.desc ?? "").trim().length > preview.trim().length;
-                const href = article.slug
-                  ? ROUTES.IDEAS_TRADITION_DETAIL.replace(":slug", article.slug)
-                  : ROUTES.IDEAS_TRADITION;
+                const href = article.slug ? ROUTES.IDEAS_TRADITION_DETAIL.replace(":slug", article.slug) : ROUTES.IDEAS_TRADITION;
 
                 return (
                   <Link key={article.id} to={href} className="block" style={{ textDecoration: "none" }}>
                     <article className="it-card text-center cursor-pointer">
                       <div
                         className="it-img w-full h-[470px] bg-cover bg-black mb-[10px]"
-                        style={{ backgroundImage: `url(${article.image})`, backgroundBlendMode: "luminosity", backgroundPosition: "top" }}
+                        style={{
+                          backgroundImage: `url(${article.image})`,
+                          backgroundBlendMode: "luminosity",
+                          backgroundPosition: "top",
+                        }}
                         aria-label={article.title}
                       />
                       <div className="flex flex-col items-center">
@@ -283,15 +329,26 @@ export default function ArticleSection({ articles }: Props) {
                         </p>
                         <h3
                           className="it__bebas it-title mt-10"
-                          style={{ fontWeight: 400, fontSize: "48px", lineHeight: 1.1, textShadow: "0px 4px 50px rgba(0,0,0,0.25)" }}
+                          style={{
+                            fontWeight: 400,
+                            fontSize: "48px",
+                            lineHeight: 1.1,
+                            textShadow: "0px 4px 50px rgba(0,0,0,0.25)",
+                          }}
                         >
                           {article.title}
                         </h3>
 
-                        <p className="it__roboto text-white/90 max-w-[90%] mx-auto"
-                          style={{ fontSize: "18px", lineHeight: 1.5, marginTop: "10px" }}>
+                        <p
+                          className="it__roboto text-white/90 max-w-[90%] mx-auto"
+                          style={{ fontSize: "18px", lineHeight: 1.5, marginTop: "10px" }}
+                        >
                           {preview}
-                          {showEllipsis && <>… <ContinueReadInline /></>}
+                          {showEllipsis && (
+                            <>
+                              … <ContinueReadInline />
+                            </>
+                          )}
                         </p>
                       </div>
                     </article>

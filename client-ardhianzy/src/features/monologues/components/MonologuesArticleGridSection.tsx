@@ -131,27 +131,78 @@ export default function MonologuesArticleGridSection({ articles }: Props) {
   const showComingSoon = !loading && onlyOne;
 
   return (
-    <section className="w-full bg-black text-white py-20">
+    <section className="mlgcol w-full bg-black text-white py-20">
       <style>{`
         .rs__loadwrap { /* kept for parity; disabled */
           display:none !important;
         }
+
+        .mlgcol__title{ font-weight: 400 !important; }
+
+        @media (max-width: 640px) {
+          .mlgcol { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+          .mlgcol__container { width: 92% !important; padding-left: 0 !important; padding-right: 0 !important; padding-bottom: 72px !important; }
+
+          .mlgcol__title {
+            font-size: 2.4rem !important;
+            line-height: 1.1 !important;
+            margin-bottom: 2rem !important;
+            padding-top: 14px !important;
+          }
+
+          .mlgcol__stack { gap: 2.5rem !important; }
+
+          .mlgcol__article { gap: 18px !important; }
+
+          .mlgcol__img {
+            width: 100% !important;
+            height: 240px !important;
+            border-radius: 16px !important;
+          }
+          .mlgcol__img--soon { padding: 32px !important; object-fit: contain !important; }
+
+          .mlgcol__date {
+            font-size: 1rem !important;
+            margin-bottom: 1.4rem !important;
+            line-height: 1.15 !important;
+          }
+
+          .mlgcol__h3 {
+            font-size: 2.4rem !important;
+            line-height: 1.1 !important;
+            margin-bottom: 12px !important;
+          }
+
+          .mlgcol__desc {
+            font-size: 0.95rem !important;
+            line-height: 1.65 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 6 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .mlgcol__img { height: 220px !important; }
+          .mlgcol__desc { -webkit-line-clamp: 5 !important; }
+        }
       `}</style>
 
-      <div className="max-w-[1331px] mx-auto px-5 pb-40">
-        <h2 className="mb-10 mt-10 border-t border-white pt-5 text-left font-bebas !text-[48px] leading-[58px]">
+      <div className="mlgcol__container max-w-[1331px] mx-auto px-5 pb-40">
+        <h2 className="mlgcol__title mb-10 mt-10 border-t border-white pt-5 text-left font-bebas text-[48px] leading-[58px]">
           OTHER MONOLOGUES
         </h2>
 
         {showComingSoon ? (
           <div className="relative">
-            <div className="flex flex-col !gap-[60px]">
-              <article className="flex items-center !gap-[30px] max-[1200px]:flex-col max-[1200px]:items-start">
+            <div className="mlgcol__stack flex flex-col !gap-[60px]">
+              <article className="mlgcol__article flex items-center !gap-[30px] max-[1200px]:flex-col max-[1200px]:items-start">
                 <div className="shrink-0">
                   <img
                     src={"/assets/monologues/placeholder.png"}
                     alt="Coming Soon"
-                    className="block rounded-[16px] border-l-2 border-[#444444] object-contain p-14 object-top !w-[599px] !h-[365px] filter grayscale max-[1200px]:!w-full max-[1200px]:!h-auto"
+                    className="mlgcol__img mlgcol__img--soon block rounded-[16px] border-l-2 border-[#444444] object-contain p-14 object-top !w-[599px] !h-[365px] filter grayscale max-[1200px]:!w-full max-[1200px]:!h-auto"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = "/assets/icon/Ardhianzy_Logo_2.png";
                     }}
@@ -159,14 +210,13 @@ export default function MonologuesArticleGridSection({ articles }: Props) {
                 </div>
 
                 <div className="flex flex-col items-start !max-w-[552px] max-[1200px]:max-w-full max-[1200px]:pt-5">
-                  <p className="font-roboto italic !font-extralight !text-[20px] text-white !leading-[1] !mb-[24px]">
-                  </p>
+                  <p className="mlgcol__date font-roboto italic !font-extralight !text-[20px] text-white !leading-[1] !mb-[24px]"></p>
 
-                  <h3 className="font-bebas !font-normal !text-[58px] text-white !leading-[1] text-shadow-article !mb-[14px]">
+                  <h3 className="mlgcol__h3 font-bebas !font-normal !text-[58px] text-white !leading-[1] text-shadow-article !mb-[14px]">
                     COMING SOON
                   </h3>
 
-                  <p className="font-roboto !text-[18px] !leading-[1.5] text-justify text-white">
+                  <p className="mlgcol__desc font-roboto !text-[18px] !leading-[1.5] text-justify text-white">
                     Our next monologue publication is currently in preparation. Stay tuned!
                   </p>
                 </div>
@@ -175,7 +225,7 @@ export default function MonologuesArticleGridSection({ articles }: Props) {
           </div>
         ) : (
           <div className="relative">
-            <div className="flex flex-col !gap-[60px]">
+            <div className="mlgcol__stack flex flex-col !gap-[60px]">
               {items.map((article) => {
                 const preview = truncateByPhraseOrWords(article.desc ?? "", "sekaligus", 55);
                 const showEllipsis = (article.desc ?? "").trim().length > preview.trim().length;
@@ -187,25 +237,25 @@ export default function MonologuesArticleGridSection({ articles }: Props) {
                     className="block"
                     style={{ textDecoration: "none" }}
                   >
-                    <article className="flex items-center !gap-[30px] max-[1200px]:flex-col max-[1200px]:items-start">
+                    <article className="mlgcol__article flex items-center !gap-[30px] max-[1200px]:flex-col max-[1200px]:items-start">
                       <div className="shrink-0">
                         <img
                           src={article.image}
                           alt={article.title}
-                          className="block rounded-[16px] border-l-2 border-[#444444] object-cover object-top !w-[599px] !h-[365px] filter grayscale max-[1200px]:!w-full max-[1200px]:!h-auto"
+                          className="mlgcol__img block rounded-[16px] border-l-2 border-[#444444] object-cover object-top !w-[599px] !h-[365px] filter grayscale max-[1200px]:!w-full max-[1200px]:!h-auto"
                         />
                       </div>
 
                       <div className="flex flex-col items-start !max-w-[552px] max-[1200px]:max-w-full max-[1200px]:pt-5">
-                        <p className="font-roboto italic !font-extralight !text-[20px] text-white !leading-[1] !mb-[24px]">
+                        <p className="mlgcol__date font-roboto italic !font-extralight !text-[20px] text-white !leading-[1] !mb-[24px]">
                           {article.date}
                         </p>
 
-                        <h3 className="font-bebas !font-normal !text-[58px] text-white !leading-[1] text-shadow-article !mb-[14px]">
+                        <h3 className="mlgcol__h3 font-bebas !font-normal !text-[58px] text-white !leading-[1] text-shadow-article !mb-[14px]">
                           {article.title}
                         </h3>
 
-                        <p className="font-roboto !text-[18px] !leading-[1.5] text-justify text-white">
+                        <p className="mlgcol__desc font-roboto !text-[18px] !leading-[1.5] text-justify text-white">
                           {preview}
                           {showEllipsis ? "..." : ""} <ContinueReadInline />
                         </p>
