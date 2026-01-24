@@ -108,9 +108,13 @@ export default function ReadingGuideDetailPage() {
       <article className="w-full mx-auto py-[clamp(24px,4vw,64px)]">
         <div className="mx-auto maxw-desktop">
           <div className="mb-3 text-sm text-white/50">
-            <Link to="/" className="hover:opacity-80">Home</Link>
+            <Link to="/" className="hover:opacity-80">
+              Home
+            </Link>
             <span className="mx-2 opacity-50">/</span>
-            <Link to="/reading-guide" className="hover:opacity-80">Reading Guide</Link>
+            <Link to="/reading-guide" className="hover:opacity-80">
+              Reading Guide
+            </Link>
           </div>
 
           <h1

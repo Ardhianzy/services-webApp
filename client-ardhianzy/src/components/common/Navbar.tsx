@@ -19,22 +19,39 @@ function Navbar({
 
   return (
     <nav
-      className="fixed top-0 left-0 w-full h-[72px] bg-black text-white flex justify-center items-center px-8 z-[2424] border-b border-[#222] box-border"
+      className="fixed top-0 left-0 w-full h-[72px] bg-black text-white flex justify-center items-center px-8 max-md:px-4 z-[2424] border-b border-[#222] box-border"
       role="navigation"
       aria-label="Primary"
     >
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');`}</style>
 
+      <style>{`
+        .navbar-wordmark {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 48px;
+          letter-spacing: 1px;
+        }
+        @media (max-width: 768px) {
+          .navbar-wordmark { font-size: 40px !important; }
+        }
+        @media (max-width: 420px) {
+          .navbar-wordmark { font-size: 34px !important; }
+        }
+      `}</style>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center min-w-0">
         <Link
           to="/"
-          className="group flex items-center text-white no-underline"
+          className="group flex items-center text-white no-underline min-w-0"
           aria-label="Ardhianzy Home"
         >
-          <img src={logoSrc} alt="Ardhianzy Logo" className="w-[40px] h-auto mr-2" />
+          <img
+            src={logoSrc}
+            alt="Ardhianzy Logo"
+            className="w-[40px] h-auto mr-2 max-md:w-[36px] max-[420px]:w-[32px]"
+          />
           <span
-            className="text-white transition-colors"
+            className="text-white transition-colors navbar-wordmark whitespace-nowrap"
             style={{ ...bebas, fontSize: "48px", letterSpacing: "1px" }}
           >
             ARDHIANZY

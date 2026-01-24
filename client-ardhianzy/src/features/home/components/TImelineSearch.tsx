@@ -62,14 +62,24 @@ export default function TimelineSearch({ isOpen, onClose, data, onSelect }: Prop
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1500] flex items-center justify-center">
+    <div
+      className={[
+        "fixed inset-0 z-[1500] flex items-center justify-center",
+        "max-md:items-start max-md:pt-[14vh] max-sm:pt-[12vh]",
+      ].join(" ")}
+    >
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-[4px]"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="relative z-[1501] w-[90%] max-w-[600px] flex flex-col gap-2 animate-in fade-in zoom-in duration-200">
+      <div
+        className={[
+          "relative z-[1501] w-[90%] max-w-[600px] flex flex-col gap-2 animate-in fade-in zoom-in duration-200",
+          "max-md:w-[92%] max-md:max-w-[520px]",
+        ].join(" ")}
+      >
         <div className="relative flex items-center bg-[#1a1a1a] border border-white/20 rounded-lg shadow-2xl overflow-hidden">
           <div className="pl-4 text-white/50">
             <svg
@@ -91,7 +101,10 @@ export default function TimelineSearch({ isOpen, onClose, data, onSelect }: Prop
           <input
             ref={inputRef}
             type="text"
-            className="flex-1 bg-transparent px-4 py-4 text-lg text-white placeholder-white/40 focus:outline-none font-sans"
+            className={[
+              "flex-1 bg-transparent px-4 py-4 text-lg text-white placeholder-white/40 focus:outline-none font-sans",
+              "max-md:py-3 max-md:text-base",
+            ].join(" ")}
             placeholder="Search philosopher, year, or location..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -109,7 +122,12 @@ export default function TimelineSearch({ isOpen, onClose, data, onSelect }: Prop
         </div>
 
         {results.length > 0 && (
-          <div className="bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl overflow-hidden max-h-[300px] overflow-y-auto custom-scrollbar">
+          <div
+            className={[
+              "bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl overflow-hidden max-h-[300px] overflow-y-auto custom-scrollbar",
+              "max-md:max-h-[42vh]",
+            ].join(" ")}
+          >
             {results.map((p) => (
               <button
                 key={p.id}
