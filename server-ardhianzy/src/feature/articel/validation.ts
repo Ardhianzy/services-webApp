@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ArticleCategory } from "@prisma/client";
+
 
 // Helper to coerce boolean
 const booleanString = z.union([
@@ -13,7 +13,7 @@ export const createArticleSchema = z.object({
     content: z.string().min(10, "Content must be at least 10 characters"),
     author: z.string().min(3, "Author is required"),
     date: z.string().optional(), // Or z.coerce.date()
-    category: z.nativeEnum(ArticleCategory),
+
     meta_title: z.string().optional(),
     meta_description: z.string().optional(),
     keywords: z.string().optional(),
@@ -35,7 +35,7 @@ export const updateArticleSchema = z.object({
     content: z.string().optional(),
     author: z.string().optional(),
     date: z.string().optional(),
-    category: z.nativeEnum(ArticleCategory).optional(),
+
     meta_title: z.string().optional(),
     meta_description: z.string().optional(),
     keywords: z.string().optional(),

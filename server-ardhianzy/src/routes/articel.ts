@@ -35,7 +35,6 @@ router.put(
   validate(updateArticleSchema),
   articleHandler.updateById
 );
-router.get("/category/:category", articleHandler.getByArticelCategory);
 // Delete Article by ID (Admin only)
 router.delete("/:id", authenticate, articleHandler.deleteById);
 

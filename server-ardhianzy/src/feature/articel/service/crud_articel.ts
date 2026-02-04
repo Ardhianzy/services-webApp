@@ -1,5 +1,5 @@
 import { ArticleRepository } from "../repository/crud_articel";
-import { Article, ArticleCategory } from "@prisma/client"; // Impor enum ArticleCategory
+import { Article } from "@prisma/client";
 import imagekit from "../../../libs/imageKit";
 import path from "path";
 
@@ -11,7 +11,7 @@ export interface CreateArticleServiceData {
   content: string;
   author: string;
   date: Date | string;
-  category: ArticleCategory; // <-- TAMBAHKAN: Kategori wajib ada
+
   meta_title?: string | null;
   meta_description?: string | null;
   keywords?: string | null;
@@ -28,7 +28,7 @@ export interface UpdateArticleServiceData {
   content?: string;
   author?: string;
   date?: Date | string;
-  category?: ArticleCategory; // <-- TAMBAHKAN: Kategori opsional saat update
+
   meta_title?: string | null;
   meta_description?: string | null;
   keywords?: string | null;
@@ -79,17 +79,7 @@ export class ArticleService {
     if (!body.admin_id?.trim()) throw new Error("Admin ID is required");
     if (!imageFile) throw new Error("Image is required");
 
-    // Validasi category enum
-    if (
-      !body.category ||
-      !Object.values(ArticleCategory).includes(body.category)
-    ) {
-      throw new Error(
-        `A valid category is required. Valid options are: ${Object.values(
-          ArticleCategory
-        ).join(", ")}`
-      );
-    }
+
 
     // Upload image
     let imageUrl: string;
@@ -126,17 +116,7 @@ export class ArticleService {
   ): Promise<Article> {
     const updateData: any = { ...body };
 
-    // Validasi category enum jika ada
-    if (
-      body.category &&
-      !Object.values(ArticleCategory).includes(body.category)
-    ) {
-      throw new Error(
-        `Invalid category provided. Valid options are: ${Object.values(
-          ArticleCategory
-        ).join(", ")}`
-      );
-    }
+
 
     // Upload image baru jika ada
     if (imageFile) {
@@ -197,24 +177,5 @@ export class ArticleService {
     }
     return article;
   }
-  async getByArticleCategory(
-    category: ArticleCategory,
-    paginationParams?: PaginationParams
-  ): Promise<PaginatedResult<Article>> {
-    const result = await this.repo.getByArticelCategory(
-      category,
-      paginationParams || {}
-    );
-    if (!result || result.length === 0)
-      throw new Error("No articles found for the specified category");
-    
-    return {
-      data: result,
-      pagination: {
-        total: result.length,
-        page: paginationParams?.page || 1,
-        limit: paginationParams?.limit || 10
-      }
-    };
-  }
+
 }

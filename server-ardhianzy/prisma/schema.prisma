@@ -13,12 +13,6 @@ enum DifficultyLevel {
   EXPERT
 }
 
-enum ArticleCategory {
-  IDEAS_AND_TRADITIONS
-  POP_CULTURE
-  READING_GUIDLINE
-}
-
 model Admin {
   id         String   @id @default(cuid())
   image      String
@@ -151,15 +145,15 @@ model Research {
 }
 
 model Article {
-  id               String          @id @default(cuid())
-  admin_id         String
-  title            String
-  slug             String          @unique
-  image            String
-  content          String
-  author           String
-  date             DateTime
-  category         ArticleCategory
+  id       String   @id @default(cuid())
+  admin_id String
+  title    String
+  slug     String   @unique
+  image    String
+  content  String
+  author   String
+  date     DateTime
+
   meta_title       String?
   meta_description String?
   keywords         String?
