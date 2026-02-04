@@ -50,7 +50,9 @@ function ArticleBody({ html }: { html: string }) {
         .article-typography ol{list-style:decimal}
         .article-typography img,.article-typography video,.article-typography iframe{max-width:100%;height:auto}
         .article-typography a{color:#fff;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.6)}
-        @media (max-width:768px){.article-typography{font-size:1rem;line-height:1.85}}
+        @media (max-width:768px){
+          .article-typography{font-size:1rem;line-height:1.85}
+        }
       `}</style>
       <div className="article-typography" dangerouslySetInnerHTML={{ __html: html }} />
     </>
@@ -64,7 +66,7 @@ export default function IdeaArticleDetailPage() {
   const title = (data as ArticleDTO | null)?.title ?? "Ideas & Tradition";
   const contentHtml =
     normalizeBackendHtml((data as ArticleDTO | null)?.content) ||
-    normalizeBackendHtml((data as ArticleDTO | null)?.meta_description ) ||
+    normalizeBackendHtml((data as ArticleDTO | null)?.meta_description) ||
     "";
 
   if (loading) {
@@ -109,9 +111,13 @@ export default function IdeaArticleDetailPage() {
       <article className="w-full mx-auto py-[clamp(24px,4vw,64px)]">
         <div className="mx-auto maxw-desktop">
           <div className="mb-3 text-sm text-white/50">
-            <Link to="/" className="hover:opacity-80">Home</Link>
+            <Link to="/" className="hover:opacity-80">
+              Home
+            </Link>
             <span className="mx-2 opacity-50">/</span>
-            <Link to="/ideas-tradition" className="hover:opacity-80">Ideas & Tradition</Link>
+            <Link to="/ideas-tradition" className="hover:opacity-80">
+              Ideas & Tradition
+            </Link>
           </div>
 
           <h1

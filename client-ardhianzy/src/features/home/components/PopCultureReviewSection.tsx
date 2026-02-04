@@ -61,6 +61,16 @@ function ContinueReadInline() {
   );
 }
 
+function getArticleTs(a: any): number {
+  const candidates = [a?.published_at, a?.updated_at, a?.created_at, a?.date, a?.pdf_uploaded_at];
+  for (const c of candidates) {
+    if (!c) continue;
+    const t = Date.parse(String(c));
+    if (!Number.isNaN(t)) return t;
+  }
+  return 0;
+}
+
 const PopCultureReviewSection: FC = () => {
   const [vw, setVw] = useState<number>(() =>
     typeof window !== "undefined" ? window.innerWidth : 1920
@@ -85,16 +95,20 @@ const PopCultureReviewSection: FC = () => {
     (async () => {
       try {
         const list = await contentApi.articles.list();
-        const popAll = (list as ArticleDTO[])
+
+        const popDtos = (list as ArticleDTO[])
           .filter((a) => (a.category ?? "").toUpperCase() === "POP_CULTURE")
-          .map<CardLike>((a) => ({
-            img: a.image ?? "/assets/research/Desain tanpa judul.png",
-            title: a.title ?? "Untitled",
-            excerpt: normalizeMetaText(a.meta_description) || (a.excerpt ?? "—"),
-            link: a.slug
-              ? generatePath(`${ROUTES.POP_CULTURE_REVIEW}/:slug`, { slug: a.slug })
-              : ROUTES.POP_CULTURE_REVIEW,
-          }));
+          .slice()
+          .sort((a, b) => getArticleTs(b) - getArticleTs(a));
+
+        const popAll = popDtos.map<CardLike>((a) => ({
+          img: a.image ?? "/assets/research/Desain tanpa judul.png",
+          title: a.title ?? "Untitled",
+          excerpt: normalizeMetaText(a.meta_description) || (a.excerpt ?? "—"),
+          link: a.slug
+            ? generatePath(`${ROUTES.POP_CULTURE_REVIEW}/:slug`, { slug: a.slug })
+            : ROUTES.POP_CULTURE_REVIEW,
+        }));
 
         const latest = popAll.slice(0, 5);
         while (latest.length < 5) latest.push(COMING_SOON_CARD);
@@ -153,20 +167,21 @@ const PopCultureReviewSection: FC = () => {
             <img
               src="/assets/icon/Popshopia_Logo.png"
               alt="Ardhianzy Popsophia"
-              className="hidden sm:inline-block h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
+              className="inline-block h-[clamp(34px,10vw,54px)] min-[768px]:h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
               draggable={false}
             />
             <h2
               id="pop_heading"
-              className="ml-4 text-[3rem] text-white"
+              className="ml-3 min-[768px]:ml-4 text-[2.4rem] min-[768px]:text-[3rem] text-white leading-none min-[768px]:leading-normal"
               style={{ fontFamily: "'Bebas Neue', sans-serif" }}
             >
               Popsophia
             </h2>
           </div>
+
           <a
             href={ROUTES.POP_CULTURE_REVIEW}
-            className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
+            className="hidden min-[768px]:inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
             style={{
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: "1rem",
@@ -177,135 +192,192 @@ const PopCultureReviewSection: FC = () => {
           </a>
         </div>
 
-        <div
-          className="grid"
-          style={{
-            gridTemplateColumns,
-            gridAutoRows: ROW_HEIGHT,
-            gap: `${GAP_REM}rem`,
-            width: isNarrow ? "100%" : "fit-content",
-            margin: "0 auto",
-          }}
-        >
-          {items.map((item, i) => {
-            const itemStyle: React.CSSProperties = isNarrow ? {} : WIDE_POS[i] ?? {};
-            const { preview, truncated } = previewClamp(item.excerpt, 36);
-            const isComingSoon =
-              item.link === COMING_SOON_CARD.link && item.title === COMING_SOON_CARD.title;
+        <div className="hidden min-[768px]:block w-full">
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns,
+              gridAutoRows: ROW_HEIGHT,
+              gap: `${GAP_REM}rem`,
+              width: isNarrow ? "100%" : "fit-content",
+              margin: "0 auto",
+            }}
+          >
+            {items.map((item, i) => {
+              const itemStyle: React.CSSProperties = isNarrow ? {} : WIDE_POS[i] ?? {};
+              const { preview, truncated } = previewClamp(item.excerpt, 36);
+              const isComingSoon =
+                item.link === COMING_SOON_CARD.link && item.title === COMING_SOON_CARD.title;
 
-            const imgClass = isComingSoon
-              ? "h-full w-full object-contain p-24"
-              : "h-full w-full object-cover";
+              const imgClass = isComingSoon
+                ? "h-full w-full object-contain p-24"
+                : "h-full w-full object-cover";
 
-            const inner = (
-              <>
-                <img
-                  src={item.img}
-                  alt={item.title}
-                  className={imgClass}
-                />
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0"
-                  style={{ background: OVERLAY }}
-                />
-                <div className="absolute bottom-6 left-6 right-6 z-[2] flex flex-col items-start text-left text-white">
-                  <h3
-                    className="mb-2 text-[1.5rem]"
-                    style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-                  >
-                    {item.title}
-                  </h3>
-                  <p
-                    className="mb-3 text-[0.9rem] leading-[1.4] line-clamp-3"
-                    style={{
-                      fontFamily: "'Roboto Condensed', sans-serif",
-                      opacity: 0.85,
-                    }}
-                  >
-                    {preview}
-                    {truncated && "…"}
-                    {truncated && (
-                      isComingSoon ? (
-                        <Link to={item.link}>
+              const inner = (
+                <>
+                  <img
+                    src={item.img}
+                    alt={item.title}
+                    className={imgClass}
+                  />
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0"
+                    style={{ background: OVERLAY }}
+                  />
+                  <div className="absolute bottom-6 left-6 right-6 z-[2] flex flex-col items-start text-left text-white">
+                    <h3
+                      className="mb-2 text-[1.5rem]"
+                      style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+                    >
+                      {item.title}
+                    </h3>
+                    <p
+                      className="mb-3 text-[0.9rem] leading-[1.4] line-clamp-3"
+                      style={{
+                        fontFamily: "'Roboto Condensed', sans-serif",
+                        opacity: 0.85,
+                      }}
+                    >
+                      {preview}
+                      {truncated && "…"}
+                      {truncated && (
+                        isComingSoon ? (
+                          <Link to={item.link}>
+                            <ContinueReadInline />
+                          </Link>
+                        ) : (
                           <ContinueReadInline />
-                        </Link>
-                      ) : (
-                        <ContinueReadInline />
-                      )
-                    )}
-                  </p>
-                </div>
-              </>
-            );
+                        )
+                      )}
+                    </p>
+                  </div>
+                </>
+              );
 
-            if (isComingSoon) {
+              if (isComingSoon) {
+                return (
+                  <div
+                    key={`${item.title}-${i}`}
+                    className="relative overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow border-1"
+                    style={itemStyle}
+                    aria-label={item.title}
+                  >
+                    {inner}
+                  </div>
+                );
+              }
+
               return (
-                <div
+                <Link
                   key={`${item.title}-${i}`}
-                  className="relative overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow border-1"
+                  to={item.link}
+                  className="relative block cursor-pointer overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow border-1"
                   style={itemStyle}
                   aria-label={item.title}
                 >
                   {inner}
-                </div>
+                </Link>
               );
-            }
+            })}
 
-            return (
-              <Link
-                key={`${item.title}-${i}`}
-                to={item.link}
-                className="relative block cursor-pointer overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow border-1"
-                style={itemStyle}
-                aria-label={item.title}
-              >
-                {inner}
-              </Link>
-            );
-          })}
+            <Link
+              to={featured.link}
+              className="relative flex flex-col justify-end overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow"
+              style={
+                isNarrow
+                  ? { gridColumn: "1 / -1" }
+                  : { gridColumn: "4", gridRow: "1 / span 2", width: "420px" }
+              }
+              aria-label={featured.title}
+            >
+              <img
+                src={featured.img}
+                alt={featured.title}
+                className="w-full object-cover"
+                style={{ height: featuredImgHeight }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0"
+                style={{ background: OVERLAY }}
+              />
+              <div className="absolute bottom-6 left-6 right-6 z-[2] flex flex-col items-start text-left text-white">
+                <h3
+                  className="mb-2 text-[1.5rem]"
+                  style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+                >
+                  {featured.title}
+                </h3>
+                <p
+                  className="mb-3 text-[0.9rem] leading-[1.4] line-clamp-3"
+                  style={{
+                    fontFamily: "'Roboto Condensed', sans-serif",
+                    opacity: 0.85,
+                  }}
+                >
+                  {featPrev}
+                  {featCut && "…"}
+                  {featCut && <ContinueReadInline />}
+                </p>
+              </div>
+            </Link>
+          </div>
+        </div>
 
-          <Link
-            to={featured.link}
-            className="relative flex flex-col justify-end overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow"
-            style={
-              isNarrow
-                ? { gridColumn: "1 / -1" }
-                : { gridColumn: "4", gridRow: "1 / span 2", width: "420px" }
-            }
-            aria-label={featured.title}
-          >
-            <img
-              src={featured.img}
-              alt={featured.title}
-              className="w-full object-cover"
-              style={{ height: featuredImgHeight }}
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0"
-              style={{ background: OVERLAY }}
-            />
-            <div className="absolute bottom-6 left-6 right-6 z-[2] flex flex-col items-start text-left text-white">
-              <h3
-                className="mb-2 text-[1.5rem]"
-                style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-              >
-                {featured.title}
-              </h3>
-              <p
-                className="mb-3 text-[0.9rem] leading-[1.4] line-clamp-3"
+        <div className="min-[768px]:hidden w-full">
+          <div className="mx-auto w-[88vw] max-w-[520px]">
+            <Link
+              to={featured.link}
+              className="relative flex flex-col justify-end overflow-hidden rounded-[30px] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)] transition-shadow"
+              aria-label={featured.title}
+            >
+              <img
+                src={featured.img}
+                alt={featured.title}
+                className="w-full object-cover"
+                style={{ height: "350px" }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0"
+                style={{ background: OVERLAY }}
+              />
+              <div className="absolute bottom-6 left-6 right-6 z-[2] flex flex-col items-start text-left text-white">
+                <h3
+                  className="mb-2 text-[1.5rem]"
+                  style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+                >
+                  {featured.title}
+                </h3>
+                <p
+                  className="mb-3 text-[0.9rem] leading-[1.4] line-clamp-3"
+                  style={{
+                    fontFamily: "'Roboto Condensed', sans-serif",
+                    opacity: 0.85,
+                  }}
+                >
+                  {featPrev}
+                  {featCut && "…"}
+                  {featCut && <ContinueReadInline />}
+                </p>
+              </div>
+            </Link>
+
+            <div className="mt-[18px] flex justify-center">
+              <a
+                href={ROUTES.POP_CULTURE_REVIEW}
+                className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
                 style={{
-                  fontFamily: "'Roboto Condensed', sans-serif",
-                  opacity: 0.85,
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: "1rem",
+                  textDecoration: "none",
                 }}
               >
-                {featPrev}
-                {featCut && "…"}
-                {featCut && <ContinueReadInline />}
-              </p>
+                SEE ALL <span className="ml-[0.3rem]">→</span>
+              </a>
             </div>
-          </Link>
+          </div>
         </div>
       </div>
     </section>

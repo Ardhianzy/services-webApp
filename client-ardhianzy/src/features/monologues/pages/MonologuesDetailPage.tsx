@@ -88,8 +88,8 @@ function PdfInlineViewer({ url, title }: { url: string; title: string }) {
   }, [url, title]);
 
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-black py-6">
-      <div ref={ref} className="w-[90%] mx-auto" />
+    <div className="mlgdet__pdf w-full rounded-xl border border-white/10 bg-black py-6">
+      <div ref={ref} className="mlgdet__pdfInner w-[90%] mx-auto" />
       {err ? (
         <div className="w-[90%] mx-auto mt-4 text-white/80">{err}</div>
       ) : null}
@@ -116,7 +116,9 @@ export default function MonologuesDetailPage() {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [slug]);
 
   const title = item?.title ?? "Monologues";
@@ -128,6 +130,20 @@ export default function MonologuesDetailPage() {
       <SectionNavLinks />
 
       <main className="bg-black text-white min-h-screen pt-[70px] pb-[80px]">
+        <style>{`
+          @media (max-width: 640px) {
+            .mlgdet__wrap { width: 92% !important; margin-top: 20px !important; }
+            .mlgdet__back {
+              width: 100% !important;
+              justify-content: center !important;
+              text-align: center !important;
+              white-space: normal !important;
+            }
+            .mlgdet__pdf { padding-top: 18px !important; padding-bottom: 18px !important; border-radius: 16px !important; }
+            .mlgdet__pdfInner { width: 92% !important; }
+          }
+        `}</style>
+
         {/* <section
           className="relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden"
           aria-label="Monologues hero"
@@ -147,10 +163,11 @@ export default function MonologuesDetailPage() {
           </h1>
         </section> */}
 
-        <section className="w-[95%] mx-auto mt-[32px]">
+        <section className="mlgdet__wrap w-[95%] mx-auto mt-[32px]">
           <button
             onClick={() => navigate(-1)}
             className="
+              mlgdet__back
               font-roboto mb-4 underline text-white cursor-pointer
               inline-flex items-center gap-[10px]
               rounded-full px-4 py-2 text-[15px] font-semibold bg-transparent

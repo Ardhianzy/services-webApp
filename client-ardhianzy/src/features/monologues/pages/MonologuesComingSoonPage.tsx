@@ -12,8 +12,15 @@ export default function MonologuesComingSoonPage() {
       <SectionNavLinks />
 
       <main className="bg-black text-white min-h-screen pt-[70px] pb-[80px]">
+        <style>{`
+          @media (max-width: 640px) {
+            .mlgcs__hero { height: 48vh !important; }
+            .mlgcs__title { font-size: 2.4rem !important; }
+          }
+        `}</style>
+
         <section
-          className="relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden"
+          className="mlgcs__hero relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden"
           aria-label="Monologues hero"
         >
           <img
@@ -24,7 +31,7 @@ export default function MonologuesComingSoonPage() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
           <h1
-            className="absolute inset-x-0 bottom-[44%] m-0 text-center text-white"
+            className="mlgcs__title absolute inset-x-0 bottom-[44%] m-0 text-center text-white"
             style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2.5rem,6vw,5rem)", lineHeight: 1.05 }}
           >
             Coming Soon

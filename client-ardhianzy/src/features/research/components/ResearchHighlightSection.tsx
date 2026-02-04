@@ -1,5 +1,5 @@
 // src/features/research/components/ResearchHighlightSection.tsx
-import { useState, useEffect, type CSSProperties } from "react";
+import { useState, useEffect, type CSSProperties, useMemo } from "react";
 import { contentApi } from "@/lib/content/api";
 import type { ResearchDTO } from "@/lib/content/types";
 import { Link } from "react-router-dom";
@@ -84,6 +84,38 @@ export default function ResearchHighlightSection({
   const [remote, setRemote] = useState<ResearchHighlightArticle[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [ledeOpen, setLedeOpen] = useState(false);
+
+  const isMobileNow = () => {
+    if (typeof window === "undefined") return false;
+    if (typeof window.matchMedia !== "function") return false;
+    return window.matchMedia("(max-width: 640px)").matches;
+  };
+
+  const openLedeModal = () => {
+    if (!isMobileNow()) return;
+    setLedeOpen(true);
+  };
+
+  const closeLedeModal = () => setLedeOpen(false);
+
+  useEffect(() => {
+    if (!ledeOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLedeModal();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [ledeOpen]);
+
   useEffect(() => {
     let alive = true;
     if (articles && articles.length) {
@@ -136,9 +168,27 @@ export default function ResearchHighlightSection({
   const LEDE =
     "Divisi riset dari Ardhianzy yang mempublikasikan laporan-laporan penelitian bertema filosofis dan psikologis. Fokusnya adalah menggali pertanyaan-pertanyaan mendalam seputar eksistensi, kesadaran, emosi, nilai, dan pengalaman manusia. Setiap laporan disusun dengan standar akademik namun tetap komunikatif, menjembatani antara disiplin ilmu dan refleksi personal. Riset ini bukan sekadar angka, tetapi narasi dari dunia batin kita.";
 
+  const LEDE_TEASER = "Divisi riset dari Ardhianzy yang mempublikasikan laporan-laporan...";
+  const ledeTeaser = useMemo(() => LEDE_TEASER, []);
+
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
+        .rs-head__title{
+          position: relative !important;
+          z-index: 2 !important;
+          color: #fff !important;
+          font-family: 'Bebas Neue', cursive !important;
+          font-size: 5rem !important;
+          text-align: center !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0 !important;
+          margin: 0 !important;
+          padding-bottom: 80px !important;
+        }
+
         .rs-head__dekWrap{
           position: absolute !important;
           z-index: 2 !important;
@@ -171,6 +221,45 @@ export default function ResearchHighlightSection({
           backdrop-filter: blur(2px);
           border-radius: 0px !important;
           box-shadow: 0 12px 30px rgba(0,0,0,.18);
+        }
+
+        .rs-head__ledeTrigger{
+          display: none !important;
+          pointer-events: auto !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+          font-family: Roboto, ui-sans-serif, system-ui !important;
+          border: 0 !important;
+          outline: 0 !important;
+          cursor: pointer !important;
+
+          color: #ECECEC !important;
+          text-align: center !important;
+          letter-spacing: .1px !important;
+
+          border-top: 1px solid rgba(255,255,255,.18) !important;
+          padding: .55rem .85rem !important;
+          background: linear-gradient(180deg, rgba(0,0,0,.40), rgba(0,0,0,.18)) !important;
+          backdrop-filter: blur(2px);
+          box-shadow: 0 10px 26px rgba(0,0,0,.18);
+        }
+        .rs-head__ledeTriggerTop{
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 8px !important;
+          font-size: 0.85rem !important;
+          opacity: .92 !important;
+          margin-bottom: 6px !important;
+          text-decoration: underline !important;
+          text-underline-offset: 4px !important;
+          text-decoration-color: rgba(255,255,255,.55) !important;
+        }
+        .rs-head__ledeTriggerText{
+          display: block !important;
+          font-size: 0.9rem !important;
+          line-height: 1.45 !important;
+          opacity: .95 !important;
         }
 
         .rs-head__section::before {
@@ -211,10 +300,87 @@ export default function ResearchHighlightSection({
         @media (max-width: 768px) {
           .rs-article-slider { --card-w: 95vw; --card-gap: 15px; }
         }
+
+        @media (max-width: 640px) {
+          .rs-head__hero { height: 48vh !important; }
+
+          .rs-head__title { font-size: 2.4rem !important; padding-bottom: 56px !important; }
+
+          .rs-head__dekWrap { max-width: min(90vw, 62ch) !important; bottom: 14px !important; }
+          .rs-head__dek { display: none !important; }
+          .rs-head__ledeTrigger { display: block !important; border-radius: 14px !important; }
+
+          .rs-card__overlay { padding: 18px 18px !important; }
+          .rs-card__title { font-size: 2.4rem !important; max-width: 100% !important; }
+          .rs-desc { -webkit-line-clamp: 6 !important; font-size: 0.95rem !important; line-height: 1.65 !important; }
+        }
+        @media (max-width: 420px) {
+          .rs-head__hero { height: 46vh !important; }
+          .rs-head__ledeTriggerText { font-size: 0.88rem !important; }
+          .rs-desc { -webkit-line-clamp: 5 !important; }
+        }
+
+        .rs-head__ledeOverlay{
+          position: fixed !important;
+          inset: 0 !important;
+          z-index: 80 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 18px 14px !important;
+          background: rgba(0,0,0,.55) !important;
+          backdrop-filter: blur(18px) !important;
+          -webkit-backdrop-filter: blur(18px) !important;
+        }
+        .rs-head__ledeModal{
+          width: min(92vw, 560px) !important;
+          max-height: 70vh !important;
+          overflow: auto !important;
+          border-radius: 18px !important;
+          border: 1px solid rgba(255,255,255,.12) !important;
+          background: rgba(17,17,17,.92) !important;
+          box-shadow: 0 18px 55px rgba(0,0,0,.55) !important;
+          padding: 14px 14px 12px 14px !important;
+        }
+        .rs-head__ledeModalTop{
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          gap: 12px !important;
+          margin-bottom: 10px !important;
+        }
+        .rs-head__ledeModalTitle{
+          font-family: Roboto, ui-sans-serif, system-ui !important;
+          font-size: 0.98rem !important;
+          font-weight: 600 !important;
+          color: #fff !important;
+          margin: 0 !important;
+          letter-spacing: .2px !important;
+        }
+        .rs-head__ledeClose{
+          border: 1px solid rgba(255,255,255,.18) !important;
+          background: rgba(0,0,0,.25) !important;
+          color: #fff !important;
+          border-radius: 999px !important;
+          width: 34px !important;
+          height: 34px !important;
+          display: inline-grid !important;
+          place-items: center !important;
+          cursor: pointer !important;
+          line-height: 1 !important;
+          font-size: 18px !important;
+        }
+        .rs-head__ledeBody{
+          font-family: Roboto, ui-sans-serif, system-ui !important;
+          font-size: 0.98rem !important;
+          line-height: 1.65 !important;
+          color: rgba(255,255,255,.9) !important;
+          margin: 0 !important;
+        }
       `}</style>
 
       <section
-        className="relative flex h-[60vh] w-screen items-center justify-center bg-cover bg-center"
+        className="rs-head__hero relative flex h-[60vh] w-screen items-center justify-center bg-cover bg-center"
         style={{
           backgroundImage: `url('${headingBackgroundUrl}')`,
           backgroundPosition: "start",
@@ -228,18 +394,57 @@ export default function ResearchHighlightSection({
         <div
           className="absolute inset-0 z-[1]"
           style={{
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)",
+            background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, transparent 100%)",
           }}
         />
-        <h1 className="relative z-[2] font-bebas uppercase text-white text-center !text-[5rem] pb-20">
-          {headingTitle}
-        </h1>
+
+        <h1 className="rs-head__title">{headingTitle}</h1>
 
         <div className="rs-head__dekWrap">
           <p className="rs-head__dek">{LEDE}</p>
+
+          <button
+            type="button"
+            className="rs-head__ledeTrigger"
+            onClick={openLedeModal}
+            aria-label="Buka teks pengantar riset"
+            aria-haspopup="dialog"
+            aria-expanded={ledeOpen}
+          >
+            <span className="rs-head__ledeTriggerTop">
+              Tap to read intro <span aria-hidden>↗</span>
+            </span>
+            <span className="rs-head__ledeTriggerText">{ledeTeaser}</span>
+          </button>
         </div>
       </section>
+
+      {ledeOpen ? (
+        <div
+          className="rs-head__ledeOverlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pengantar Research"
+          onClick={closeLedeModal}
+        >
+          <div className="rs-head__ledeModal" onClick={(e) => e.stopPropagation()}>
+            <div className="rs-head__ledeModalTop">
+              <p className="rs-head__ledeModalTitle">Introduction</p>
+              <button
+                type="button"
+                className="rs-head__ledeClose"
+                onClick={closeLedeModal}
+                aria-label="Tutup"
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="rs-head__ledeBody">{LEDE}</p>
+          </div>
+        </div>
+      ) : null}
 
       <section className="rs-head__section relative w-full bg-black py-5 overflow-hidden">
         <div
@@ -247,7 +452,7 @@ export default function ResearchHighlightSection({
           className="pointer-events-none absolute left-0 top-0 bottom-0 z-[3]"
           style={{ width: "15%", maxWidth: 200, background: "" }}
         />
-        
+
         <div className="relative mx-auto flex w-full max-w-full items-center justify-center">
           <div className="relative h-[417px] w-full overflow-visible">
             <div
@@ -288,17 +493,17 @@ export default function ResearchHighlightSection({
                         />
 
                         <div
-                          className="absolute inset-0 flex flex-col items-start justify-start p-[30px] pr-[40px] text-white"
+                          className="rs-card__overlay absolute inset-0 flex flex-col items-start justify-start p-[30px] pr-[40px] text-white"
                           style={{
                             background:
                               "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)",
                           }}
                         >
-                          <h3 className="font-bebas uppercase !text-[3.5rem] leading-[1] tracking-[2px] max-w-[500px] mb-[10px]">
+                          <h3 className="rs-card__title font-bebas uppercase !text-[3.5rem] leading-[1] tracking-[2px] max-w-[500px] mb-[10px]">
                             {article.title}
                           </h3>
 
-                          {(article.researcher || dateHuman) ? (
+                          {article.researcher || dateHuman ? (
                             <p className="mb-[12px] font-semibold text[1.1rem] text-[#aaa]">
                               {article.researcher ?? ""}
                               {article.researcher && dateHuman ? " • " : ""}
