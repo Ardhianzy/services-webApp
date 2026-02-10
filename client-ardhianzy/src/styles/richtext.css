@@ -91,8 +91,8 @@
 .admin-totmeta-html blockquote{
   margin: 0.8rem 0;
   padding: 0.75rem 0.95rem;
-  border-left: 4px solid rgba(248, 113, 113, 0.9);
-  background: rgba(248, 113, 113, 0.08);
+  border-left: 4px solid #94a3b8; 
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.1), transparent);
   border-radius: 0.85rem;
   color: #f8fafc;
 }
@@ -220,8 +220,8 @@
 .richtext blockquote{
   margin: 0.9rem 0;
   padding: 0.8rem 1rem;
-  border-left: 4px solid rgba(248, 113, 113, 0.9);
-  background: rgba(248, 113, 113, 0.08);
+  border-left: 4px solid #94a3b8; 
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.1), transparent);
   border-radius: 0.95rem;
   color: #f8fafc;
 }
@@ -344,8 +344,8 @@
 .card-typography blockquote{
   margin: 0.9rem 0;
   padding: 0.8rem 1rem;
-  border-left: 4px solid rgba(248, 113, 113, 0.9);
-  background: rgba(248, 113, 113, 0.08);
+  border-left: 4px solid #94a3b8; 
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.1), transparent);
   border-radius: 0.95rem;
   color: #f8fafc;
 }

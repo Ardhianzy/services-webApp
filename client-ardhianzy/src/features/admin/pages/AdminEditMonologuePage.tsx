@@ -1,6 +1,6 @@
 // src/features/admin/pages/AdminEditMonologuePage.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import {
@@ -8,6 +8,16 @@ import {
   adminUpdateMonologue,
   normalizeBackendHtml,
 } from "@/lib/content/api";
+
+function parseFlag(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return v === "1" || v === "true" || v === "yes";
+  }
+  return false;
+}
 
 type AdminMonologueForm = {
   title: string;
@@ -23,20 +33,16 @@ const AdminEditMonologuePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState<AdminMonologueForm | null>(
-    null
-  );
+  const [form, setForm] = useState<AdminMonologueForm | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] =
-    useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  const imageObjectUrlRef = useRef<string | null>(null);
 
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [pdfPreviewName, setPdfPreviewName] =
-    useState<string | null>(null);
-  const [existingPdfUrl, setExistingPdfUrl] =
-    useState<string | null>(null);
-  const [existingPdfSize, setExistingPdfSize] =
-    useState<number | null>(null);
+  const [pdfPreviewName, setPdfPreviewName] = useState<string | null>(null);
+  const [existingPdfUrl, setExistingPdfUrl] = useState<string | null>(null);
+  const [existingPdfSize, setExistingPdfSize] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -50,6 +56,17 @@ const AdminEditMonologuePage: React.FC = () => {
   };
 
   useEffect(() => {
+    return () => {
+      if (imageObjectUrlRef.current) {
+        try {
+          URL.revokeObjectURL(imageObjectUrlRef.current);
+        } catch {}
+        imageObjectUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!id) {
       setError("ID monologue tidak ditemukan di URL.");
       setLoading(false);
@@ -57,12 +74,17 @@ const AdminEditMonologuePage: React.FC = () => {
     }
 
     let cancelled = false;
+    const ctrl = new AbortController();
 
     (async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await adminGetMonologueById(id);
+
+        const data = await adminGetMonologueById(id, {
+          signal: ctrl.signal,
+        });
+
         if (cancelled) return;
         const raw: any = data;
 
@@ -73,7 +95,7 @@ const AdminEditMonologuePage: React.FC = () => {
           dialog: normalizeBackendHtml(raw.dialog ?? ""),
           metaTitle: raw.meta_title ?? "",
           metaDescription: raw.meta_description ?? "",
-          isPublished: Boolean(raw.is_published),
+          isPublished: parseFlag(raw.is_published),
         };
 
         setForm(mapped);
@@ -86,15 +108,11 @@ const AdminEditMonologuePage: React.FC = () => {
         setExistingPdfSize(
           typeof raw.pdf_size === "number" ? raw.pdf_size : null
         );
-        setPdfPreviewName(
-          raw.pdf_filename ?? raw.pdf_url ?? null
-        );
+        setPdfPreviewName(raw.pdf_filename ?? raw.pdf_url ?? null);
       } catch (e: any) {
+        if (e?.name === "AbortError") return;
         if (!cancelled) {
-          setError(
-            e?.message ||
-              "Gagal memuat data monologue untuk di-edit."
-          );
+          setError(e?.message || "Gagal memuat data monologue untuk di-edit.");
         }
       } finally {
         if (!cancelled) {
@@ -105,29 +123,41 @@ const AdminEditMonologuePage: React.FC = () => {
 
     return () => {
       cancelled = true;
+      try {
+        ctrl.abort();
+      } catch {}
     };
   }, [id]);
 
-  const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (
-    e
-  ) => {
+  const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const file = e.target.files?.[0] ?? null;
+
     setImageFile(file);
+
+    if (imageObjectUrlRef.current) {
+      try {
+        URL.revokeObjectURL(imageObjectUrlRef.current);
+      } catch {}
+      imageObjectUrlRef.current = null;
+    }
+
     if (file) {
       const url = URL.createObjectURL(file);
+      imageObjectUrlRef.current = url;
       setImagePreviewUrl(url);
+    } else {
+      setImagePreviewUrl(null);
     }
   };
 
-  const handlePdfChange: React.ChangeEventHandler<HTMLInputElement> = (
-    e
-  ) => {
+  const handlePdfChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const file = e.target.files?.[0] ?? null;
     setPdfFile(file);
     setPdfPreviewName(file ? file.name : existingPdfUrl);
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
     if (!id || !form) return;
 
     if (!form.title || !form.dialog) {
@@ -172,9 +202,7 @@ const AdminEditMonologuePage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white px-10 py-8 flex items-center justify-center">
-        <p className="text-sm text-neutral-400">
-          Memuat monologue untuk di-edit...
-        </p>
+        <p className="text-sm text-neutral-400">Memuat monologue untuk di-edit...</p>
       </div>
     );
   }
@@ -195,9 +223,7 @@ const AdminEditMonologuePage: React.FC = () => {
             KEMBALI KE LIST
           </button>
         </div>
-        <p className="text-sm text-red-400">
-          {error || "Monologue tidak ditemukan."}
-        </p>
+        <p className="text-sm text-red-400">{error || "Monologue tidak ditemukan."}</p>
       </div>
     );
   }
@@ -231,31 +257,23 @@ const AdminEditMonologuePage: React.FC = () => {
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                TITLE
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">TITLE</label>
               <input
                 type="text"
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.title}
-                onChange={(e) =>
-                  updateField("title", e.target.value)
-                }
+                onChange={(e) => updateField("title", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                SLUG
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">SLUG</label>
               <input
                 type="text"
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white font-mono"
                 value={form.slug}
-                onChange={(e) =>
-                  updateField("slug", e.target.value)
-                }
+                onChange={(e) => updateField("slug", e.target.value)}
               />
             </div>
           </div>
@@ -269,9 +287,7 @@ const AdminEditMonologuePage: React.FC = () => {
               className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                          focus:border-white"
               value={form.judul}
-              onChange={(e) =>
-                updateField("judul", e.target.value)
-              }
+              onChange={(e) => updateField("judul", e.target.value)}
             />
           </div>
 
@@ -285,9 +301,7 @@ const AdminEditMonologuePage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.metaTitle}
-                onChange={(e) =>
-                  updateField("metaTitle", e.target.value)
-                }
+                onChange={(e) => updateField("metaTitle", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -299,9 +313,7 @@ const AdminEditMonologuePage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.metaDescription}
-                onChange={(e) =>
-                  updateField("metaDescription", e.target.value)
-                }
+                onChange={(e) => updateField("metaDescription", e.target.value)}
               />
             </div>
           </div>
@@ -314,9 +326,7 @@ const AdminEditMonologuePage: React.FC = () => {
               className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
                          focus:border-white min-h-[220px] font-mono leading-relaxed"
               value={form.dialog}
-              onChange={(e) =>
-                updateField("dialog", e.target.value)
-              }
+              onChange={(e) => updateField("dialog", e.target.value)}
             />
           </div>
 
@@ -364,9 +374,7 @@ const AdminEditMonologuePage: React.FC = () => {
             </p>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-400 mt-1">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
 
           <div className="flex flex-wrap items-center gap-3 justify-between pt-3 border-t border-zinc-800 mt-2">
             <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
@@ -374,9 +382,7 @@ const AdminEditMonologuePage: React.FC = () => {
                 type="checkbox"
                 className="w-4 h-4 rounded border-zinc-600 bg-black"
                 checked={form.isPublished}
-                onChange={(e) =>
-                  updateField("isPublished", e.target.checked)
-                }
+                onChange={(e) => updateField("isPublished", e.target.checked)}
               />
               <span>Publish ke user</span>
             </label>
@@ -422,9 +428,7 @@ const AdminEditMonologuePage: React.FC = () => {
             </h1>
 
             {form.metaDescription && (
-              <p className="text-sm text-neutral-300 mb-4">
-                {form.metaDescription}
-              </p>
+              <p className="text-sm text-neutral-300 mb-4">{form.metaDescription}</p>
             )}
 
             {imagePreviewUrl && (
@@ -445,9 +449,7 @@ const AdminEditMonologuePage: React.FC = () => {
             />
 
             <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 text-xs text-neutral-300">
-              <div className="font-medium mb-1">
-                PDF Monologue (Preview)
-              </div>
+              <div className="font-medium mb-1">PDF Monologue (Preview)</div>
               <div>
                 {pdfPreviewName
                   ? pdfPreviewName

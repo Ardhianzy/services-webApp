@@ -1,3 +1,27 @@
+// src/lib/content/types.ts
+
+export type Pagination = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
+export type ListResponse<T> = {
+  success: boolean;
+  message?: string;
+  data: T[];
+  pagination?: Pagination;
+};
+
+export type DetailResponse<T> = {
+  success: boolean;
+  message?: string;
+  data: T;
+};
+
 export type ToTDTO = {
   id: string;
   admin_id?: string | null;
@@ -147,6 +171,17 @@ export type MonologueDTO = {
   updated_at?: string | null;
 };
 
+export type MonologueCardVM = {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  author: string;
+  dateISO?: string;
+  slug: string;
+  href: string;
+};
+
 export type ShopDTO = {
   id: string;
   admin_id?: string | null;
@@ -166,50 +201,10 @@ export type ShopDTO = {
   is_published?: boolean | null;
 };
 
-export type MonologueCardVM = {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  author: string;
-  dateISO?: string;
-  slug: string;
-  href: string;
-};
-
 export type LatestYoutubeDTO = {
   id: string;
   title: string;
   url: string;
   description?: string | null;
   created_at: string;
-};
-
-export type Pagination = {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-};
-
-export type ListResponse<T> = {
-  success: boolean;
-  message?: string;
-  data: T[];
-  pagination?: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
-};
-
-export type DetailResponse<T> = {
-  success: boolean;
-  message?: string;
-  data: T;
 };

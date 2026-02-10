@@ -318,7 +318,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
         />
       </section>
 
-      <section className="mb-1 pb-2">
+      {/* <section className="mb-1 pb-2">
         <h4
           className={[
             "text-left font-semibold mb-1",
@@ -333,7 +333,7 @@ export default function PhilosopherDetailCard({ philosopher, onClose }: Props) {
           style={{ textAlign: "justify", textJustify: "inter-word" as any }}
           dangerouslySetInnerHTML={{ __html: meta?.conclusion || (loading ? "Loading..." : "—") }}
         />
-      </section>
+      </section> */}
     </aside>
   );
 }

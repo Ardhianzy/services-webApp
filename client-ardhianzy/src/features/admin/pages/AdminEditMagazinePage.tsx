@@ -4,10 +4,20 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import {
-  adminFetchMagazines,
+  adminGetMagazineById,
   adminUpdateMagazine,
   normalizeBackendHtml,
 } from "@/lib/content/api";
+
+function parseFlag(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return v === "1" || v === "true" || v === "yes";
+  }
+  return false;
+}
 
 type AdminMagazineForm = {
   title: string;
@@ -64,12 +74,7 @@ const AdminEditMagazinePage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const list = await adminFetchMagazines();
-        if (cancelled) return;
-
-        const raw: any =
-          (list ?? []).find((item: any) => String(item.id) === String(id)) ??
-          null;
+        const raw: any = await adminGetMagazineById(id);
 
         if (!raw) {
           setForm(null);
@@ -89,7 +94,7 @@ const AdminEditMagazinePage: React.FC = () => {
           keywords: Array.isArray(raw.keywords)
             ? raw.keywords.join(", ")
             : raw.keywords ?? "",
-          isPublished: Boolean(raw.is_published),
+          isPublished: parseFlag(raw.is_published),
         };
 
         setForm(mapped);
@@ -144,6 +149,7 @@ const AdminEditMagazinePage: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
     if (!id || !form) return;
 
     if (!form.title || !form.descriptionHtml) {

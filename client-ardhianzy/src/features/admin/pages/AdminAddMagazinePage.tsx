@@ -1,6 +1,6 @@
 // src/features/admin/pages/AdminAddMagazinePage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import { adminCreateMagazine, normalizeBackendHtml } from "@/lib/content/api";
@@ -48,6 +48,14 @@ const AdminAddMagazinePage: React.FC = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   const updateField = <K extends keyof AdminMagazineForm>(
     key: K,
@@ -336,7 +344,10 @@ const AdminAddMagazinePage: React.FC = () => {
               <button
                 type="button"
                 disabled={submitting}
-                onClick={() => handleSubmit(false)}
+                onClick={() => {
+                  updateField("isPublished", false);
+                  void handleSubmit(false);
+                }}
                 className="px-4 py-2 rounded-full border border-zinc-600 text-xs tracking-[0.15em]
                            hover:bg-zinc-800 disabled:opacity-50 cursor-pointer"
               >
@@ -345,7 +356,10 @@ const AdminAddMagazinePage: React.FC = () => {
               <button
                 type="button"
                 disabled={submitting}
-                onClick={() => handleSubmit(true)}
+                onClick={() => {
+                  updateField("isPublished", true);
+                  void handleSubmit(true);
+                }}
                 className="px-4 py-2 rounded-full border border-white bg-white text-black text-xs tracking-[0.15em]
                            hover:bg-transparent hover:text-white hover:border-white disabled:opacity-50 cursor-pointer"
               >

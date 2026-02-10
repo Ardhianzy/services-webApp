@@ -24,12 +24,12 @@ import MonologuesDetailPage from "@/features/monologues/pages/MonologuesDetailPa
 import ReadingGuideSection from "@/features/home/components/ReadingGuideSection";
 import ReadingGuideDetailPage from "@/features/reading-guides/pages/ReadingGuideDetailPage";
 import ReadingGuideComingSoonPage from "@/features/reading-guides/pages/ReadingGuideComingSoonPage";
-import IdeasTraditionGridSection from "@/features/home/components/IdeasTraditionGridSection";
-import IdeaArticleDetailPage from "@/features/ideas-tradition/pages/IdeaArticleDetailPage";
-import IdeasTraditionComingSoonPage from "@/features/ideas-tradition/pages/IdeasTraditionComingSoonPage";
-import PopCultureReviewSection from "@/features/home/components/PopCultureReviewSection";
-import PopCultureReviewDetailPage from "@/features/pop-cultures/pages/PopCultureReviewDetailPage";
-import PopCultureReviewComingSoonPage from "@/features/pop-cultures/pages/PopCultureReviewComingSoonPage";
+// import IdeasTraditionGridSection from "@/features/home/components/IdeasTraditionGridSection";
+// import IdeaArticleDetailPage from "@/features/ideas-tradition/pages/IdeaArticleDetailPage";
+// import IdeasTraditionComingSoonPage from "@/features/ideas-tradition/pages/IdeasTraditionComingSoonPage";
+// import PopCultureReviewSection from "@/features/home/components/PopCultureReviewSection";
+// import PopCultureReviewDetailPage from "@/features/pop-cultures/pages/PopCultureReviewDetailPage";
+// import PopCultureReviewComingSoonPage from "@/features/pop-cultures/pages/PopCultureReviewComingSoonPage";
 import ShopsSection from "@/features/home/components/ShopsSection";
 import LatestVideosSection from "@/features/home/components/LatestVideosSection";
 import CommunitySection from "@/features/home/components/CommunitySection";
@@ -38,8 +38,8 @@ import MagazinePage from "@/features/magazine/pages/MagazinePage";
 import ShopPage from "@/features/shop/pages/ShopPage";
 import ResearchPage from "@/features/research/pages/ResearchPage";
 import MonologuesPage from "@/features/monologues/pages/MonologuesPage";
-import IdeasTraditionPage from "@/features/ideas-tradition/pages/IdeasTraditionPage";
-import PopCultureReviewPage from "@/features/pop-cultures/pages/PopCultureReviewPage";
+// import IdeasTraditionPage from "@/features/ideas-tradition/pages/IdeasTraditionPage";
+// import PopCultureReviewPage from "@/features/pop-cultures/pages/PopCultureReviewPage";
 import ReadingGuidePage from "@/features/reading-guides/pages/ReadingGuidePage";
 // import ReadPage from "@/features/articles/pages/ReadPage";
 // import LoginPage from "@/features/auth/pages/LoginPage";
@@ -108,8 +108,8 @@ function HomePage() {
         <CourseSection />
         <MonologuesSection />
         <ReadingGuideSection />
-        <IdeasTraditionGridSection />
-        <PopCultureReviewSection />
+        {/* <IdeasTraditionGridSection />
+        <PopCultureReviewSection /> */}
         <ShopsSection />
         <LatestVideosSection />
         <CommunitySection />
@@ -180,7 +180,7 @@ function AppRoutes() {
       />
       <Route path={ROUTES.MONOLOGUES_DETAIL} element={<MonologuesDetailPage />} />
       <Route path={ROUTES.MONOLOGUES_COMING_SOON} element={<MonologuesComingSoonPage />} />
-      <Route
+      {/* <Route
         path={ROUTES.IDEAS_TRADITION}
         element={
           <>
@@ -200,8 +200,8 @@ function AppRoutes() {
           </>
         }
       />
-      <Route path={ROUTES.IDEAS_TRADITION_COMING_SOON} element={<IdeasTraditionComingSoonPage />} />
-      <Route
+      <Route path={ROUTES.IDEAS_TRADITION_COMING_SOON} element={<IdeasTraditionComingSoonPage />} /> */}
+      {/* <Route
         path={ROUTES.POP_CULTURE_REVIEW}
         element={
           <>
@@ -224,7 +224,7 @@ function AppRoutes() {
       <Route
         path={ROUTES.POP_CULTURE_REVIEW_COMING_SOON}
         element={<PopCultureReviewComingSoonPage />}
-      />
+      /> */}
       <Route
         path={ROUTES.READING_GUIDE}
         element={

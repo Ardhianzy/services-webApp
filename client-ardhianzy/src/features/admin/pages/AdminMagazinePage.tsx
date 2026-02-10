@@ -22,6 +22,16 @@ type MagazineRow = MagazineDTO & {
   is_published?: boolean | null;
 };
 
+function parseFlag(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return v === "1" || v === "true" || v === "yes";
+  }
+  return false;
+}
+
 function formatDateShort(value?: string | null) {
   if (!value) return "-";
   const d = new Date(value);
@@ -83,9 +93,7 @@ const AdminMagazinePage: React.FC = () => {
       const desc = (m.meta_description ?? "").toLowerCase();
       const matchSearch =
         !q || title.includes(q) || slug.includes(q) || desc.includes(q);
-      const isPublished = Boolean(
-        (m as MagazineRow).is_published
-      );
+      const isPublished = parseFlag((m as any).is_published);
       const matchStatus =
         statusFilter === "ALL"
           ? true
@@ -213,9 +221,7 @@ const AdminMagazinePage: React.FC = () => {
                 </thead>
                 <tbody>
                   {filteredRows.map((m) => {
-                    const isPublished = Boolean(
-                      (m as MagazineRow).is_published
-                    );
+                    const isPublished = parseFlag((m as any).is_published);
                     const isSelected = selected?.id === m.id;
                     return (
                       <tr
@@ -303,9 +309,7 @@ const AdminMagazinePage: React.FC = () => {
             <div className="bg-black rounded-2xl border border-zinc-800/80 py-5 px-4 overflow-y-auto">
               {(() => {
                 const m = selected;
-                const isPublished = Boolean(
-                  (m as MagazineRow).is_published
-                );
+                const isPublished = parseFlag((m as any).is_published);
                 const htmlDescription = normalizeBackendHtml(
                   m.description ?? ""
                 );

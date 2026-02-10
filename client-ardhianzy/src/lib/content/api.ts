@@ -15,13 +15,24 @@ import type {
 } from "./types";
 import { http, authHeader } from "@/lib/http";
 
+/* =============================================================================
+   BASE URL
+============================================================================= */
+
 const ADMIN_API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ||
-  "";
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") || "";
+
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ?? "";
+
+/* =============================================================================
+   SHARED HELPERS (Pagination + List Normalizer)
+============================================================================= */
 
 type PageParams = {
   page?: number;
   limit?: number;
+  signal?: AbortSignal;
 };
 
 function buildUrlWithPagination(baseUrl: string, params?: PageParams): string {
@@ -38,18 +49,47 @@ function buildUrlWithPagination(baseUrl: string, params?: PageParams): string {
   }
 
   if (!queryParts.length) return baseUrl;
-
   return baseUrl + (baseUrl.includes("?") ? "&" : "?") + queryParts.join("&");
 }
 
-function ensurePagination<T>(
-  data: T[],
-  pagination?: Pagination
-): Pagination {
-  if (pagination) return pagination;
+function toNum(v: unknown, fallback: number): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+}
+
+function normalizePaginationLike(rawPg: any, fallbackTotal: number): Pagination {
+  const total = toNum(rawPg?.total, fallbackTotal);
+  const page = toNum(rawPg?.page, 1);
+  const limit = toNum(rawPg?.limit, Math.max(1, fallbackTotal || 1));
+
+  const totalPagesRaw = rawPg?.totalPages ?? rawPg?.total_pages;
+  const totalPages =
+    Number.isFinite(Number(totalPagesRaw))
+      ? Math.max(0, Number(totalPagesRaw))
+      : limit > 0
+        ? Math.max(0, Math.ceil(total / limit))
+        : 0;
+
+  const hasPrevRaw = rawPg?.hasPreviousPage ?? rawPg?.has_previous_page;
+  const hasNextRaw = rawPg?.hasNextPage ?? rawPg?.has_next_page;
+
+  const hasPreviousPage =
+    typeof hasPrevRaw === "boolean" ? hasPrevRaw : page > 1;
+
+  const hasNextPage =
+    typeof hasNextRaw === "boolean" ? hasNextRaw : page < totalPages;
+
+  return { total, page, limit, totalPages, hasNextPage, hasPreviousPage };
+}
+
+function ensurePagination<T>(data: T[], pagination?: any): Pagination {
+  if (pagination) return normalizePaginationLike(pagination, data.length);
 
   const total = data.length;
-
   return {
     total,
     page: 1,
@@ -58,6 +98,29 @@ function ensurePagination<T>(
     hasNextPage: false,
     hasPreviousPage: false,
   };
+}
+
+function pickArrayFromUnknown<T>(anyRaw: any): T[] | null {
+  if (Array.isArray(anyRaw)) return anyRaw as T[];
+  if (Array.isArray(anyRaw?.data)) return anyRaw.data as T[];
+  if (Array.isArray(anyRaw?.rows)) return anyRaw.rows as T[];
+  if (Array.isArray(anyRaw?.result)) return anyRaw.result as T[];
+
+  if (Array.isArray(anyRaw?.data?.data)) return anyRaw.data.data as T[];
+  if (Array.isArray(anyRaw?.data?.rows)) return anyRaw.data.rows as T[];
+
+  return null;
+}
+
+function pickPaginationFromUnknown(anyRaw: any): any | undefined {
+  return (
+    anyRaw?.pagination ??
+    anyRaw?.pageInfo ??
+    anyRaw?.meta?.pagination ??
+    anyRaw?.data?.pagination ??
+    anyRaw?.data?.pageInfo ??
+    anyRaw?.data?.meta?.pagination
+  );
 }
 
 function normalizeListResponse<T>(
@@ -69,52 +132,19 @@ function normalizeListResponse<T>(
 ): ListResponse<T> {
   const anyRaw: any = raw as any;
 
-  if (Array.isArray(raw)) {
-    const arr = raw as T[];
-    return {
-      success: true,
-      data: arr,
-      pagination: ensurePagination(arr),
-    };
-  }
-
-  if (anyRaw && Array.isArray(anyRaw.data)) {
-    const arr = anyRaw.data as T[];
-    return {
-      success:
-        typeof anyRaw.success === "boolean" ? anyRaw.success : true,
-      message: anyRaw.message,
-      data: arr,
-      pagination: ensurePagination(arr, anyRaw.pagination),
-    };
-  }
+  const arr = pickArrayFromUnknown<T>(anyRaw) ?? [];
+  const pg = pickPaginationFromUnknown(anyRaw);
 
   return {
-    success:
-      typeof anyRaw?.success === "boolean" ? anyRaw.success : true,
-    message: anyRaw?.message,
-    data: [],
-    pagination: ensurePagination([]),
+    success: typeof anyRaw?.success === "boolean" ? anyRaw.success : true,
+    message: typeof anyRaw?.message === "string" ? anyRaw.message : anyRaw?.message,
+    data: arr,
+    pagination: ensurePagination(arr, pg),
   };
 }
 
-async function adminGetList<T>(
-  path: string,
-  params?: PageParams
-): Promise<ListResponse<T>> {
-  const baseUrl = `${ADMIN_API_BASE}${path}`;
-  const url = buildUrlWithPagination(baseUrl, params);
-
-  const res = await http<
-    ListResponse<T> | T[] | { data?: T[]; pagination?: Pagination; success?: boolean; message?: string }
-  >(url, {
-    method: "GET",
-    headers: {
-      ...authHeader(),
-    },
-  });
-
-  return normalizeListResponse<T>(res);
+export function unwrapList<T>(payload: ListResponse<T> | T[] | unknown): T[] {
+  return normalizeListResponse<T>(payload as any).data;
 }
 
 function unwrapAdminDetail<T>(payload: T | { data?: T }): T {
@@ -124,7 +154,71 @@ function unwrapAdminDetail<T>(payload: T | { data?: T }): T {
   return payload as T;
 }
 
-/* ========== ADMIN: ARTICLES ========== */
+/* =============================================================================
+   ADMIN: GET/LIST/READ HELPERS
+============================================================================= */
+
+async function adminGetList<T>(
+  path: string,
+  params?: PageParams
+): Promise<ListResponse<T>> {
+  const baseUrl = `${ADMIN_API_BASE}${path}`;
+  const url = buildUrlWithPagination(baseUrl, params);
+
+  const res = await http<
+    | ListResponse<T>
+    | T[]
+    | { data?: T[]; pagination?: Pagination; success?: boolean; message?: string }
+    | unknown
+  >(url, {
+    method: "GET",
+    headers: {
+      ...authHeader(),
+    },
+    signal: params?.signal,
+  });
+
+  return normalizeListResponse<T>(res);
+}
+
+async function adminGetDetail<T>(
+  path: string,
+  opts?: { signal?: AbortSignal }
+): Promise<T> {
+  const res = await http<T | { data?: T }>(`${ADMIN_API_BASE}${path}`, {
+    method: "GET",
+    headers: { ...authHeader() },
+    signal: opts?.signal,
+  });
+
+  return unwrapAdminDetail<T>(res);
+}
+
+async function adminScanById<T extends { id?: any }>(
+  fetchPage: (params?: PageParams) => Promise<ListResponse<T>>,
+  id: string,
+  opts?: { limit?: number; maxPages?: number; signal?: AbortSignal }
+): Promise<T | null> {
+  const limit =
+    typeof opts?.limit === "number" && opts.limit > 0 ? opts.limit : 50;
+  const maxPages =
+    typeof opts?.maxPages === "number" && opts.maxPages > 0 ? opts.maxPages : 10;
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const res = await fetchPage({ page, limit, signal: opts?.signal });
+    const found = res.data.find((x) => String(x.id) === String(id));
+    if (found) return found;
+
+    const pg = res.pagination;
+    if (!pg || !pg.hasNextPage || page >= (pg.totalPages ?? page)) break;
+  }
+
+  return null;
+}
+
+/* =============================================================================
+   ADMIN: ARTICLES
+============================================================================= */
 
 export async function adminFetchArticlesPaginated(
   params?: PageParams
@@ -139,18 +233,24 @@ export async function adminFetchArticles(
   return res.data;
 }
 
-export async function adminGetArticleById(id: string): Promise<ArticleDTO> {
-  const list = await adminFetchArticles({ page: 1, limit: 1000 });
-  const found = list.find((item) => String(item.id) === String(id));
-  if (!found) {
-    throw new Error("Artikel tidak ditemukan.");
+export async function adminGetArticleById(
+  id: string,
+  opts?: { signal?: AbortSignal }
+): Promise<ArticleDTO> {
+  try {
+    return await adminGetDetail<ArticleDTO>(`/api/articel/${id}`, opts);
+  } catch {
+    const found = await adminScanById<ArticleDTO>(adminFetchArticlesPaginated, id, {
+      limit: 50,
+      maxPages: 10,
+      signal: opts?.signal,
+    });
+    if (!found) throw new Error("Artikel tidak ditemukan.");
+    return found;
   }
-  return found;
 }
 
-export async function adminCreateArticle(
-  formData: FormData
-): Promise<ArticleDTO> {
+export async function adminCreateArticle(formData: FormData): Promise<ArticleDTO> {
   const res = await http<ArticleDTO | { data?: ArticleDTO }>(
     `${ADMIN_API_BASE}/api/articel`,
     {
@@ -182,18 +282,17 @@ export async function adminUpdateArticle(
 }
 
 export async function adminDeleteArticle(id: string): Promise<void> {
-  await http<void | { data?: unknown }>(
-    `${ADMIN_API_BASE}/api/articel/${id}`,
-    {
-      method: "DELETE",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
+  await http<void | { data?: unknown }>(`${ADMIN_API_BASE}/api/articel/${id}`, {
+    method: "DELETE",
+    headers: {
+      ...authHeader(),
+    },
+  });
 }
 
-/* ========== ADMIN: MAGAZINES ========== */
+/* =============================================================================
+   ADMIN: MAGAZINES
+============================================================================= */
 
 export async function adminFetchMagazinesPaginated(
   params?: PageParams
@@ -208,13 +307,21 @@ export async function adminFetchMagazines(
   return res.data;
 }
 
-export async function adminGetMagazineById(id: string): Promise<MagazineDTO> {
-  const list = await adminFetchMagazines({ page: 1, limit: 1000 });
-  const found = list.find((item) => String(item.id) === String(id));
-  if (!found) {
-    throw new Error("Magazine tidak ditemukan.");
+export async function adminGetMagazineById(
+  id: string,
+  opts?: { signal?: AbortSignal }
+): Promise<MagazineDTO> {
+  try {
+    return await adminGetDetail<MagazineDTO>(`/api/megazine/${id}`, opts);
+  } catch {
+    const found = await adminScanById<MagazineDTO>(
+      adminFetchMagazinesPaginated,
+      id,
+      { limit: 50, maxPages: 10, signal: opts?.signal }
+    );
+    if (!found) throw new Error("Magazine tidak ditemukan.");
+    return found;
   }
-  return found;
 }
 
 export async function adminCreateMagazine(
@@ -251,18 +358,17 @@ export async function adminUpdateMagazine(
 }
 
 export async function adminDeleteMagazine(id: string): Promise<void> {
-  await http<void | { data?: unknown }>(
-    `${ADMIN_API_BASE}/api/megazine/${id}`,
-    {
-      method: "DELETE",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
+  await http<void | { data?: unknown }>(`${ADMIN_API_BASE}/api/megazine/${id}`, {
+    method: "DELETE",
+    headers: {
+      ...authHeader(),
+    },
+  });
 }
 
-/* ========== ADMIN: MONOLOGUES ========== */
+/* =============================================================================
+   ADMIN: MONOLOGUES
+============================================================================= */
 
 export async function adminFetchMonologuesPaginated(
   params?: PageParams
@@ -278,14 +384,20 @@ export async function adminFetchMonologues(
 }
 
 export async function adminGetMonologueById(
-  id: string
+  id: string,
+  opts?: { signal?: AbortSignal }
 ): Promise<MonologueDTO> {
-  const list = await adminFetchMonologues({ page: 1, limit: 1000 });
-  const found = list.find((item) => String(item.id) === String(id));
-  if (!found) {
-    throw new Error("Monologue tidak ditemukan.");
+  try {
+    return await adminGetDetail<MonologueDTO>(`/api/monologues/${id}`, opts);
+  } catch {
+    const found = await adminScanById<MonologueDTO>(
+      adminFetchMonologuesPaginated,
+      id,
+      { limit: 50, maxPages: 10, signal: opts?.signal }
+    );
+    if (!found) throw new Error("Monologue tidak ditemukan.");
+    return found;
   }
-  return found;
 }
 
 export async function adminCreateMonologue(
@@ -333,7 +445,9 @@ export async function adminDeleteMonologue(id: string): Promise<void> {
   );
 }
 
-/* ========== ADMIN: RESEARCH ========== */
+/* =============================================================================
+   ADMIN: RESEARCH
+============================================================================= */
 
 export async function adminFetchResearchPaginated(
   params?: PageParams
@@ -348,13 +462,21 @@ export async function adminFetchResearch(
   return res.data;
 }
 
-export async function adminGetResearchById(id: string): Promise<ResearchDTO> {
-  const list = await adminFetchResearch({ page: 1, limit: 1000 });
-  const found = list.find((item) => String(item.id) === String(id));
-  if (!found) {
-    throw new Error("Research tidak ditemukan.");
+export async function adminGetResearchById(
+  id: string,
+  opts?: { signal?: AbortSignal }
+): Promise<ResearchDTO> {
+  try {
+    return await adminGetDetail<ResearchDTO>(`/api/research/${id}`, opts);
+  } catch {
+    const found = await adminScanById<ResearchDTO>(
+      adminFetchResearchPaginated,
+      id,
+      { limit: 50, maxPages: 10, signal: opts?.signal }
+    );
+    if (!found) throw new Error("Research tidak ditemukan.");
+    return found;
   }
-  return found;
 }
 
 export async function adminCreateResearch(
@@ -402,7 +524,9 @@ export async function adminDeleteResearch(id: string): Promise<void> {
   );
 }
 
-/* ========== ADMIN: SHOP ========== */
+/* =============================================================================
+   ADMIN: SHOP
+============================================================================= */
 
 export async function adminFetchShopsPaginated(
   params?: PageParams
@@ -410,25 +534,29 @@ export async function adminFetchShopsPaginated(
   return adminGetList<ShopDTO>("/api/shop", params);
 }
 
-export async function adminFetchShops(
-  params?: PageParams
-): Promise<ShopDTO[]> {
+export async function adminFetchShops(params?: PageParams): Promise<ShopDTO[]> {
   const res = await adminFetchShopsPaginated(params);
   return res.data;
 }
 
-export async function adminGetShopById(id: string): Promise<ShopDTO> {
-  const list = await adminFetchShops({ page: 1, limit: 1000 });
-  const found = list.find((item) => String(item.id) === String(id));
-  if (!found) {
-    throw new Error("Shop item tidak ditemukan.");
+export async function adminGetShopById(
+  id: string,
+  opts?: { signal?: AbortSignal }
+): Promise<ShopDTO> {
+  try {
+    return await adminGetDetail<ShopDTO>(`/api/shop/${id}`, opts);
+  } catch {
+    const found = await adminScanById<ShopDTO>(adminFetchShopsPaginated, id, {
+      limit: 50,
+      maxPages: 10,
+      signal: opts?.signal,
+    });
+    if (!found) throw new Error("Shop item tidak ditemukan.");
+    return found;
   }
-  return found;
 }
 
-export async function adminCreateShop(
-  formData: FormData
-): Promise<ShopDTO> {
+export async function adminCreateShop(formData: FormData): Promise<ShopDTO> {
   const res = await http<ShopDTO | { data?: ShopDTO }>(
     `${ADMIN_API_BASE}/api/shop`,
     {
@@ -460,50 +588,53 @@ export async function adminUpdateShop(
 }
 
 export async function adminDeleteShop(id: string): Promise<void> {
-  await http<void | { data?: unknown }>(
-    `${ADMIN_API_BASE}/api/shop/${id}`,
-    {
-      method: "DELETE",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
+  await http<void | { data?: unknown }>(`${ADMIN_API_BASE}/api/shop/${id}`, {
+    method: "DELETE",
+    headers: {
+      ...authHeader(),
+    },
+  });
 }
 
-/* ========== ADMIN: ToT (Timeline of Thought) ========== */
+/* =============================================================================
+   ADMIN: ToT (Timeline of Thought)
+============================================================================= */
 
 export async function adminFetchToTPaginated(
   params?: PageParams
 ): Promise<ListResponse<ToTDTO>> {
-  return adminGetList<ToTDTO>("/api/tot", params);
+  return adminGetList<ToTDTO>("/api/ToT", params);
 }
 
-export async function adminFetchToT(
-  params?: PageParams
-): Promise<ToTDTO[]> {
+export async function adminFetchToT(params?: PageParams): Promise<ToTDTO[]> {
   const res = await adminFetchToTPaginated(params);
   return res.data;
 }
 
-export async function adminGetToTById(id: string): Promise<ToTDTO> {
-  const res = await http<ToTDTO | { data?: ToTDTO }>(
-    `${ADMIN_API_BASE}/api/tot/${id}`,
-    {
-      method: "GET",
-      headers: {
-        ...authHeader(),
-      },
+export async function adminGetToTById(
+  id: string,
+  opts?: { signal?: AbortSignal }
+): Promise<ToTDTO> {
+  try {
+    return await adminGetDetail<ToTDTO>(`/api/tot/${id}`, opts);
+  } catch {
+    try {
+      return await adminGetDetail<ToTDTO>(`/api/ToT/${id}`, opts);
+    } catch {
+      const found = await adminScanById<ToTDTO>(adminFetchToTPaginated, id, {
+        limit: 50,
+        maxPages: 10,
+        signal: opts?.signal,
+      });
+      if (!found) throw new Error("ToT tidak ditemukan.");
+      return found;
     }
-  );
-  return unwrapAdminDetail<ToTDTO>(res);
+  }
 }
 
-export async function adminCreateToT(
-  formData: FormData
-): Promise<ToTDTO> {
+export async function adminCreateToT(formData: FormData): Promise<ToTDTO> {
   const res = await http<ToTDTO | { data?: ToTDTO }>(
-    `${ADMIN_API_BASE}/api/tot`,
+    `${ADMIN_API_BASE}/api/ToT`,
     {
       method: "POST",
       body: formData,
@@ -519,32 +650,54 @@ export async function adminUpdateToT(
   id: string,
   formData: FormData
 ): Promise<ToTDTO> {
-  const res = await http<ToTDTO | { data?: ToTDTO }>(
-    `${ADMIN_API_BASE}/api/tot/${id}`,
-    {
-      method: "PUT",
-      body: formData,
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
-  return unwrapAdminDetail<ToTDTO>(res);
+  try {
+    const res = await http<ToTDTO | { data?: ToTDTO }>(
+      `${ADMIN_API_BASE}/api/tot/${id}`,
+      {
+        method: "PUT",
+        body: formData,
+        headers: {
+          ...authHeader(),
+        },
+      }
+    );
+    return unwrapAdminDetail<ToTDTO>(res);
+  } catch {
+    const res = await http<ToTDTO | { data?: ToTDTO }>(
+      `${ADMIN_API_BASE}/api/ToT/${id}`,
+      {
+        method: "PUT",
+        body: formData,
+        headers: {
+          ...authHeader(),
+        },
+      }
+    );
+    return unwrapAdminDetail<ToTDTO>(res);
+  }
 }
 
 export async function adminDeleteToT(id: string): Promise<void> {
-  await http<void | { data?: unknown }>(
-    `${ADMIN_API_BASE}/api/tot/${id}`,
-    {
+  try {
+    await http<void | { data?: unknown }>(`${ADMIN_API_BASE}/api/tot/${id}`, {
       method: "DELETE",
       headers: {
         ...authHeader(),
       },
-    }
-  );
+    });
+  } catch {
+    await http<void | { data?: unknown }>(`${ADMIN_API_BASE}/api/ToT/${id}`, {
+      method: "DELETE",
+      headers: {
+        ...authHeader(),
+      },
+    });
+  }
 }
 
-/* ========== ADMIN: ToT Meta ========== */
+/* =============================================================================
+   ADMIN: ToT Meta
+============================================================================= */
 
 export type ToTMetaDTO = ToTMetaDTOBase;
 
@@ -561,17 +714,21 @@ export async function adminFetchToTMeta(
   return res.data;
 }
 
-export async function adminGetToTMetaById(id: string): Promise<ToTMetaDTO> {
-  const res = await http<ToTMetaDTO | { data?: ToTMetaDTO }>(
-    `${ADMIN_API_BASE}/api/tot-meta/${id}`,
-    {
-      method: "GET",
-      headers: {
-        ...authHeader(),
-      },
-    }
-  );
-  return unwrapAdminDetail<ToTMetaDTO>(res);
+export async function adminGetToTMetaById(
+  id: string,
+  opts?: { signal?: AbortSignal }
+): Promise<ToTMetaDTO> {
+  try {
+    return await adminGetDetail<ToTMetaDTO>(`/api/tot-meta/${id}`, opts);
+  } catch {
+    const found = await adminScanById<ToTMetaDTO>(
+      adminFetchToTMetaPaginated as any,
+      id,
+      { limit: 50, maxPages: 10, signal: opts?.signal }
+    );
+    if (!found) throw new Error("ToT Meta tidak ditemukan.");
+    return found as ToTMetaDTO;
+  }
 }
 
 export async function adminCreateToTMeta(
@@ -640,30 +797,184 @@ export async function adminDeleteToTMeta(id: string): Promise<void> {
   );
 }
 
-/* ============================================================================
-   PUBLIC CONTENT API
-============================================================================ */
+/* =============================================================================
+   PUBLIC CONTENT API (GET/LIST/READ) - (tetap, tapi list normalizer sudah kuat)
+============================================================================= */
 
-const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ??
-  "";
+type CacheEntry = {
+  key: string;
+  expiry: number;
+  promise: Promise<any>;
+  controller?: AbortController;
+  refCount: number;
+  done: boolean;
+};
 
-async function getJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-    credentials: "omit",
-    signal,
+const GET_CACHE = new Map<string, CacheEntry>();
+
+function sleep(ms: number, signal?: AbortSignal) {
+  if (!signal) return new Promise((r) => setTimeout(r, ms));
+
+  return new Promise<void>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+
+    const t = window.setTimeout(() => {
+      cleanup();
+      resolve();
+    }, ms);
+
+    const onAbort = () => {
+      cleanup();
+      try {
+        window.clearTimeout(t);
+      } catch {}
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+
+    const cleanup = () => {
+      signal.removeEventListener("abort", onAbort);
+    };
+
+    signal.addEventListener("abort", onAbort, { once: true });
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status} ${res.statusText} :: ${text}`);
-  }
-  return (await res.json()) as T;
 }
 
-export function unwrapList<T>(payload: ListResponse<T> | T[] | unknown): T[] {
-  return normalizeListResponse<T>(payload as any).data;
+function parseRetryAfterMs(res: Response): number | null {
+  const ra = res.headers.get("Retry-After");
+  if (!ra) return null;
+
+  const asNum = Number(ra);
+  if (!Number.isNaN(asNum) && asNum >= 0) return Math.floor(asNum * 1000);
+
+  const asDate = Date.parse(ra);
+  if (!Number.isNaN(asDate)) {
+    const diff = asDate - Date.now();
+    return diff > 0 ? diff : 0;
+  }
+
+  return null;
+}
+
+function makeAbortPromise(signal?: AbortSignal): Promise<never> | null {
+  if (!signal) return null;
+
+  if (signal.aborted) {
+    return Promise.reject(new DOMException("Aborted", "AbortError"));
+  }
+
+  return new Promise((_, rej) => {
+    signal.addEventListener(
+      "abort",
+      () => rej(new DOMException("Aborted", "AbortError")),
+      { once: true }
+    );
+  });
+}
+
+function attachCacheConsumer<T>(entry: CacheEntry, signal?: AbortSignal): Promise<T> {
+  entry.refCount += 1;
+
+  let released = false;
+  const release = () => {
+    if (released) return;
+    released = true;
+
+    entry.refCount = Math.max(0, entry.refCount - 1);
+
+    if (entry.refCount === 0 && entry.controller && !entry.done) {
+      try {
+        entry.controller.abort();
+      } catch {}
+
+      GET_CACHE.delete(entry.key);
+    }
+  };
+
+  const abortP = makeAbortPromise(signal);
+
+  const combined = abortP
+    ? (Promise.race([entry.promise as Promise<T>, abortP]) as Promise<T>)
+    : (entry.promise as Promise<T>);
+
+  return combined.finally(release);
+}
+
+async function getJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
+  const TTL_MS = 15_000;
+  const now = Date.now();
+
+  let entry = GET_CACHE.get(url);
+
+  if (!entry || entry.expiry <= now) {
+    const ctrl = new AbortController();
+
+    const exec = (async () => {
+      const max429Retry = 1;
+      let attempt = 0;
+
+      while (true) {
+        if (ctrl.signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+
+        const res = await fetch(url, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          credentials: "omit",
+          signal: ctrl.signal,
+        });
+
+        if (res.ok) return (await res.json()) as T;
+
+        if (res.status === 429 && attempt < max429Retry) {
+          attempt += 1;
+          const retryMs = parseRetryAfterMs(res) ?? 1500;
+          const jitter = Math.floor(Math.random() * 250);
+          await sleep(retryMs + jitter, ctrl.signal);
+          continue;
+        }
+
+        const text = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status} ${res.statusText} :: ${text}`);
+      }
+    })();
+
+    entry = {
+      key: url,
+      expiry: now + TTL_MS,
+      promise: exec,
+      controller: ctrl,
+      refCount: 0,
+      done: false,
+    };
+
+    GET_CACHE.set(url, entry);
+
+    exec
+      .finally(() => {
+        const cur = GET_CACHE.get(url);
+        if (cur?.promise === exec) {
+          cur.done = true;
+        }
+      })
+      .catch(() => {});
+  }
+
+  try {
+    return await attachCacheConsumer<T>(entry, signal);
+  } catch (e: any) {
+    const isCallerAbort = !!signal?.aborted && e?.name === "AbortError";
+
+    const cur = GET_CACHE.get(url);
+    if (cur?.promise === entry.promise && !isCallerAbort) {
+      GET_CACHE.delete(url);
+    }
+
+    throw e;
+  }
 }
 
 function isAbortSignal(x: unknown): x is AbortSignal {
@@ -680,19 +991,27 @@ function isPublishedFlag(value: unknown): boolean {
   return false;
 }
 
+function isShopPublishedLike(item: any): boolean {
+  const raw = item?.is_published;
+  if (typeof raw !== "undefined" && raw !== null) return isPublishedFlag(raw);
+  return (
+    item?.is_available === true ||
+    item?.is_available === 1 ||
+    item?.is_available === "true"
+  );
+}
+
 export function normalizeBackendHtml(raw: string | null | undefined): string {
   if (!raw) return "";
 
-  let html = String(raw)
-    .replace(/\\n/g, "\n")
-    .replace(/\\t/g, "\t");
+  let html = String(raw).replace(/\\n/g, "\n").replace(/\\t/g, "\t");
 
-  const decodeUnicodeEscapes = (s: string) =>
+  const useDecode = (s: string) =>
     s.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
       String.fromCharCode(parseInt(hex, 16))
     );
 
-  html = decodeUnicodeEscapes(decodeUnicodeEscapes(html));
+  html = useDecode(useDecode(html));
 
   const decodeHtmlEntitiesSafely = (s: string) => {
     if (typeof window === "undefined") return s;
@@ -713,6 +1032,31 @@ export function normalizeBackendHtml(raw: string | null | undefined): string {
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
+
+  function repairLists(doc2: Document) {
+    const lists = Array.from(doc2.querySelectorAll("ol, ul"));
+
+    for (const list of lists) {
+      const children = Array.from(list.childNodes);
+
+      for (const child of children) {
+        if (child.nodeType === Node.TEXT_NODE && !(child.textContent ?? "").trim()) {
+          child.remove();
+          continue;
+        }
+
+        const isLi =
+          child.nodeType === Node.ELEMENT_NODE &&
+          (child as HTMLElement).tagName.toLowerCase() === "li";
+        if (isLi) continue;
+
+        const li = doc2.createElement("li");
+        list.insertBefore(li, child);
+        li.appendChild(child);
+      }
+    }
+  }
+
   repairLists(doc);
 
   const body = doc.body || doc.getElementsByTagName("body")[0];
@@ -820,33 +1164,6 @@ export function normalizeBackendHtml(raw: string | null | undefined): string {
 
     const next = replaceTag(el, bold ? "strong" : "em");
     return next;
-  }
-
-  function repairLists(doc: Document) {
-    const lists = Array.from(doc.querySelectorAll("ol, ul"));
-
-    for (const list of lists) {
-      // Snapshot supaya iterasi stabil walaupun DOM berubah
-      const children = Array.from(list.childNodes);
-
-      for (const child of children) {
-        // Hapus whitespace text node agar tidak bikin <li> kosong
-        if (child.nodeType === Node.TEXT_NODE && !(child.textContent ?? "").trim()) {
-          child.remove();
-          continue;
-        }
-
-        const isLi =
-          child.nodeType === Node.ELEMENT_NODE &&
-          (child as HTMLElement).tagName.toLowerCase() === "li";
-        if (isLi) continue;
-
-        // Bungkus node non-<li> menjadi <li> di posisi yang sama (order terjaga)
-        const li = doc.createElement("li");
-        list.insertBefore(li, child);
-        li.appendChild(child);
-      }
-    }
   }
 
   function sanitizeNode(node: Node | null): void {
@@ -957,32 +1274,80 @@ async function getPublicList<T>(
     page?: number;
     limit?: number;
     publishedOnly?: boolean;
+    publishFilter?: (item: any) => boolean;
   }
 ): Promise<ListResponse<T>> {
-  const { signal, page, limit, publishedOnly } = opts ?? {};
+  const { signal, page, limit, publishedOnly, publishFilter } = opts ?? {};
   const baseUrl = `${API_BASE}${path}`;
   const url = buildUrlWithPagination(baseUrl, { page, limit });
 
   const payload = await getJSON<unknown>(url, signal);
   const normalized = normalizeListResponse<T>(payload);
 
-  const data = publishedOnly
-    ? normalized.data.filter((item) =>
-        isPublishedFlag((item as any)?.is_published)
-      )
-    : normalized.data;
+  const data =
+    publishedOnly
+      ? normalized.data.filter((item) =>
+          publishFilter
+            ? publishFilter(item as any)
+            : isPublishedFlag((item as any)?.is_published)
+        )
+      : normalized.data;
 
-  return {
-    ...normalized,
-    data,
-  };
+  return { ...normalized, data };
+}
+
+async function fetchAllPublicPages<T>(
+  path: string,
+  opts?: {
+    signal?: AbortSignal;
+    limit?: number;
+    publishedOnly?: boolean;
+    hardCapPages?: number;
+    publishFilter?: (item: any) => boolean;
+  }
+): Promise<T[]> {
+  const signal = opts?.signal;
+  const limit = typeof opts?.limit === "number" && opts.limit > 0 ? opts.limit : 50;
+  const publishedOnly =
+    typeof opts?.publishedOnly === "boolean" ? opts.publishedOnly : true;
+  const hardCapPages =
+    typeof opts?.hardCapPages === "number" && opts.hardCapPages > 0
+      ? opts.hardCapPages
+      : 50;
+
+  const all: T[] = [];
+  let page = 1;
+  let hasNext = true;
+
+  while (hasNext) {
+    if (page > hardCapPages) break;
+
+    const res = await getPublicList<T>(path, {
+      signal,
+      page,
+      limit,
+      publishedOnly,
+      publishFilter: opts?.publishFilter,
+    });
+
+    all.push(...res.data);
+
+    const pg = res.pagination;
+    if (!pg) {
+      hasNext = false;
+    } else {
+      hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
+    }
+
+    if (hasNext) page += 1;
+  }
+
+  return all;
 }
 
 export const contentApi = {
   magazines: {
-    async listPaginated(
-      opts?: { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<ListResponse<MagazineDTO>> {
+    async listPaginated(opts?: { signal?: AbortSignal; page?: number; limit?: number }): Promise<ListResponse<MagazineDTO>> {
       return getPublicList<MagazineDTO>("/api/megazine", {
         signal: opts?.signal,
         page: opts?.page,
@@ -991,52 +1356,33 @@ export const contentApi = {
       });
     },
 
-    async list(
-      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<MagazineDTO[]> {
+    async list(arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }): Promise<MagazineDTO[]> {
       const signal = isAbortSignal(arg) ? arg : arg?.signal;
-      const limit =
-        !isAbortSignal(arg) &&
-        typeof arg?.limit === "number" &&
-        !Number.isNaN(arg.limit) &&
-        arg.limit > 0
-          ? arg.limit
-          : 50;
+      const isObj = arg && typeof arg === "object" && !isAbortSignal(arg);
+      const page = isObj ? (arg as any).page : undefined;
+      const limit = isObj ? (arg as any).limit : undefined;
 
-      const all: MagazineDTO[] = [];
-      let page = 1;
-      let hasNext = true;
-
-      while (hasNext) {
+      if (typeof page === "number" && page > 0) {
         const res = await getPublicList<MagazineDTO>("/api/megazine", {
           signal,
           page,
           limit,
           publishedOnly: true,
         });
-
-        all.push(...res.data);
-
-        const pg = res.pagination;
-        if (!pg) {
-          hasNext = false;
-        } else {
-          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
-        }
-
-        if (hasNext) {
-          page += 1;
-        }
+        return res.data;
       }
 
-      return all;
+      return fetchAllPublicPages<MagazineDTO>("/api/megazine", {
+        signal,
+        limit,
+        publishedOnly: true,
+        hardCapPages: 50,
+      });
     },
   },
 
   research: {
-    async listPaginated(
-      opts?: { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<ListResponse<ResearchDTO>> {
+    async listPaginated(opts?: { signal?: AbortSignal; page?: number; limit?: number }): Promise<ListResponse<ResearchDTO>> {
       return getPublicList<ResearchDTO>("/api/research", {
         signal: opts?.signal,
         page: opts?.page,
@@ -1045,52 +1391,33 @@ export const contentApi = {
       });
     },
 
-    async list(
-      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<ResearchDTO[]> {
+    async list(arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }): Promise<ResearchDTO[]> {
       const signal = isAbortSignal(arg) ? arg : arg?.signal;
-      const limit =
-        !isAbortSignal(arg) &&
-        typeof arg?.limit === "number" &&
-        !Number.isNaN(arg.limit) &&
-        arg.limit > 0
-          ? arg.limit
-          : 50;
+      const isObj = arg && typeof arg === "object" && !isAbortSignal(arg);
+      const page = isObj ? (arg as any).page : undefined;
+      const limit = isObj ? (arg as any).limit : undefined;
 
-      const all: ResearchDTO[] = [];
-      let page = 1;
-      let hasNext = true;
-
-      while (hasNext) {
+      if (typeof page === "number" && page > 0) {
         const res = await getPublicList<ResearchDTO>("/api/research", {
           signal,
           page,
           limit,
           publishedOnly: true,
         });
-
-        all.push(...res.data);
-
-        const pg = res.pagination;
-        if (!pg) {
-          hasNext = false;
-        } else {
-          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
-        }
-
-        if (hasNext) {
-          page += 1;
-        }
+        return res.data;
       }
 
-      return all;
+      return fetchAllPublicPages<ResearchDTO>("/api/research", {
+        signal,
+        limit,
+        publishedOnly: true,
+        hardCapPages: 50,
+      });
     },
   },
 
   monologues: {
-    async listPaginated(
-      opts?: { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<ListResponse<MonologueDTO>> {
+    async listPaginated(opts?: { signal?: AbortSignal; page?: number; limit?: number }): Promise<ListResponse<MonologueDTO>> {
       return getPublicList<MonologueDTO>("/api/monologues", {
         signal: opts?.signal,
         page: opts?.page,
@@ -1099,45 +1426,28 @@ export const contentApi = {
       });
     },
 
-    async list(
-      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<MonologueDTO[]> {
+    async list(arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }): Promise<MonologueDTO[]> {
       const signal = isAbortSignal(arg) ? arg : arg?.signal;
-      const limit =
-        !isAbortSignal(arg) &&
-        typeof arg?.limit === "number" &&
-        !Number.isNaN(arg.limit) &&
-        arg.limit > 0
-          ? arg.limit
-          : 50;
+      const isObj = arg && typeof arg === "object" && !isAbortSignal(arg);
+      const page = isObj ? (arg as any).page : undefined;
+      const limit = isObj ? (arg as any).limit : undefined;
 
-      const all: MonologueDTO[] = [];
-      let page = 1;
-      let hasNext = true;
-
-      while (hasNext) {
+      if (typeof page === "number" && page > 0) {
         const res = await getPublicList<MonologueDTO>("/api/monologues", {
           signal,
           page,
           limit,
           publishedOnly: true,
         });
-
-        all.push(...res.data);
-
-        const pg = res.pagination;
-        if (!pg) {
-          hasNext = false;
-        } else {
-          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
-        }
-
-        if (hasNext) {
-          page += 1;
-        }
+        return res.data;
       }
 
-      return all;
+      return fetchAllPublicPages<MonologueDTO>("/api/monologues", {
+        signal,
+        limit,
+        publishedOnly: true,
+        hardCapPages: 50,
+      });
     },
   },
 
@@ -1154,11 +1464,7 @@ export const contentApi = {
     ): Promise<ListResponse<ArticleDTO>> {
       const isObj = arg && typeof arg === "object" && !isAbortSignal(arg);
       const category = isObj ? (arg as any).category : undefined;
-      const signal = isObj
-        ? (arg as any).signal
-        : isAbortSignal(arg)
-        ? (arg as AbortSignal)
-        : undefined;
+      const signal = isObj ? (arg as any).signal : isAbortSignal(arg) ? (arg as AbortSignal) : undefined;
       const page = isObj ? (arg as any).page : undefined;
       const limit = isObj ? (arg as any).limit : undefined;
 
@@ -1171,13 +1477,8 @@ export const contentApi = {
 
       if (category) {
         const target = String(category).toUpperCase();
-        const filtered = res.data.filter(
-          (x) => (x.category ?? "").toUpperCase() === target
-        );
-        return {
-          ...res,
-          data: filtered,
-        };
+        const filtered = res.data.filter((x) => (x.category ?? "").toUpperCase() === target);
+        return { ...res, data: filtered };
       }
 
       return res;
@@ -1195,52 +1496,36 @@ export const contentApi = {
     ): Promise<ArticleDTO[]> {
       const isObj = arg && typeof arg === "object" && !isAbortSignal(arg);
       const category = isObj ? (arg as any).category : undefined;
-      const signal = isObj
-        ? (arg as any).signal
-        : isAbortSignal(arg)
-        ? (arg as AbortSignal)
-        : undefined;
+      const signal = isObj ? (arg as any).signal : isAbortSignal(arg) ? (arg as AbortSignal) : undefined;
+      const page = isObj ? (arg as any).page : undefined;
+      const limit = isObj ? (arg as any).limit : undefined;
 
-      const pageSize =
-        isObj &&
-        typeof (arg as any).limit === "number" &&
-        !Number.isNaN((arg as any).limit) &&
-        (arg as any).limit > 0
-          ? (arg as any).limit
-          : 50;
-
-      const all: ArticleDTO[] = [];
-      let page = 1;
-      let hasNext = true;
-
-      while (hasNext) {
+      if (typeof page === "number" && page > 0) {
         const res = await getPublicList<ArticleDTO>("/api/articel", {
           signal,
           page,
-          limit: pageSize,
+          limit,
           publishedOnly: true,
         });
 
-        let pageData = res.data;
         if (category) {
           const target = String(category).toUpperCase();
-          pageData = pageData.filter(
-            (x) => (x.category ?? "").toUpperCase() === target
-          );
+          return res.data.filter((x) => (x.category ?? "").toUpperCase() === target);
         }
 
-        all.push(...pageData);
+        return res.data;
+      }
 
-        const pg = res.pagination;
-        if (!pg) {
-          hasNext = false;
-        } else {
-          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
-        }
+      const all = await fetchAllPublicPages<ArticleDTO>("/api/articel", {
+        signal,
+        limit,
+        publishedOnly: true,
+        hardCapPages: 50,
+      });
 
-        if (hasNext) {
-          page += 1;
-        }
+      if (category) {
+        const target = String(category).toUpperCase();
+        return all.filter((x) => (x.category ?? "").toUpperCase() === target);
       }
 
       return all;
@@ -1251,77 +1536,90 @@ export const contentApi = {
       opts?: { category?: ArticleCategory; signal?: AbortSignal }
     ): Promise<ArticleDTO | null> {
       const { category, signal } = opts ?? {};
-      const list = await contentApi.articles.list({
-        category,
-        signal,
-        page: 1,
-        limit: 1000,
-      });
-      const norm = (s: string) => s?.trim().toLowerCase();
-      const found = list.find((a) => norm(a.slug) === norm(slug));
-      return found ?? null;
+      const norm = (s: string) => (s ?? "").trim().toLowerCase();
+
+      try {
+        const url = `${API_BASE}/api/articel/title/${encodeURIComponent(slug)}`;
+        const res = await getJSON<any>(url, signal);
+
+        const article: ArticleDTO | null =
+          res?.data && !Array.isArray(res.data) ? (res.data as ArticleDTO) :
+          res && !Array.isArray(res) ? (res as ArticleDTO) :
+          null;
+
+        if (article && isPublishedFlag((article as any)?.is_published)) {
+          if (!category) return article;
+
+          const target = String(category).toUpperCase();
+          if (String(article.category ?? "").toUpperCase() === target) return article;
+
+          return null;
+        }
+      } catch {}
+
+      const PAGE_LIMIT = 100;
+      const MAX_PAGES_SCAN = 10;
+
+      for (let page = 1; page <= MAX_PAGES_SCAN; page += 1) {
+        const res = await contentApi.articles.listPaginated({
+          category,
+          signal,
+          page,
+          limit: PAGE_LIMIT,
+        });
+
+        const found = res.data.find((a) => norm(a.slug) === norm(slug));
+        if (found) return found;
+
+        const pg = res.pagination;
+        if (!pg || !pg.hasNextPage || page >= (pg.totalPages ?? page)) break;
+      }
+
+      return null;
     },
   },
 
   shops: {
-    async listPaginated(
-      opts?: { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<ListResponse<ShopDTO>> {
+    async listPaginated(opts?: { signal?: AbortSignal; page?: number; limit?: number }): Promise<ListResponse<ShopDTO>> {
       return getPublicList<ShopDTO>("/api/shop", {
         signal: opts?.signal,
         page: opts?.page,
         limit: opts?.limit,
         publishedOnly: true,
+        publishFilter: isShopPublishedLike,
       });
     },
 
-    async list(
-      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<ShopDTO[]> {
+    async list(arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }): Promise<ShopDTO[]> {
       const signal = isAbortSignal(arg) ? arg : arg?.signal;
-      const limit =
-        !isAbortSignal(arg) &&
-        typeof arg?.limit === "number" &&
-        !Number.isNaN(arg.limit) &&
-        arg.limit > 0
-          ? arg.limit
-          : 50;
+      const isObj = arg && typeof arg === "object" && !isAbortSignal(arg);
+      const page = isObj ? (arg as any).page : undefined;
+      const limit = isObj ? (arg as any).limit : undefined;
 
-      const all: ShopDTO[] = [];
-      let page = 1;
-      let hasNext = true;
-
-      while (hasNext) {
+      if (typeof page === "number" && page > 0) {
         const res = await getPublicList<ShopDTO>("/api/shop", {
           signal,
           page,
           limit,
           publishedOnly: true,
+          publishFilter: isShopPublishedLike,
         });
-
-        all.push(...res.data);
-
-        const pg = res.pagination;
-        if (!pg) {
-          hasNext = false;
-        } else {
-          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
-        }
-
-        if (hasNext) {
-          page += 1;
-        }
+        return res.data;
       }
 
-      return all;
+      return fetchAllPublicPages<ShopDTO>("/api/shop", {
+        signal,
+        limit,
+        publishedOnly: true,
+        hardCapPages: 50,
+        publishFilter: isShopPublishedLike,
+      });
     },
   },
 
   tot: {
-    async listPaginated(
-      opts?: { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<ListResponse<ToTDTO>> {
-      return getPublicList<ToTDTO>("/api/tot", {
+    async listPaginated(opts?: { signal?: AbortSignal; page?: number; limit?: number }): Promise<ListResponse<ToTDTO>> {
+      return getPublicList<ToTDTO>("/api/ToT", {
         signal: opts?.signal,
         page: opts?.page,
         limit: opts?.limit,
@@ -1329,53 +1627,33 @@ export const contentApi = {
       });
     },
 
-    async list(
-      arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }
-    ): Promise<ToTDTO[]> {
+    async list(arg?: AbortSignal | { signal?: AbortSignal; page?: number; limit?: number }): Promise<ToTDTO[]> {
       const signal = isAbortSignal(arg) ? arg : arg?.signal;
-      const limit =
-        !isAbortSignal(arg) &&
-        typeof arg?.limit === "number" &&
-        !Number.isNaN(arg.limit) &&
-        arg.limit > 0
-          ? arg.limit
-          : 100;
+      const isObj = arg && typeof arg === "object" && !isAbortSignal(arg);
+      const page = isObj ? (arg as any).page : undefined;
+      const limit = isObj ? (arg as any).limit : undefined;
 
-      const all: ToTDTO[] = [];
-      let page = 1;
-      let hasNext = true;
-
-      while (hasNext) {
-        const res = await getPublicList<ToTDTO>("/api/tot", {
+      if (typeof page === "number" && page > 0) {
+        const res = await getPublicList<ToTDTO>("/api/ToT", {
           signal,
           page,
           limit,
           publishedOnly: true,
         });
-
-        all.push(...res.data);
-
-        const pg = res.pagination;
-        if (!pg) {
-          hasNext = false;
-        } else {
-          hasNext = pg.hasNextPage && page < (pg.totalPages ?? page);
-        }
-
-        if (hasNext) {
-          page += 1;
-        }
+        return res.data;
       }
 
-      return all;
+      return fetchAllPublicPages<ToTDTO>("/api/ToT", {
+        signal,
+        limit: typeof limit === "number" && limit > 0 ? limit : 100,
+        publishedOnly: true,
+        hardCapPages: 50,
+      });
     },
   },
 
   totMeta: {
-    async byTotId(
-      totId: string,
-      signal?: AbortSignal
-    ): Promise<ToTMetaDTO | null> {
+    async byTotId(totId: string, signal?: AbortSignal): Promise<ToTMetaDTO | null> {
       const url = `${API_BASE}/api/tot-meta/tot/${encodeURIComponent(totId)}`;
       const any = await getJSON<any>(url, signal);
 
@@ -1385,8 +1663,7 @@ export const contentApi = {
         meta = any.data as ToTMetaDTO;
       } else if (Array.isArray(any?.data)) {
         const list = any.data as ToTMetaDTO[];
-        meta =
-          list.find((m) => isPublishedFlag((m as any)?.is_published)) ?? null;
+        meta = list.find((m) => isPublishedFlag((m as any)?.is_published)) ?? null;
       } else {
         meta = (any as ToTMetaDTO) ?? null;
       }
@@ -1401,7 +1678,7 @@ export const contentApi = {
 
   youtube: {
     async latest(signal?: AbortSignal): Promise<LatestYoutubeDTO[]> {
-      const url = `${import.meta.env.VITE_API_URL}/api/youtube/latest`;
+      const url = `${API_BASE}/api/youtube/latest`;
       const res = await getJSON<{ data?: LatestYoutubeDTO[] }>(url, signal);
       return Array.isArray(res?.data) ? res.data : [];
     },
@@ -1414,10 +1691,7 @@ export type DetailResponse<T> = {
   data: T;
 };
 
-export function useArticleDetail(
-  slug: string,
-  opts?: { category?: ArticleCategory }
-) {
+export function useArticleDetail(slug: string, opts?: { category?: ArticleCategory }) {
   const [data, setData] = useState<ArticleDTO | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -1428,6 +1702,7 @@ export function useArticleDetail(
       setLoading(false);
       return;
     }
+
     const ctrl = new AbortController();
     setLoading(true);
     setError(null);
@@ -1435,7 +1710,10 @@ export function useArticleDetail(
     contentApi.articles
       .detailBySlug(slug, { category: opts?.category, signal: ctrl.signal })
       .then((res) => setData(res))
-      .catch((err) => setError(err?.message ?? "Failed to load"))
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        setError(err?.message ?? "Failed to load");
+      })
       .finally(() => setLoading(false));
 
     return () => ctrl.abort();

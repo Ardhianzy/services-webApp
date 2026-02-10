@@ -12,6 +12,16 @@ import {
 } from "@/lib/content/api";
 import type { ToTDTO } from "@/lib/content/types";
 
+function parseFlag(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return v === "1" || v === "true" || v === "yes";
+  }
+  return false;
+}
+
 type ToTMetaFormState = {
   ToT_id: string;
   metafisika: string;
@@ -49,14 +59,16 @@ const AdminEditToTMetaPage: React.FC = () => {
       return;
     }
 
+    const ctrl = new AbortController();
+
     const load = async () => {
       try {
         setLoading(true);
         setError(null);
 
         const [totList, metaDetail] = await Promise.all([
-          adminFetchToT(),
-          adminGetToTMetaById(id),
+          adminFetchToT({ signal: ctrl.signal }),
+          adminGetToTMetaById(id, { signal: ctrl.signal }),
         ]);
 
         setTots(totList);
@@ -68,9 +80,10 @@ const AdminEditToTMetaPage: React.FC = () => {
           epsimologi: metaDetail.epsimologi ?? "",
           aksiologi: metaDetail.aksiologi ?? "",
           conclusion: metaDetail.conclusion ?? "",
-          is_published: Boolean(metaDetail.is_published),
+          is_published: parseFlag(metaDetail.is_published),
         });
       } catch (err: any) {
+        if (err?.name === "AbortError") return;
         setError(err?.message ?? "Failed to load ToT Meta detail");
       } finally {
         setLoading(false);
@@ -78,6 +91,12 @@ const AdminEditToTMetaPage: React.FC = () => {
     };
 
     void load();
+
+    return () => {
+      try {
+        ctrl.abort();
+      } catch {}
+    };
   }, [id]);
 
   const handleChange = (
@@ -94,7 +113,7 @@ const AdminEditToTMetaPage: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!id) return;
 
@@ -141,9 +160,7 @@ const AdminEditToTMetaPage: React.FC = () => {
 
   const selectedTot: Partial<ToTDTO> | null =
     (form &&
-      (tots.find(
-        (t) => t.id === form.ToT_id
-      ) as Partial<ToTDTO> | undefined)) ??
+      (tots.find((t) => t.id === form.ToT_id) as Partial<ToTDTO> | undefined)) ??
     meta?.tot ??
     null;
 
@@ -154,9 +171,7 @@ const AdminEditToTMetaPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white px-10 py-8 flex items-center justify-center">
-        <p className="text-sm text-neutral-400">
-          Memuat ToT Meta untuk di-edit...
-        </p>
+        <p className="text-sm text-neutral-400">Memuat ToT Meta untuk di-edit...</p>
       </div>
     );
   }
@@ -177,9 +192,7 @@ const AdminEditToTMetaPage: React.FC = () => {
             KEMBALI KE LIST
           </button>
         </div>
-        <p className="text-sm text-red-400">
-          {error || "ToT Meta tidak ditemukan."}
-        </p>
+        <p className="text-sm text-red-400">{error || "ToT Meta tidak ditemukan."}</p>
       </div>
     );
   }
@@ -192,8 +205,8 @@ const AdminEditToTMetaPage: React.FC = () => {
             EDIT TOT META
           </h1>
           <p className="text-sm text-neutral-400 mt-1 max-w-xl">
-            Perbarui konten Metafisika, Epistemologi, Aksiologi, dan
-            Kesimpulan untuk Timeline of Thought terpilih.
+            Perbarui konten Metafisika, Epistemologi, Aksiologi, dan Kesimpulan
+            untuk Timeline of Thought terpilih.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -219,7 +232,10 @@ const AdminEditToTMetaPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
-        <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5"
+        >
           {error && <p className="text-sm text-red-400 -mt-1">{error}</p>}
 
           <div className="space-y-2">
@@ -242,7 +258,7 @@ const AdminEditToTMetaPage: React.FC = () => {
             </select>
             {selectedTot && (
               <p className="text-[11px] text-neutral-500">
-                {selectedTot.geoorigin && `${selectedTot.geoorigin} · `} 
+                {selectedTot.geoorigin && `${selectedTot.geoorigin} · `}
                 {selectedTot.years}
               </p>
             )}
@@ -265,8 +281,8 @@ const AdminEditToTMetaPage: React.FC = () => {
             </label>
             <p className="text-[11px] text-neutral-500">
               Jika tidak dicentang, konten akan berstatus{" "}
-              <span className="font-semibold">Draft / Preview</span> dan
-              hanya tampil di admin.
+              <span className="font-semibold">Draft / Preview</span> dan hanya
+              tampil di admin.
             </p>
           </div>
 
@@ -346,7 +362,6 @@ const AdminEditToTMetaPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saving}
-                onClick={handleSubmit}
                 className="px-4 py-2 rounded-full border border-white bg-white text-black text-xs tracking-[0.15em]
                            hover:bg-transparent hover:text-white hover:border-white disabled:opacity-50 cursor-pointer"
               >
@@ -354,7 +369,7 @@ const AdminEditToTMetaPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </form>
 
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
@@ -454,10 +469,8 @@ const AdminEditToTMetaPage: React.FC = () => {
               !form.epsimologi &&
               !form.aksiologi &&
               !form.conclusion && (
-                <p className="text-xs text-neutral-500 mt-2">
-                  Konten masih kosong. Isi salah satu bidang HTML di
-                  formulir kiri untuk melihat preview bagaimana ToT Meta
-                  akan tampil di halaman user.
+                <p className="text-sm text-neutral-500">
+                  Preview akan muncul setelah kamu mengisi konten HTML.
                 </p>
               )}
           </div>

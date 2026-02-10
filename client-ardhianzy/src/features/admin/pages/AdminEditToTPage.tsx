@@ -1,6 +1,12 @@
 // src/features/admin/pages/AdminEditToTPage.tsx
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEventHandler,
+  type FC,
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import {
@@ -22,15 +28,16 @@ type AdminToTForm = {
   isPublished: boolean;
 };
 
-const AdminEditToTPage: React.FC = () => {
+const AdminEditToTPage: FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [form, setForm] = useState<AdminToTForm | null>(null);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] =
-    useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  const objectUrlRef = useRef<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -40,9 +47,7 @@ const AdminEditToTPage: React.FC = () => {
     key: K,
     value: AdminToTForm[K]
   ) => {
-    setForm((prev) =>
-      prev ? { ...prev, [key]: value } : prev
-    );
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
   useEffect(() => {
@@ -70,24 +75,27 @@ const AdminEditToTPage: React.FC = () => {
           years: raw.years ?? "",
           modernCountry: raw.modern_country ?? "",
           metaTitle: raw.meta_title ?? "",
-          metaDescription: normalizeBackendHtml(
-            raw.meta_description ?? ""
-          ),
+          metaDescription: raw.meta_description ?? "",
           keywords: raw.keywords ?? "",
           isPublished: Boolean(raw.is_published),
         };
 
         setForm(mapped);
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+          objectUrlRef.current = null;
+        }
 
         if (typeof raw.image === "string" && raw.image) {
           setImagePreviewUrl(raw.image);
+        } else {
+          setImagePreviewUrl(null);
         }
+
+        setImageFile(null);
       } catch (e: any) {
         if (!cancelled) {
-          setError(
-            e?.message ||
-              "Gagal memuat data ToT untuk di-edit."
-          );
+          setError(e?.message || "Gagal memuat data ToT untuk di-edit.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -99,13 +107,27 @@ const AdminEditToTPage: React.FC = () => {
     };
   }, [id]);
 
-  const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (
-    e
-  ) => {
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleImageChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     const file = e.target.files?.[0] ?? null;
     setImageFile(file);
+
     if (file) {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+
       const url = URL.createObjectURL(file);
+      objectUrlRef.current = url;
       setImagePreviewUrl(url);
     }
   };
@@ -114,9 +136,7 @@ const AdminEditToTPage: React.FC = () => {
     if (!id || !form) return;
 
     if (!form.philosofer || !form.geoorigin || !form.years) {
-      setError(
-        "Minimal isi nama tokoh, geo origin, dan periode tahun (years)."
-      );
+      setError("Minimal isi nama tokoh, geo origin, dan periode tahun (years).");
       return;
     }
 
@@ -129,14 +149,11 @@ const AdminEditToTPage: React.FC = () => {
       fd.append("philosofer", form.philosofer);
       if (form.slug) fd.append("slug", form.slug);
       if (form.geoorigin) fd.append("geoorigin", form.geoorigin);
-      if (form.detailLocation)
-        fd.append("detail_location", form.detailLocation);
+      if (form.detailLocation) fd.append("detail_location", form.detailLocation);
       if (form.years) fd.append("years", form.years);
-      if (form.modernCountry)
-        fd.append("modern_country", form.modernCountry);
+      if (form.modernCountry) fd.append("modern_country", form.modernCountry);
       if (form.metaTitle) fd.append("meta_title", form.metaTitle);
-      if (form.metaDescription)
-        fd.append("meta_description", form.metaDescription);
+      if (form.metaDescription) fd.append("meta_description", form.metaDescription);
       if (form.keywords) fd.append("keywords", form.keywords);
       fd.append("is_published", String(form.isPublished));
 
@@ -159,9 +176,7 @@ const AdminEditToTPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white px-10 py-8 flex items-center justify-center">
-        <p className="text-sm text-neutral-400">
-          Memuat ToT untuk di-edit...
-        </p>
+        <p className="text-sm text-neutral-400">Memuat ToT untuk di-edit...</p>
       </div>
     );
   }
@@ -170,9 +185,7 @@ const AdminEditToTPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-black text-white px-10 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold tracking-[0.15em]">
-            EDIT ToT
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-[0.15em]">EDIT ToT</h1>
           <button
             type="button"
             onClick={() => navigate(ROUTES.ADMIN.TOT_LIST)}
@@ -182,9 +195,7 @@ const AdminEditToTPage: React.FC = () => {
             KEMBALI KE LIST
           </button>
         </div>
-        <p className="text-sm text-red-400">
-          {error || "ToT tidak ditemukan."}
-        </p>
+        <p className="text-sm text-red-400">{error || "ToT tidak ditemukan."}</p>
       </div>
     );
   }
@@ -223,9 +234,7 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.philosofer}
-                onChange={(e) =>
-                  updateField("philosofer", e.target.value)
-                }
+                onChange={(e) => updateField("philosofer", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -237,9 +246,7 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white font-mono"
                 value={form.slug}
-                onChange={(e) =>
-                  updateField("slug", e.target.value)
-                }
+                onChange={(e) => updateField("slug", e.target.value)}
               />
             </div>
           </div>
@@ -254,9 +261,7 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.geoorigin}
-                onChange={(e) =>
-                  updateField("geoorigin", e.target.value)
-                }
+                onChange={(e) => updateField("geoorigin", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -268,9 +273,7 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.detailLocation}
-                onChange={(e) =>
-                  updateField("detailLocation", e.target.value)
-                }
+                onChange={(e) => updateField("detailLocation", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -282,9 +285,7 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.modernCountry}
-                onChange={(e) =>
-                  updateField("modernCountry", e.target.value)
-                }
+                onChange={(e) => updateField("modernCountry", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2 max-w-xs">
@@ -296,9 +297,7 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                           focus:border-white"
                 value={form.years}
-                onChange={(e) =>
-                  updateField("years", e.target.value)
-                }
+                onChange={(e) => updateField("years", e.target.value)}
               />
             </div>
           </div>
@@ -313,9 +312,7 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.metaTitle}
-                onChange={(e) =>
-                  updateField("metaTitle", e.target.value)
-                }
+                onChange={(e) => updateField("metaTitle", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2 md:col-span-1">
@@ -326,18 +323,13 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
                            min-h-[80px] resize-vertical focus:border-white font-mono leading-relaxed"
                 value={form.metaDescription}
-                onChange={(e) =>
-                  updateField(
-                    "metaDescription",
-                    e.target.value
-                  )
-                }
+                onChange={(e) => updateField("metaDescription", e.target.value)}
                 placeholder="<p>Deskripsi singkat tokoh...</p>"
               />
               <p className="text-[11px] text-neutral-500">
-                *Dukung HTML sederhana (&lt;p&gt;, &lt;strong&gt;,
-                &lt;em&gt;, &lt;ul&gt;, dll). Di sisi user akan
-                dirender apa adanya setelah normalisasi.
+                *Dukung HTML sederhana (&lt;p&gt;, &lt;strong&gt;, &lt;em&gt;,
+                &lt;ul&gt;, dll). Di sisi user akan dirender apa adanya setelah
+                normalisasi.
               </p>
             </div>
             <div className="flex flex-col gap-2 md:col-span-1">
@@ -349,9 +341,7 @@ const AdminEditToTPage: React.FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.keywords}
-                onChange={(e) =>
-                  updateField("keywords", e.target.value)
-                }
+                onChange={(e) => updateField("keywords", e.target.value)}
               />
             </div>
           </div>
@@ -379,11 +369,7 @@ const AdminEditToTPage: React.FC = () => {
             )}
           </div>
 
-          {error && (
-            <p className="text-sm text-red-400 mt-1">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
 
           <div className="flex flex-wrap items-center gap-3 justify-between pt-3 border-t border-zinc-800 mt-2">
             <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
@@ -391,12 +377,7 @@ const AdminEditToTPage: React.FC = () => {
                 type="checkbox"
                 className="w-4 h-4 rounded border-zinc-600 bg-black"
                 checked={form.isPublished}
-                onChange={(e) =>
-                  updateField(
-                    "isPublished",
-                    e.target.checked
-                  )
-                }
+                onChange={(e) => updateField("isPublished", e.target.checked)}
               />
               <span>Publish ke user</span>
             </label>
@@ -433,9 +414,7 @@ const AdminEditToTPage: React.FC = () => {
                     : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40"
                 }`}
               >
-                {form.isPublished
-                  ? "Published"
-                  : "Draft / Preview"}
+                {form.isPublished ? "Published" : "Draft / Preview"}
               </span>
             </div>
 
@@ -470,9 +449,7 @@ const AdminEditToTPage: React.FC = () => {
               <div className="prose prose-invert prose-sm max-w-none mb-4">
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: normalizeBackendHtml(
-                      form.metaDescription
-                    ),
+                    __html: normalizeBackendHtml(form.metaDescription),
                   }}
                 />
               </div>
@@ -491,8 +468,8 @@ const AdminEditToTPage: React.FC = () => {
             <div className="mt-4 text-[11px] text-neutral-500 space-y-1">
               {!form.metaDescription && (
                 <p>
-                  Meta description kosong. Kamu bisa mengisinya
-                  untuk ringkasan singkat tokoh dan kebutuhan SEO.
+                  Meta description kosong. Kamu bisa mengisinya untuk ringkasan
+                  singkat tokoh dan kebutuhan SEO.
                 </p>
               )}
             </div>
