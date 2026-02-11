@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { ArticleService } from "../service/crud_articel"; // Sesuaikan path
 import { Article } from "@prisma/client";
 
@@ -139,6 +139,8 @@ export class ArticleHandler {
 
       // 2. Ownership Check
       const adminId = req.user?.admin_Id;
+      // 2. Ownership Check (RELAXED)
+      /*
       if (existingArticle.admin_id !== adminId) {
         res.status(403).json({
           success: false,
@@ -146,6 +148,7 @@ export class ArticleHandler {
         });
         return;
       }
+      */
 
       const updatedArticle = await this.articleService.updateById(
         id,
@@ -185,6 +188,8 @@ export class ArticleHandler {
 
       // 2. Ownership Check
       const adminId = req.user?.admin_Id;
+      // 2. Ownership Check (RELAXED)
+      /*
       if (existingArticle.admin_id !== adminId) {
         res.status(403).json({
           success: false,
@@ -192,6 +197,7 @@ export class ArticleHandler {
         });
         return;
       }
+      */
 
       const deletedArticle = await this.articleService.deleteById(id);
       res.status(200).json({
@@ -283,4 +289,36 @@ export class ArticleHandler {
     }
   };
 
+  getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+
+      // Validation: If ID is not long enough (likely a slug or invalid), pass to next handler
+      if (!id || id.length < 20) {
+        return next();
+      }
+
+      const article = await this.articleService.getById(id);
+
+      if (!article) {
+        res.status(404).json({
+          success: false,
+          message: "Article not found",
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Article retrieved successfully",
+        data: article,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to fetch Article",
+      });
+    }
+  };
 }

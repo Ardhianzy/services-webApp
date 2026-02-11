@@ -25,6 +25,8 @@ router.get("/", shopHandler.getAll.bind(shopHandler));
 
 router.delete("/:id", authenticate, shopHandler.deleteById.bind(shopHandler));
 
+router.get("/:id", shopHandler.getById.bind(shopHandler));
+
 router.put(
   "/:id",
   authenticate,

@@ -34,6 +34,7 @@ export interface CreateShopData {
   meta_title?: string;
   meta_description?: string;
   is_available?: boolean;
+  is_published?: boolean;
 }
 
 export interface UpdateShopData
@@ -52,6 +53,7 @@ export class ShopRepository {
     "category",
     "price",
     "is_available",
+    "is_published", // Added
     "slug",
     "created_at",
     "updated_at",

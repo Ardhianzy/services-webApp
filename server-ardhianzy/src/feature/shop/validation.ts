@@ -16,6 +16,7 @@ export const createShopSchema = z.object({
     meta_title: z.string().optional(),
     meta_description: z.string().optional(),
     is_available: booleanString,
+    is_published: booleanString,
   }),
 });
 
@@ -33,5 +34,6 @@ export const updateShopSchema = z.object({
     meta_title: z.string().optional(),
     meta_description: z.string().optional(),
     is_available: booleanString,
+    is_published: booleanString,
   }),
 });

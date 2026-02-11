@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { MonologuesService } from "../service/crud_service"; // Sesuaikan path
 
 // --- Deklarasi Global yang Lebih Fleksibel ---
@@ -107,6 +107,8 @@ export class MonologuesHandler {
         res.status(404).json({ success: false, message: "Monologue not found" });
         return;
       }
+      // 2. Ownership Check (REMOVED to allow any admin to update)
+      /*
       if (existing.admin_id !== req.user?.admin_Id) {
         res.status(403).json({
           success: false,
@@ -114,6 +116,7 @@ export class MonologuesHandler {
         });
         return;
       }
+      */
 
       // Eksplisit mendefinisikan data update, bukan menyalin semua dari body
       const updateData = {
@@ -160,6 +163,8 @@ export class MonologuesHandler {
         res.status(404).json({ success: false, message: "Monologue not found" });
         return;
       }
+      // 2. Ownership Check (REMOVED to allow any admin to delete)
+      /*
       if (existing.admin_id !== req.user?.admin_Id) {
         res.status(403).json({
           success: false,
@@ -167,6 +172,7 @@ export class MonologuesHandler {
         });
         return;
       }
+      */
       const deletedMonologue = await this.monologuesService.deleteById(id);
 
       res.status(200).json({
@@ -223,6 +229,41 @@ export class MonologuesHandler {
         error instanceof Error ? error.message : "Failed to fetch Monologue";
       const statusCode = errorMessage === "Monologue not found" ? 404 : 500;
       res.status(statusCode).json({ success: false, message: errorMessage });
+    }
+  };
+  getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+
+      // Validation: If ID is not long enough (likely a slug), pass to next handler
+      if (!id || id.length < 20) {
+        return next();
+      }
+
+      const monologue = await this.monologuesService.getById(id);
+      
+      if (!monologue) {
+        // If it looks like an ID but not found, we could return 404.
+        // Or we could pass to next() just in case it's a weird slug.
+        // Let's return 404 to be explicit if it looked like an ID.
+        res.status(404).json({
+           success: false, 
+           message: "Monologue not found" 
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Monologue retrieved successfully",
+        data: monologue,
+      });
+    } catch (error) {
+       res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to fetch Monologue",
+      });
     }
   };
 }

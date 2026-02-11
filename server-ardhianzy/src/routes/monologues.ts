@@ -45,6 +45,12 @@ router.delete("/:id", authenticate, monologuesHandler.deleteById);
 // Mendapatkan semua Monologues dengan paginasi
 router.get("/", monologuesHandler.getAll);
 
+// Mendapatkan satu Monologue berdasarkan ID (khusus Admin/Edit)
+// Regex ini memastikan ID memiliki minimal 20 karakter alphanumeric (seperti CUID/UUID)
+// agar tidak bertabrakan dengan slug yang mungkin pendek
+// Regex dihapus untuk kompatibilitas Express 5. Validasi ID dilakukan di handler.
+router.get("/:id", monologuesHandler.getById.bind(monologuesHandler));
+
 // Mendapatkan satu Monologue berdasarkan slug-nya (lebih baik untuk SEO)
 router.get("/:slug", monologuesHandler.findBySlug);
 

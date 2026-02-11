@@ -187,6 +187,7 @@ model Shop {
   meta_title       String?
   meta_description String?
   is_available     Boolean @default(true)
+  is_published     Boolean @default(false)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

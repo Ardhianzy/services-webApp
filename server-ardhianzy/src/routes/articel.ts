@@ -26,6 +26,11 @@ router.get("/", articleHandler.getAll);
 // Get Article by title
 router.get("/title/:title", articleHandler.getByTitle);
 
+// Get Article by ID (Admin only/Edit)
+// Regex ini memastikan ID memiliki minimal 20 karakter alphanumeric (seperti CUID/UUID)
+// Regex dihapus untuk kompatibilitas Express 5.
+router.get("/:id", articleHandler.getById.bind(articleHandler));
+
 // Update Article by ID (Admin only)
 router.put(
   "/:id",
