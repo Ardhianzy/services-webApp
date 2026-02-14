@@ -114,9 +114,23 @@ export class ArticleService {
     body: UpdateArticleServiceData,
     imageFile?: Express.Multer.File
   ): Promise<Article> {
-    const updateData: any = { ...body };
+    // Don't spread body - it already has correctly parsed booleans from handler
+    const updateData: any = {};
 
-
+    // Copy fields individually (optional fields only if defined)
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.content !== undefined) updateData.content = body.content;
+    if (body.author !== undefined) updateData.author = body.author;
+    if (body.meta_title !== undefined) updateData.meta_title = body.meta_title;
+    if (body.meta_description !== undefined) updateData.meta_description = body.meta_description;
+    if (body.keywords !== undefined) updateData.keywords = body.keywords;
+    if (body.excerpt !== undefined) updateData.excerpt = body.excerpt;
+    if (body.canonical_url !== undefined) updateData.canonical_url = body.canonical_url;
+    if (body.view_count !== undefined) updateData.view_count = body.view_count;
+    
+    // Preserve boolean values that were already parsed in handler
+    if (body.is_published !== undefined) updateData.is_published = body.is_published;
+    if (body.is_featured !== undefined) updateData.is_featured = body.is_featured;
 
     // Upload image baru jika ada
     if (imageFile) {

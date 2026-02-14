@@ -14,6 +14,7 @@ declare global {
 
 // Helper to parse boolean
 function parseBool(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;  // Handle boolean input first!
   if (typeof value === "string") {
     if (value.toLowerCase() === "true") return true;
     if (value.toLowerCase() === "false") return false;

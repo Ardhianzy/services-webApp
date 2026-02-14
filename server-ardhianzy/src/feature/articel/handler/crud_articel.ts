@@ -14,6 +14,7 @@ declare global {
 
 /** Parse boolean dari string "true" atau "false" */
 function parseBool(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;  // ← CRITICAL: Handle boolean first!
   if (typeof value === "string") {
     if (value.toLowerCase() === "true") return true;
     if (value.toLowerCase() === "false") return false;
@@ -104,10 +105,14 @@ export class ArticleHandler {
       const updateData: any = {};
 
       // Parse booleans FIRST to prevent them from being overwritten
-      if (req.body.is_published !== undefined)
+      if (req.body.is_published !== undefined) {
+        // console.log('[HANDLER] is_published RAW:', req.body.is_published, typeof req.body.is_published);
         updateData.is_published = parseBool(req.body.is_published);
-      if (req.body.is_featured !== undefined)
+        // console.log('[HANDLER] is_published PARSED:', updateData.is_published, typeof updateData.is_published);
+      }
+      if (req.body.is_featured !== undefined) {
         updateData.is_featured = parseBool(req.body.is_featured);
+      }
 
       // Then copy other fields (excluding booleans)
       const fields = [
@@ -130,6 +135,8 @@ export class ArticleHandler {
       // Handle date parsing
       if (req.body.date !== undefined)
         updateData.date = parseDate(req.body.date);
+      
+      // console.log('[HANDLER] Final updateData being sent to service:', JSON.stringify(updateData, null, 2));
 
       // 1. Fetch existing article
       const existingArticle = await this.articleService.getById(id);
