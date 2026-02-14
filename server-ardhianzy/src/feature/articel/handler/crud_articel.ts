@@ -103,7 +103,13 @@ export class ArticleHandler {
 
       const updateData: any = {};
 
-      // Salin field yang ada dari body
+      // Parse booleans FIRST to prevent them from being overwritten
+      if (req.body.is_published !== undefined)
+        updateData.is_published = parseBool(req.body.is_published);
+      if (req.body.is_featured !== undefined)
+        updateData.is_featured = parseBool(req.body.is_featured);
+
+      // Then copy other fields (excluding booleans)
       const fields = [
         "title",
         "content",
@@ -113,7 +119,6 @@ export class ArticleHandler {
         "keywords",
         "excerpt",
         "canonical_url",
-
         "view_count",
       ];
       fields.forEach((field) => {
@@ -122,13 +127,9 @@ export class ArticleHandler {
         }
       });
 
-      // Handle parsing khusus
+      // Handle date parsing
       if (req.body.date !== undefined)
         updateData.date = parseDate(req.body.date);
-      if (req.body.is_published !== undefined)
-        updateData.is_published = parseBool(req.body.is_published);
-      if (req.body.is_featured !== undefined)
-        updateData.is_featured = parseBool(req.body.is_featured);
 
       // 1. Fetch existing article
       const existingArticle = await this.articleService.getById(id);

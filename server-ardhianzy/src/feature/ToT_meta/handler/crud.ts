@@ -15,6 +15,16 @@ declare global {
   }
 }
 
+/** Parse boolean dari string "true" atau "false" */
+function parseBool(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    if (value.toLowerCase() === "true") return true;
+    if (value.toLowerCase() === "false") return false;
+  }
+  return undefined;
+}
+
 export class ToTMetaHandler {
   private totMetaService: ToTMetaService;
 
@@ -29,7 +39,7 @@ export class ToTMetaHandler {
         epsimologi: req.body.epsimologi,
         aksiologi: req.body.aksiologi,
         conclusion: req.body.conclusion,
-        is_published: req.body.is_published,
+        is_published: parseBool(req.body.is_published) ?? false,
       });
 
       res.status(201).json({
@@ -73,7 +83,7 @@ export class ToTMetaHandler {
         epsimologi: req.body.epsimologi,
         aksiologi: req.body.aksiologi,
         conclusion: req.body.conclusion,
-        is_published: req.body.is_published,
+        is_published: parseBool(req.body.is_published),
       };
 
       // Handle ToT_id if provided

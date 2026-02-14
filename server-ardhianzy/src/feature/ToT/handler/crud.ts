@@ -14,6 +14,16 @@ declare global {
   }
 }
 
+/** Parse boolean dari string "true" atau "false" */
+function parseBool(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    if (value.toLowerCase() === "true") return true;
+    if (value.toLowerCase() === "false") return false;
+  }
+  return undefined;
+}
+
 export class TotHandler {
   private totService: TotService;
 
@@ -40,8 +50,7 @@ export class TotHandler {
         meta_title: req.body.meta_title,
         meta_description: req.body.meta_description,
         keywords: req.body.keywords,
-        is_published:
-          req.body.is_published === "true" || req.body.is_published === true,
+        is_published: parseBool(req.body.is_published) ?? false,
         image: req.file,
         modern_country: req.body.modern_country,
       });
@@ -189,7 +198,7 @@ export class TotHandler {
       };
 
       if (req.body.is_published !== undefined) {
-        updateData.is_published = req.body.is_published;
+        updateData.is_published = parseBool(req.body.is_published);
       }
 
       const updatedToT = await this.totService.updateById(id, updateData);

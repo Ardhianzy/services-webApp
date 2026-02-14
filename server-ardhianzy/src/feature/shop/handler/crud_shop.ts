@@ -243,16 +243,27 @@ export class ShopHandler {
       }
       */
 
-      const updateData = {
-        ...req.body,
-        image: req.file,
-      };
+      const updateData: any = {};
 
+      // Parse booleans FIRST to prevent them from being overwritten
       if (req.body.is_published !== undefined) {
         updateData.is_published = parseBool(req.body.is_published);
       }
       if (req.body.is_available !== undefined) {
         updateData.is_available = parseBool(req.body.is_available);
+      }
+
+      // Copy other fields (excluding booleans)
+      const fieldsToUpdate = Object.keys(req.body).filter(
+        key => key !== 'is_published' && key !== 'is_available'
+      );
+      fieldsToUpdate.forEach(field => {
+        updateData[field] = req.body[field];
+      });
+
+      // Add image if present
+      if (req.file) {
+        updateData.image = req.file;
       }
 
       const updatedShop = await this.service.updateById(id, updateData);
