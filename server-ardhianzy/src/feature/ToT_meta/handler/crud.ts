@@ -15,6 +15,16 @@ declare global {
   }
 }
 
+/** Parse boolean dari string "true" atau "false" */
+function parseBool(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    if (value.toLowerCase() === "true") return true;
+    if (value.toLowerCase() === "false") return false;
+  }
+  return undefined;
+}
+
 export class ToTMetaHandler {
   private totMetaService: ToTMetaService;
 
@@ -29,7 +39,7 @@ export class ToTMetaHandler {
         epsimologi: req.body.epsimologi,
         aksiologi: req.body.aksiologi,
         conclusion: req.body.conclusion,
-        is_published: req.body.is_published,
+        is_published: parseBool(req.body.is_published) ?? false,
       });
 
       res.status(201).json({
@@ -48,12 +58,32 @@ export class ToTMetaHandler {
   updateById = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
+      
+      const existing = await this.totMetaService.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "ToT Meta not found" });
+        return;
+      }
+      // @ts-ignore - tot relation is included in repository
+      if (existing.tot?.admin_id !== req.admin?.admin_Id && existing.tot?.admin_id !== (req.user as any)?.admin_Id) {
+         // Fallback check for req.admin vs req.user
+         const requestAdminId = req.admin?.admin_Id || (req.user as any)?.admin_Id;
+         // @ts-ignore
+         if (existing.tot?.admin_id !== requestAdminId) {
+            res.status(403).json({
+              success: false,
+              message: "Forbidden: You are not the owner of the related ToT",
+            });
+            return;
+         }
+      }
+
       const updateData: any = {
         metafisika: req.body.metafisika,
         epsimologi: req.body.epsimologi,
         aksiologi: req.body.aksiologi,
         conclusion: req.body.conclusion,
-        is_published: req.body.is_published,
+        is_published: parseBool(req.body.is_published),
       };
 
       // Handle ToT_id if provided
@@ -94,6 +124,23 @@ export class ToTMetaHandler {
     try {
       // CHANGED: Removed parseInt, as 'id' is a String (CUID)
       const { id } = req.params;
+      
+      const existing = await this.totMetaService.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "ToT Meta not found" });
+        return;
+      }
+      
+      // Fallback check for req.admin vs req.user
+      const requestAdminId = req.admin?.admin_Id || (req.user as any)?.admin_Id;
+      // @ts-ignore
+      if (existing.tot?.admin_id !== requestAdminId) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of the related ToT",
+        });
+        return;
+      }
 
       const deletedToTMeta = await this.totMetaService.deleteById(id);
 

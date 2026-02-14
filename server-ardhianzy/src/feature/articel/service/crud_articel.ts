@@ -1,5 +1,5 @@
 import { ArticleRepository } from "../repository/crud_articel";
-import { Article, ArticleCategory } from "@prisma/client"; // Impor enum ArticleCategory
+import { Article } from "@prisma/client";
 import imagekit from "../../../libs/imageKit";
 import path from "path";
 
@@ -11,7 +11,7 @@ export interface CreateArticleServiceData {
   content: string;
   author: string;
   date: Date | string;
-  category: ArticleCategory; // <-- TAMBAHKAN: Kategori wajib ada
+
   meta_title?: string | null;
   meta_description?: string | null;
   keywords?: string | null;
@@ -28,7 +28,7 @@ export interface UpdateArticleServiceData {
   content?: string;
   author?: string;
   date?: Date | string;
-  category?: ArticleCategory; // <-- TAMBAHKAN: Kategori opsional saat update
+
   meta_title?: string | null;
   meta_description?: string | null;
   keywords?: string | null;
@@ -79,17 +79,7 @@ export class ArticleService {
     if (!body.admin_id?.trim()) throw new Error("Admin ID is required");
     if (!imageFile) throw new Error("Image is required");
 
-    // Validasi category enum
-    if (
-      !body.category ||
-      !Object.values(ArticleCategory).includes(body.category)
-    ) {
-      throw new Error(
-        `A valid category is required. Valid options are: ${Object.values(
-          ArticleCategory
-        ).join(", ")}`
-      );
-    }
+
 
     // Upload image
     let imageUrl: string;
@@ -124,19 +114,23 @@ export class ArticleService {
     body: UpdateArticleServiceData,
     imageFile?: Express.Multer.File
   ): Promise<Article> {
-    const updateData: any = { ...body };
+    // Don't spread body - it already has correctly parsed booleans from handler
+    const updateData: any = {};
 
-    // Validasi category enum jika ada
-    if (
-      body.category &&
-      !Object.values(ArticleCategory).includes(body.category)
-    ) {
-      throw new Error(
-        `Invalid category provided. Valid options are: ${Object.values(
-          ArticleCategory
-        ).join(", ")}`
-      );
-    }
+    // Copy fields individually (optional fields only if defined)
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.content !== undefined) updateData.content = body.content;
+    if (body.author !== undefined) updateData.author = body.author;
+    if (body.meta_title !== undefined) updateData.meta_title = body.meta_title;
+    if (body.meta_description !== undefined) updateData.meta_description = body.meta_description;
+    if (body.keywords !== undefined) updateData.keywords = body.keywords;
+    if (body.excerpt !== undefined) updateData.excerpt = body.excerpt;
+    if (body.canonical_url !== undefined) updateData.canonical_url = body.canonical_url;
+    if (body.view_count !== undefined) updateData.view_count = body.view_count;
+    
+    // Preserve boolean values that were already parsed in handler
+    if (body.is_published !== undefined) updateData.is_published = body.is_published;
+    if (body.is_featured !== undefined) updateData.is_featured = body.is_featured;
 
     // Upload image baru jika ada
     if (imageFile) {
@@ -164,6 +158,22 @@ export class ArticleService {
 
   // --- Metode Passthrough (hanya meneruskan ke Repository) ---
 
+  async getById(id: string): Promise<Article | null> {
+      // Perlu implementasi di repo jika belum ada, atau pakai prisma langsung di repo.
+      // Cek repository dulu apakah ada getById.
+      // Di view sebelumnya, repository punya updateById yang pake prisma.article.update({where: {id}}).
+      // Sebaiknya kita tambahkan getById di Repo juga jika belum ada.
+      // Tapi tunggu, repo.updateById throws P2025 if not found.
+      // Kita butuh getById untuk cek admin_id.
+      // Cek repo file content di step 190.
+      // Repo punya createByAdmin, updateById, deleteById, getAll, getByTitle, getByArticelCategory.
+      // Tidak ada getById by ID.
+      // Saya harus tambah getById di Repo dulu.
+      // Tapi saya di sini edit service.
+      // Saya akan tambahkan getById di service yang memanggil repo.getById (yang akan saya buat).
+      return this.repo.getById(id);
+  }
+
   async deleteById(id: string): Promise<Article> {
     return this.repo.deleteById(id);
   }
@@ -181,24 +191,5 @@ export class ArticleService {
     }
     return article;
   }
-  async getByArticleCategory(
-    category: ArticleCategory,
-    paginationParams?: PaginationParams
-  ): Promise<PaginatedResult<Article>> {
-    const result = await this.repo.getByArticelCategory(
-      category,
-      paginationParams || {}
-    );
-    if (!result || result.length === 0)
-      throw new Error("No articles found for the specified category");
-    
-    return {
-      data: result,
-      pagination: {
-        total: result.length,
-        page: paginationParams?.page || 1,
-        limit: paginationParams?.limit || 10
-      }
-    };
-  }
+
 }

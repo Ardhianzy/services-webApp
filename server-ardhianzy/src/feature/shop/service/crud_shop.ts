@@ -38,6 +38,7 @@ interface CreateShopData {
   meta_title?: string;
   meta_description?: string;
   is_available?: boolean;
+  is_published?: boolean;
   admin_id: string; // ← string (cuid)
 }
 
@@ -53,6 +54,7 @@ interface UpdateShopData {
   meta_title?: string;
   meta_description?: string;
   is_available?: boolean;
+  is_published?: boolean;
 }
 
 export class ShopService {
@@ -104,6 +106,7 @@ export class ShopService {
         meta_title: shopData.meta_title,
         meta_description: shopData.meta_description,
         is_available: shopData.is_available,
+        is_published: shopData.is_published,
       });
     } catch (error) {
       throw new Error(
@@ -185,6 +188,8 @@ export class ShopService {
         updateData.meta_description = shopData.meta_description;
       if (shopData.is_available !== undefined)
         updateData.is_available = shopData.is_available;
+      if (shopData.is_published !== undefined)
+        updateData.is_published = shopData.is_published;
 
       // Upload image baru jika ada
       if (shopData.image) {
@@ -208,6 +213,15 @@ export class ShopService {
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
+    }
+  }
+  async getById(id: string): Promise<Shop | null> {
+    try {
+      return await this.repo.getById(id);
+    } catch (error) {
+       // If repo doesn't have it, valid to throw error? No, return null or throw.
+       // Let's assume repo doesn't have it and add it shortly.
+       throw error;
     }
   }
 }

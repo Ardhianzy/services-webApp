@@ -1,9 +1,15 @@
 import express, { Application, Request, Response, NextFunction } from "express";
 import cors, { CorsOptions } from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
 import prisma from "./config/db";
 import mainRoutes from "./routes";
+import { globalLimiter } from "./middleware/rateLimiter";
 
 const app: Application = express();
+
+const morganFormat = process.env.NODE_ENV === "production" ? "combined" : "dev";
+app.use(morgan(morganFormat)); // Logger menyesuaikan environment
 
 const allowedOrigins: string[] = [
   "https://www.ardhianzy.com",
@@ -20,11 +26,17 @@ const corsOptions: CorsOptions = {
     }
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
 };
 
+// CRITICAL: CORS must be applied BEFORE helmet and other middleware
 app.use(cors(corsOptions));
+app.use(helmet());
+app.use(globalLimiter); // Terapkan rate limiter global
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -52,4 +52,11 @@ export class YoutubeCrudRepo {
             );
         }
 }
+    async getById(id: string): Promise<Youtube | null> {
+        return prisma.youtube.findUnique({ where: { id } });
+    }
+
+    async delete(id: string): Promise<Youtube> {
+        return prisma.youtube.delete({ where: { id } });
+    }
 }

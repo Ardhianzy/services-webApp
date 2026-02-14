@@ -1,5 +1,5 @@
 import prisma from "../../../config/db";
-import { Article, Prisma, ArticleCategory } from "@prisma/client";
+import { Article, Prisma } from "@prisma/client";
 import {
   SlugGenerator,
   SEOMetaGenerator,
@@ -34,7 +34,7 @@ export interface CreateArticleData {
   content: string;
   author: string;
   date: Date;
-  category: ArticleCategory; // <-- TAMBAHKAN FIELD CATEGORY (WAJIB SAAT CREATE)
+
   meta_title?: string | null;
   meta_description?: string | null;
   keywords?: string | null;
@@ -51,7 +51,7 @@ export interface UpdateArticleData {
   content?: string;
   author?: string;
   date?: Date;
-  category?: ArticleCategory; // <-- TAMBAHKAN FIELD CATEGORY (OPSIONAL SAAT UPDATE)
+
   meta_title?: string | null;
   meta_description?: string | null;
   keywords?: string | null;
@@ -95,7 +95,7 @@ export class ArticleRepository {
           content: dataArticle.content,
           author: dataArticle.author,
           date: theDate,
-          category: dataArticle.category, // <-- SIMPAN CATEGORY KE DATABASE
+
           meta_title: dataArticle.meta_title ?? seoMeta.metaTitle,
           meta_description:
             dataArticle.meta_description ?? seoMeta.metaDescription,
@@ -203,7 +203,7 @@ export class ArticleRepository {
         "is_published",
         "is_featured",
         "view_count",
-        "category",
+
       ];
 
       const sortBy = (
@@ -258,21 +258,16 @@ export class ArticleRepository {
       );
     }
   }
-  async getByArticelCategory(category: ArticleCategory, paginationParams: PaginationParams = {}): Promise<Article[]> {
+
+  async getById(id: string): Promise<Article | null> {
     try {
-      const page = Math.max(1, paginationParams.page ?? 1);
-      const limit = Math.min(100, Math.max(1, paginationParams.limit ?? 10));
-      const skip = (page - 1) * limit;
-      const articles = await prisma.article.findMany({
-        where: { category },
-        skip,
-        take: limit,
-        orderBy: { date: "desc" },
+      const article = await prisma.article.findUnique({
+        where: { id },
       });
-      return articles;
+      return article;
     } catch (error) {
-      throw new Error(
-        `Failed to get Articles by category: ${
+       throw new Error(
+        `Failed to get Article by id: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );

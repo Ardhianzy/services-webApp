@@ -1,19 +1,20 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { ArticleService } from "../service/crud_articel"; // Sesuaikan path
-import { Article, ArticleCategory } from "@prisma/client"; // Impor ArticleCategory
+import { Article } from "@prisma/client";
 
 // --- Deklarasi Global & Helper Functions ---
 declare global {
   namespace Express {
     interface Request {
       user?: { admin_Id: string; username: string };
-      file?: Express.Multer.File; // Dari multer.single()
+      file?: Express.Multer.File; 
     }
   }
 }
 
 /** Parse boolean dari string "true" atau "false" */
 function parseBool(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;  // ← CRITICAL: Handle boolean first!
   if (typeof value === "string") {
     if (value.toLowerCase() === "true") return true;
     if (value.toLowerCase() === "false") return false;
@@ -54,16 +55,7 @@ export class ArticleHandler {
       }
 
       // Validasi category enum
-      const category = req.body.category as ArticleCategory;
-      if (!category || !Object.values(ArticleCategory).includes(category)) {
-        res.status(400).json({
-          success: false,
-          message: `Invalid category. Must be one of: ${Object.values(
-            ArticleCategory
-          ).join(", ")}`,
-        });
-        return;
-      }
+
 
       const body = {
         admin_id: adminId,
@@ -71,7 +63,7 @@ export class ArticleHandler {
         content: req.body.content,
         author: req.body.author,
         date: date,
-        category: category,
+
         meta_title: req.body.meta_title,
         meta_description: req.body.meta_description,
         keywords: req.body.keywords,
@@ -112,7 +104,17 @@ export class ArticleHandler {
 
       const updateData: any = {};
 
-      // Salin field yang ada dari body
+      // Parse booleans FIRST to prevent them from being overwritten
+      if (req.body.is_published !== undefined) {
+        // console.log('[HANDLER] is_published RAW:', req.body.is_published, typeof req.body.is_published);
+        updateData.is_published = parseBool(req.body.is_published);
+        // console.log('[HANDLER] is_published PARSED:', updateData.is_published, typeof updateData.is_published);
+      }
+      if (req.body.is_featured !== undefined) {
+        updateData.is_featured = parseBool(req.body.is_featured);
+      }
+
+      // Then copy other fields (excluding booleans)
       const fields = [
         "title",
         "content",
@@ -122,7 +124,6 @@ export class ArticleHandler {
         "keywords",
         "excerpt",
         "canonical_url",
-        "category",
         "view_count",
       ];
       fields.forEach((field) => {
@@ -131,13 +132,31 @@ export class ArticleHandler {
         }
       });
 
-      // Handle parsing khusus
+      // Handle date parsing
       if (req.body.date !== undefined)
         updateData.date = parseDate(req.body.date);
-      if (req.body.is_published !== undefined)
-        updateData.is_published = parseBool(req.body.is_published);
-      if (req.body.is_featured !== undefined)
-        updateData.is_featured = parseBool(req.body.is_featured);
+      
+      // console.log('[HANDLER] Final updateData being sent to service:', JSON.stringify(updateData, null, 2));
+
+      // 1. Fetch existing article
+      const existingArticle = await this.articleService.getById(id);
+      if (!existingArticle) {
+        res.status(404).json({ success: false, message: "Article not found" });
+        return;
+      }
+
+      // 2. Ownership Check
+      const adminId = req.user?.admin_Id;
+      // 2. Ownership Check (RELAXED)
+      /*
+      if (existingArticle.admin_id !== adminId) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this article",
+        });
+        return;
+      }
+      */
 
       const updatedArticle = await this.articleService.updateById(
         id,
@@ -168,6 +187,26 @@ export class ArticleHandler {
           .json({ success: false, message: "Article ID is required" });
         return;
       }
+      // 1. Fetch existing article
+      const existingArticle = await this.articleService.getById(id);
+      if (!existingArticle) {
+        res.status(404).json({ success: false, message: "Article not found" });
+        return;
+      }
+
+      // 2. Ownership Check
+      const adminId = req.user?.admin_Id;
+      // 2. Ownership Check (RELAXED)
+      /*
+      if (existingArticle.admin_id !== adminId) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this article",
+        });
+        return;
+      }
+      */
+
       const deletedArticle = await this.articleService.deleteById(id);
       res.status(200).json({
         success: true,
@@ -257,56 +296,36 @@ export class ArticleHandler {
       });
     }
   };
-  getByArticelCategory = async (req: Request, res: Response): Promise<void> => {
+
+  getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { category } = req.params;
-      if (!category) {
-        res.status(400).json({
+      const { id } = req.params;
+
+      // Validation: If ID is not long enough (likely a slug or invalid), pass to next handler
+      if (!id || id.length < 20) {
+        return next();
+      }
+
+      const article = await this.articleService.getById(id);
+
+      if (!article) {
+        res.status(404).json({
           success: false,
-          message: "Category parameter is required",
+          message: "Article not found",
         });
         return;
       }
-      if (!Object.values(ArticleCategory).includes(category as ArticleCategory)) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid article category",
-        });
-        return;
-      }
-      const validCategory = category as ArticleCategory;
-      const { page, limit } = req.query;
-      const paginationParams = {
-        page: page ? parseInt(page as string, 10) : 1,
-        limit: limit ? parseInt(limit as string, 10) : 10,
-      };
-      if (isNaN(paginationParams.page) || paginationParams.page < 1) {
-        paginationParams.page = 1;
-      }
-      if (isNaN(paginationParams.limit) || paginationParams.limit < 1) {
-        paginationParams.limit = 10;
-      }
-      const paginatedResult = await this.articleService.getByArticleCategory(
-        validCategory,
-        paginationParams
-      );
+
       res.status(200).json({
         success: true,
-        message: "Articles retrieved successfully",
-        data: paginatedResult,
+        message: "Article retrieved successfully",
+        data: article,
       });
     } catch (error) {
-      if (error instanceof Error && error.message.includes("No articles found")) {
-        res.status(44).json({
-          success: false,
-          message: "No articles found for the specified category",
-        });
-        return;
-      }
       res.status(500).json({
         success: false,
         message:
-          error instanceof Error ? error.message : "Failed to fetch articles",
+          error instanceof Error ? error.message : "Failed to fetch Article",
       });
     }
   };

@@ -15,6 +15,7 @@ const authController = new AuthController();
 
 router.post(
   "/register",
+  authenticate, // Hanya admin yang bisa mendaftarkan admin baru
   upload.single("image"),
   validateAdminRegistration,
   authController.register

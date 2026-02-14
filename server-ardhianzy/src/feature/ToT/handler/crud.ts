@@ -14,6 +14,16 @@ declare global {
   }
 }
 
+/** Parse boolean dari string "true" atau "false" */
+function parseBool(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    if (value.toLowerCase() === "true") return true;
+    if (value.toLowerCase() === "false") return false;
+  }
+  return undefined;
+}
+
 export class TotHandler {
   private totService: TotService;
 
@@ -40,8 +50,7 @@ export class TotHandler {
         meta_title: req.body.meta_title,
         meta_description: req.body.meta_description,
         keywords: req.body.keywords,
-        is_published:
-          req.body.is_published === "true" || req.body.is_published === true,
+        is_published: parseBool(req.body.is_published) ?? false,
         image: req.file,
         modern_country: req.body.modern_country,
       });
@@ -159,9 +168,20 @@ export class TotHandler {
   updateToT = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = req.params.id;
+      const adminId = req.user?.admin_Id;
 
       if (!id?.trim()) {
         res.status(400).json({ success: false, message: "Invalid ID format" });
+        return;
+      }
+
+      // Check ownership
+      const existingToT = await this.totService.getById(id);
+      if (existingToT.admin_id !== adminId) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You do not have permission to update this record",
+        });
         return;
       }
 
@@ -178,8 +198,7 @@ export class TotHandler {
       };
 
       if (req.body.is_published !== undefined) {
-        updateData.is_published =
-          req.body.is_published === "true" || req.body.is_published === true;
+        updateData.is_published = parseBool(req.body.is_published);
       }
 
       const updatedToT = await this.totService.updateById(id, updateData);
@@ -207,9 +226,20 @@ export class TotHandler {
   deleteToT = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = req.params.id;
+      const adminId = req.user?.admin_Id;
 
       if (!id?.trim()) {
         res.status(400).json({ success: false, message: "Invalid ID format" });
+        return;
+      }
+
+      // Check ownership
+      const existingToT = await this.totService.getById(id);
+      if (existingToT.admin_id !== adminId) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You do not have permission to delete this record",
+        });
         return;
       }
 

@@ -264,6 +264,7 @@ export class ToTMetaRepository {
               philosofer: true,
               geoorigin: true,
               years: true,
+              admin_id: true,
             },
           },
         },

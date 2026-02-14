@@ -34,6 +34,7 @@ export interface CreateShopData {
   meta_title?: string;
   meta_description?: string;
   is_available?: boolean;
+  is_published?: boolean;
 }
 
 export interface UpdateShopData
@@ -52,6 +53,7 @@ export class ShopRepository {
     "category",
     "price",
     "is_available",
+    "is_published", // Added
     "slug",
     "created_at",
     "updated_at",
@@ -235,6 +237,21 @@ export class ShopRepository {
       }
       throw new Error(
         `Failed to update Shop: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
+  
+  async getById(id: string): Promise<Shop | null> {
+    try {
+      const shop = await prisma.shop.findUnique({
+        where: { id },
+      });
+      return shop;
+    } catch (error) {
+      throw new Error(
+        `Failed to get Shop by id: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );

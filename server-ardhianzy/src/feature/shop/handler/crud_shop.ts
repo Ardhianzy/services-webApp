@@ -12,6 +12,16 @@ declare global {
   }
 }
 
+// Helper to parse boolean
+function parseBool(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;  // Handle boolean input first!
+  if (typeof value === "string") {
+    if (value.toLowerCase() === "true") return true;
+    if (value.toLowerCase() === "false") return false;
+  }
+  return undefined;
+}
+
 export class ShopHandler {
   private service: ShopService;
 
@@ -47,6 +57,8 @@ export class ShopHandler {
         ...req.body,
         admin_id: adminId, // ← cuid string
         image: req.file,
+        is_published: parseBool(req.body.is_published) ?? false, // Default false
+        is_available: parseBool(req.body.is_available) ?? true,  // Default true
       };
 
       const newShop = await this.service.create(shopData);
@@ -151,6 +163,22 @@ export class ShopHandler {
         return;
       }
 
+      const existing = await this.service.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Shop not found" });
+        return;
+      }
+      // 2. Ownership Check (RELAXED)
+      /*
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this shop item",
+        });
+        return;
+      }
+      */
+
       const deletedShop = await this.service.deleteById(id);
 
       res.status(200).json({
@@ -200,10 +228,44 @@ export class ShopHandler {
         return;
       }
 
-      const updateData = {
-        ...req.body,
-        image: req.file,
-      };
+      const existing = await this.service.getById(id);
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Shop not found" });
+        return;
+      }
+      // 2. Ownership Check (RELAXED)
+      /*
+      if (existing.admin_id !== req.user?.admin_Id) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden: You are not the owner of this shop item",
+        });
+        return;
+      }
+      */
+
+      const updateData: any = {};
+
+      // Parse booleans FIRST to prevent them from being overwritten
+      if (req.body.is_published !== undefined) {
+        updateData.is_published = parseBool(req.body.is_published);
+      }
+      if (req.body.is_available !== undefined) {
+        updateData.is_available = parseBool(req.body.is_available);
+      }
+
+      // Copy other fields (excluding booleans)
+      const fieldsToUpdate = Object.keys(req.body).filter(
+        key => key !== 'is_published' && key !== 'is_available'
+      );
+      fieldsToUpdate.forEach(field => {
+        updateData[field] = req.body[field];
+      });
+
+      // Add image if present
+      if (req.file) {
+        updateData.image = req.file;
+      }
 
       const updatedShop = await this.service.updateById(id, updateData);
 
@@ -221,6 +283,41 @@ export class ShopHandler {
         return;
       }
 
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
+    }
+  }
+  /**
+   * Get Shop by ID
+   */
+  async getById(req: Request, res: Response): Promise<void> {
+    try {
+      const id = req.params.id; // cuid string
+
+      if (!id?.trim()) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid shop ID",
+        });
+        return;
+      }
+
+      const shop = await this.service.getById(id);
+
+      if (!shop) {
+        res.status(404).json({ success: false, message: "Shop not found" });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Shop retrieved successfully",
+        data: shop,
+      });
+    } catch (error) {
       res.status(500).json({
         success: false,
         message:

@@ -287,4 +287,8 @@ export class MonologuesService {
     if (!monologue) throw new Error("Monologue not found");
     return monologue;
   }
+  
+  async getById(id: string): Promise<Monologues | null> {
+    return prisma.monologues.findUnique({ where: { id } });
+  }
 }

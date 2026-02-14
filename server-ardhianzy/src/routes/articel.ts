@@ -3,6 +3,10 @@ import { ArticleHandler } from "../feature/articel/handler/crud_articel";
 import { authenticate } from "../middleware/authenticate";
 import upload from "../middleware/multer";
 
+import { validate } from "../middleware/validate";
+import { createArticleSchema, updateArticleSchema } from "../feature/articel/validation";
+import { uploadLimiter } from "../middleware/rateLimiter";
+
 const router = Router();
 const articleHandler = new ArticleHandler();
 
@@ -10,7 +14,9 @@ const articleHandler = new ArticleHandler();
 router.post(
   "/",
   authenticate,
+  uploadLimiter,
   upload.single("image"),
+  validate(createArticleSchema),
   articleHandler.createByAdmin
 );
 
@@ -20,14 +26,20 @@ router.get("/", articleHandler.getAll);
 // Get Article by title
 router.get("/title/:title", articleHandler.getByTitle);
 
+// Get Article by ID (Admin only/Edit)
+// Regex ini memastikan ID memiliki minimal 20 karakter alphanumeric (seperti CUID/UUID)
+// Regex dihapus untuk kompatibilitas Express 5.
+router.get("/:id", articleHandler.getById.bind(articleHandler));
+
 // Update Article by ID (Admin only)
 router.put(
   "/:id",
   authenticate,
+  uploadLimiter,
   upload.single("image"),
+  validate(updateArticleSchema),
   articleHandler.updateById
 );
-router.get("/category/:category", articleHandler.getByArticelCategory);
 // Delete Article by ID (Admin only)
 router.delete("/:id", authenticate, articleHandler.deleteById);
 
