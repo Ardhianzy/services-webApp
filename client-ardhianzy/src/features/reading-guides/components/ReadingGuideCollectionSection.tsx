@@ -81,7 +81,6 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
         if (!alive) return;
 
         const mapped = (list ?? [])
-          .filter((a: ArticleDTO) => (a.category ?? "").toUpperCase() === "READING_GUIDLINE")
           .map((a: ArticleDTO) => {
             const html =
               normalizeBackendHtml(a.meta_description) ||
@@ -93,7 +92,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
               title: a.title ?? "Untitled",
               date: formatPrettyDate(a.date || a.created_at || ""),
               image: a.image ?? "",
-              slug: a.slug,
+              slug: a.slug ?? "Undefined",
               desc,
               _dateISO: a.date || a.created_at || "",
             } as GuideCard & { _dateISO?: string | null };

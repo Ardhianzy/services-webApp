@@ -59,9 +59,7 @@ function ArticleBody({ html }: { html: string }) {
 
 export default function ReadingGuideDetailPage() {
   const { slug = "" } = useParams();
-
-  // kompatibel: slug route (ReadingGuide*) -> resolver auto (id lalu slug)
-  const { data, loading } = useArticleDetail(slug, { category: "READING_GUIDLINE" });
+  const { data, loading } = useArticleDetail(slug);
 
   const title = (data as ArticleDTO | null)?.title ?? "Essay";
   const contentHtml =

@@ -119,11 +119,7 @@ export default function ReadingGuideHighlightSection({
         const list = await contentApi.articles.list();
         if (!alive) return;
 
-        const filtered = (list ?? []).filter(
-          (a: ArticleDTO) => (a.category ?? "").toUpperCase() === "READING_GUIDLINE"
-        );
-
-        const mapped: Card[] = filtered.map((a: ArticleDTO) => {
+        const mapped: Card[] = (list ?? []).map((a: ArticleDTO) => {
           const html =
             normalizeBackendHtml(a.meta_description) ||
             normalizeBackendHtml(a.excerpt) ||
@@ -132,7 +128,7 @@ export default function ReadingGuideHighlightSection({
             id: a.id,
             title: a.title ?? "Untitled",
             image: a.image ?? "",
-            slug: a.slug,
+            slug: a.slug ?? "Undefined",
             author: "Ardhianzy",
             dateISO: a.date || a.created_at || undefined,
             desc: stripHtml(html),

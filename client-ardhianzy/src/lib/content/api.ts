@@ -1965,15 +1965,6 @@ export type UseArticleDetailOptions = {
   by?: "id" | "slug" | "auto";
 };
 
-function matchCategory(article: ArticleDTO | null, category?: string): ArticleDTO | null {
-  if (!article) return null;
-  if (!category) return article;
-
-  const aCat = String((article as any).category ?? "").trim().toUpperCase();
-  const want = String(category ?? "").trim().toUpperCase();
-  return aCat && want && aCat === want ? article : null;
-}
-
 export function useArticleDetail(idOrSlug: string, opts?: UseArticleDetailOptions) {
   const [data, setData] = useState<ArticleDTO | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -2006,24 +1997,19 @@ export function useArticleDetail(idOrSlug: string, opts?: UseArticleDetailOption
     setError(null);
 
     const by = opts?.by ?? "auto";
-    const wantedCategory = opts?.category;
-
     (async () => {
       let res: ArticleDTO | null = null;
 
       if (by === "id") {
         res = await contentApi.articles.detailById(idOrSlug, { signal: ctrl.signal });
-        res = matchCategory(res, wantedCategory);
       } else if (by === "slug") {
         res = await contentApi.articles.detailBySlug(idOrSlug, { signal: ctrl.signal });
-        res = matchCategory(res, wantedCategory);
       } else {
         res = await contentApi.articles.detailById(idOrSlug, { signal: ctrl.signal });
-        res = matchCategory(res, wantedCategory);
 
         if (!res) {
           const bySlug = await contentApi.articles.detailBySlug(idOrSlug, { signal: ctrl.signal });
-          res = matchCategory(bySlug, wantedCategory);
+          res = bySlug;
         }
       }
 
@@ -2045,7 +2031,7 @@ export function useArticleDetail(idOrSlug: string, opts?: UseArticleDetailOption
         ctrl.abort();
       } catch {}
     };
-  }, [idOrSlug, opts?.by, opts?.category, opts?.signal]);
+  }, [idOrSlug, opts?.by, opts?.signal]);
 
   return { data, loading, error };
 }
