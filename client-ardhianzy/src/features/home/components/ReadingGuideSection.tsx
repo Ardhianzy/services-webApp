@@ -1,5 +1,5 @@
 // src/features/home/components/ReadingGuideSection.tsx
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useState, type FC, type CSSProperties } from "react";
 import { Link, generatePath } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import { contentApi } from "@/lib/content/api";
@@ -17,7 +17,7 @@ const ROW_HEIGHT = "340px";
 const GAP_REM = 1.5;
 const HEADER_MAX_WIDTH_DESKTOP = `calc(315px + 134px + 315px + 420px + ${GAP_REM * 3}rem)`;
 
-const WIDE_POS: Record<number, React.CSSProperties> = {
+const WIDE_POS: Record<number, CSSProperties> = {
   0: { gridColumn: "1 / span 2", gridRow: "1" },
   1: { gridColumn: "3", gridRow: "1" },
   2: { gridColumn: "1", gridRow: "2" },
@@ -29,8 +29,8 @@ const OVERLAY = "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 70%)"
 const COMING_SOON_CARD: CardLike = {
   img: "/assets/icon/Ardhianzy_Logo_2.png",
   title: "NEXT: COMING SOON",
-  excerpt: "Reading Guide in Progress",
-  link: ROUTES.READING_GUIDE_COMING_SOON,
+  excerpt: "Essay in Progress",
+  link: ROUTES.ESSAY_COMING_SOON,
 };
 
 function normalizeMetaText(input?: string | null): string {
@@ -97,7 +97,6 @@ const ReadingGuideSection: FC = () => {
         const list = await contentApi.articles.list();
 
         const rgDtos = (list as ArticleDTO[])
-          .filter((a) => (a.category ?? "").toUpperCase() === "READING_GUIDLINE")
           .slice()
           .sort((a, b) => getArticleTs(b) - getArticleTs(a));
 
@@ -106,8 +105,8 @@ const ReadingGuideSection: FC = () => {
           title: a.title ?? "Untitled",
           excerpt: normalizeMetaText(a.meta_description) || (a.excerpt ?? "—"),
           link: a.slug
-            ? generatePath(ROUTES.READING_GUIDE_DETAIL, { slug: a.slug })
-            : ROUTES.READING_GUIDE,
+            ? generatePath(ROUTES.ESSAY_DETAIL, { slug: a.slug })
+            : ROUTES.ESSAY,
         }));
 
         const latest = rgAll.slice(0, 5);
@@ -166,7 +165,7 @@ const ReadingGuideSection: FC = () => {
           <div className="flex items-center">
             <img
               src="/assets/icon/ReadingGuide_Logo.png"
-              alt="Ardhianzy Reading Guide"
+              alt="Ardhianzy Essay"
               className="inline-block h-[clamp(34px,10vw,54px)] min-[768px]:h-[clamp(38px,4vw,70px)] w-auto object-contain select-none"
               draggable={false}
             />
@@ -175,12 +174,12 @@ const ReadingGuideSection: FC = () => {
               className="ml-3 min-[768px]:ml-4 text-[2.4rem] min-[768px]:text-[3rem] text-white leading-none min-[768px]:leading-normal"
               style={{ fontFamily: "'Bebas Neue', sans-serif" }}
             >
-              Reading Guides
+              Essay
             </h2>
           </div>
 
           <a
-            href={ROUTES.READING_GUIDE}
+            href={ROUTES.ESSAY}
             className="hidden min-[768px]:inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
             style={{
               fontFamily: "'Bebas Neue', sans-serif",
@@ -204,7 +203,7 @@ const ReadingGuideSection: FC = () => {
             }}
           >
             {items.map((item, i) => {
-              const itemStyle: React.CSSProperties = isNarrow ? {} : WIDE_POS[i] ?? {};
+              const itemStyle: CSSProperties = isNarrow ? {} : WIDE_POS[i] ?? {};
               const { preview, truncated } = previewClamp(item.excerpt, 36);
               const isComingSoon =
                 item.link === COMING_SOON_CARD.link && item.title === COMING_SOON_CARD.title;
@@ -215,11 +214,7 @@ const ReadingGuideSection: FC = () => {
 
               const inner = (
                 <>
-                  <img
-                    src={item.img}
-                    alt={item.title}
-                    className={imgClass}
-                  />
+                  <img src={item.img} alt={item.title} className={imgClass} />
                   <div
                     aria-hidden
                     className="pointer-events-none absolute inset-0"
@@ -366,7 +361,7 @@ const ReadingGuideSection: FC = () => {
 
             <div className="mt-[18px] flex justify-center">
               <a
-                href={ROUTES.READING_GUIDE}
+                href={ROUTES.ESSAY}
                 className="inline-flex items-center rounded-[50px] border border-white px-6 py-[0.7rem] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60 hover:text-black hover:bg-white hover:border-black"
                 style={{
                   fontFamily: "'Bebas Neue', sans-serif",

@@ -43,9 +43,9 @@ export default function SiteFooter() {
                 </a>
               </li>
               <li><Link to="/monologues"        className="text-[#ccc] no-underline transition-colors hover:text-[#00aaff] inline-block">Monologues</Link></li>
-              <li><Link to="/ReadingGuide"      className="text-[#ccc] no-underline transition-colors hover:text-[#00aaff] inline-block">Reading Guide</Link></li>
-              <li><Link to="/IdeasTradition"    className="text-[#ccc] no-underline transition-colors hover:text-[#00aaff] inline-block">Ideas & Tradition</Link></li>
-              <li><Link to="/PopCultureReview"  className="text-[#ccc] no-underline transition-colors hover:text-[#00aaff] inline-block">Pop-Culture Review</Link></li>
+              <li><Link to="/essay"      className="text-[#ccc] no-underline transition-colors hover:text-[#00aaff] inline-block">Essay</Link></li>
+              {/* <li><Link to="/IdeasTradition"    className="text-[#ccc] no-underline transition-colors hover:text-[#00aaff] inline-block">Ideas & Tradition</Link></li>
+              <li><Link to="/PopCultureReview"  className="text-[#ccc] no-underline transition-colors hover:text-[#00aaff] inline-block">Pop-Culture Review</Link></li> */}
               <li>
                 <a
                   href="/"

@@ -1,6 +1,6 @@
 // src/features/admin/pages/AdminAddResearchPage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import { adminCreateResearch, normalizeBackendHtml } from "@/lib/content/api";
@@ -51,6 +51,14 @@ const AdminAddResearchPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
+
   const updateField = <K extends keyof AdminResearchForm>(
     key: K,
     value: AdminResearchForm[K]
@@ -82,9 +90,9 @@ const AdminAddResearchPage: React.FC = () => {
   };
 
   const handleSubmit = async (publish: boolean) => {
-    if (!form.researchTitle || !form.summaryHtml || !pdfFile) {
+    if (!form.researchTitle || !form.summaryHtml || !pdfFile || !imageFile) {
       setError(
-        "Minimal isi judul penelitian, ringkasan (HTML), dan unggah file PDF."
+        "Minimal isi judul penelitian, ringkasan (HTML), unggah cover image, dan unggah file PDF."
       );
       return;
     }
@@ -286,7 +294,7 @@ const AdminAddResearchPage: React.FC = () => {
 
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              COVER IMAGE (OPSIONAL)
+              COVER IMAGE (WAJIB)
             </label>
             <input
               type="file"
@@ -349,7 +357,10 @@ const AdminAddResearchPage: React.FC = () => {
               <button
                 type="button"
                 disabled={submitting}
-                onClick={() => handleSubmit(false)}
+                onClick={() => {
+                  updateField("isPublished", false);
+                  void handleSubmit(false);
+                }}
                 className="px-4 py-2 rounded-full border border-zinc-600 text-xs tracking-[0.15em]
                            hover:bg-zinc-800 disabled:opacity-50 cursor-pointer"
               >
@@ -358,7 +369,10 @@ const AdminAddResearchPage: React.FC = () => {
               <button
                 type="button"
                 disabled={submitting}
-                onClick={() => handleSubmit(true)}
+                onClick={() => {
+                  updateField("isPublished", true);
+                  void handleSubmit(true);
+                }}
                 className="px-4 py-2 rounded-full border border-white bg-white text-black text-xs tracking-[0.15em]
                            hover:bg-transparent hover:text-white hover:border-white disabled:opacity-50 cursor-pointer"
               >

@@ -11,9 +11,9 @@ const NAV_ITEMS: NavItem[] = [
   { kind: "route", to: "/research", label: "RESEARCH" },
   { kind: "modal", modal: "course", label: "COURSE" },
   { kind: "route", to: "/monologues", label: "MONOLOGUES" },
-  { kind: "route", to: "/ReadingGuide", label: "READING GUIDE" },
-  { kind: "route", to: "/IdeasTradition", label: "IDEAS & TRADITION" },
-  { kind: "route", to: "/PopCultureReview", label: "POPSOPHIA" },
+  { kind: "route", to: "/essay", label: "ESSAY" },
+  // { kind: "route", to: "/IdeasTradition", label: "IDEAS & TRADITION" },
+  // { kind: "route", to: "/PopCultureReview", label: "POPSOPHIA" },
   { kind: "modal", modal: "shop", label: "SHOPS" },
   { kind: "modal", modal: "community", label: "COMMUNITY" },
 ];

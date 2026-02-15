@@ -24,12 +24,12 @@ import MonologuesDetailPage from "@/features/monologues/pages/MonologuesDetailPa
 import ReadingGuideSection from "@/features/home/components/ReadingGuideSection";
 import ReadingGuideDetailPage from "@/features/reading-guides/pages/ReadingGuideDetailPage";
 import ReadingGuideComingSoonPage from "@/features/reading-guides/pages/ReadingGuideComingSoonPage";
-import IdeasTraditionGridSection from "@/features/home/components/IdeasTraditionGridSection";
-import IdeaArticleDetailPage from "@/features/ideas-tradition/pages/IdeaArticleDetailPage";
-import IdeasTraditionComingSoonPage from "@/features/ideas-tradition/pages/IdeasTraditionComingSoonPage";
-import PopCultureReviewSection from "@/features/home/components/PopCultureReviewSection";
-import PopCultureReviewDetailPage from "@/features/pop-cultures/pages/PopCultureReviewDetailPage";
-import PopCultureReviewComingSoonPage from "@/features/pop-cultures/pages/PopCultureReviewComingSoonPage";
+// import IdeasTraditionGridSection from "@/features/home/components/IdeasTraditionGridSection";
+// import IdeaArticleDetailPage from "@/features/ideas-tradition/pages/IdeaArticleDetailPage";
+// import IdeasTraditionComingSoonPage from "@/features/ideas-tradition/pages/IdeasTraditionComingSoonPage";
+// import PopCultureReviewSection from "@/features/home/components/PopCultureReviewSection";
+// import PopCultureReviewDetailPage from "@/features/pop-cultures/pages/PopCultureReviewDetailPage";
+// import PopCultureReviewComingSoonPage from "@/features/pop-cultures/pages/PopCultureReviewComingSoonPage";
 import ShopsSection from "@/features/home/components/ShopsSection";
 import LatestVideosSection from "@/features/home/components/LatestVideosSection";
 import CommunitySection from "@/features/home/components/CommunitySection";
@@ -38,8 +38,8 @@ import MagazinePage from "@/features/magazine/pages/MagazinePage";
 import ShopPage from "@/features/shop/pages/ShopPage";
 import ResearchPage from "@/features/research/pages/ResearchPage";
 import MonologuesPage from "@/features/monologues/pages/MonologuesPage";
-import IdeasTraditionPage from "@/features/ideas-tradition/pages/IdeasTraditionPage";
-import PopCultureReviewPage from "@/features/pop-cultures/pages/PopCultureReviewPage";
+// import IdeasTraditionPage from "@/features/ideas-tradition/pages/IdeasTraditionPage";
+// import PopCultureReviewPage from "@/features/pop-cultures/pages/PopCultureReviewPage";
 import ReadingGuidePage from "@/features/reading-guides/pages/ReadingGuidePage";
 // import ReadPage from "@/features/articles/pages/ReadPage";
 // import LoginPage from "@/features/auth/pages/LoginPage";
@@ -72,6 +72,9 @@ import AdminEditToTPage from "@/features/admin/pages/AdminEditToTPage";
 import AdminToTMetaPage from "@/features/admin/pages/AdminToTMetaPage";
 import AdminAddToTMetaPage from "@/features/admin/pages/AdminAddToTMetaPage";
 import AdminEditToTMetaPage from "@/features/admin/pages/AdminEditToTMetaPage";
+import AdminYoutubePage from "@/features/admin/pages/AdminYoutubePage";
+import AdminAddYoutubePage from "@/features/admin/pages/AdminAddYoutubePage";
+import AdminEditYoutubePage from "@/features/admin/pages/AdminEditYoutubePage";
 // import AdminAnalyticsPage from "@/features/admin/pages/AdminAnalyticsPage";
 // import AdminResearchShopCollectedPage from "@/features/admin/pages/AdminResearchShopCollectedPage";
 
@@ -108,8 +111,8 @@ function HomePage() {
         <CourseSection />
         <MonologuesSection />
         <ReadingGuideSection />
-        <IdeasTraditionGridSection />
-        <PopCultureReviewSection />
+        {/* <IdeasTraditionGridSection />
+        <PopCultureReviewSection /> */}
         <ShopsSection />
         <LatestVideosSection />
         <CommunitySection />
@@ -180,7 +183,7 @@ function AppRoutes() {
       />
       <Route path={ROUTES.MONOLOGUES_DETAIL} element={<MonologuesDetailPage />} />
       <Route path={ROUTES.MONOLOGUES_COMING_SOON} element={<MonologuesComingSoonPage />} />
-      <Route
+      {/* <Route
         path={ROUTES.IDEAS_TRADITION}
         element={
           <>
@@ -200,8 +203,8 @@ function AppRoutes() {
           </>
         }
       />
-      <Route path={ROUTES.IDEAS_TRADITION_COMING_SOON} element={<IdeasTraditionComingSoonPage />} />
-      <Route
+      <Route path={ROUTES.IDEAS_TRADITION_COMING_SOON} element={<IdeasTraditionComingSoonPage />} /> */}
+      {/* <Route
         path={ROUTES.POP_CULTURE_REVIEW}
         element={
           <>
@@ -224,9 +227,9 @@ function AppRoutes() {
       <Route
         path={ROUTES.POP_CULTURE_REVIEW_COMING_SOON}
         element={<PopCultureReviewComingSoonPage />}
-      />
+      /> */}
       <Route
-        path={ROUTES.READING_GUIDE}
+        path={ROUTES.ESSAY}
         element={
           <>
             <AppHeader />
@@ -236,7 +239,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path={ROUTES.READING_GUIDE_DETAIL}
+        path={ROUTES.ESSAY_DETAIL}
         element={
           <>
             <AppHeader />
@@ -246,7 +249,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path={ROUTES.READING_GUIDE_COMING_SOON}
+        path={ROUTES.ESSAY_COMING_SOON}
         element={<ReadingGuideComingSoonPage />}
       />
       {/* <Route
@@ -289,46 +292,46 @@ function AppRoutes() {
       {/* <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.SIGNUP} element={<SignUpPage />} /> */}
 
-      <Route path={ROUTES.LEGACY.IDEAS_TRADITION} element={<Navigate to={ROUTES.IDEAS_TRADITION} replace />} />
-      <Route path={ROUTES.LEGACY.POP_CULTURE_REVIEW} element={<Navigate to={ROUTES.POP_CULTURE_REVIEW} replace />} />
-      <Route path={ROUTES.LEGACY.READING_GUIDE} element={<Navigate to={ROUTES.READING_GUIDE} replace />} />
+      {/* <Route path={ROUTES.LEGACY.IDEAS_TRADITION} element={<Navigate to={ROUTES.IDEAS_TRADITION} replace />} />
+      <Route path={ROUTES.LEGACY.POP_CULTURE_REVIEW} element={<Navigate to={ROUTES.POP_CULTURE_REVIEW} replace />} /> */}
+      <Route path={ROUTES.LEGACY.ESSAY} element={<Navigate to={ROUTES.ESSAY} replace />} />
 
       <Route path={`${ROUTES.ADMIN.ROOT}/*`} element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
-          {/* /admin -> default ke list artikel */}
           <Route index element={<Navigate to="articles" replace />} />
 
-          {/* Nanti: /admin/dashboard */}
-          {/* <Route path="dashboard" element={<AdminDashboardPage />} /> */}
-
-          {/* Sudah aktif: manajemen artikel */}
           <Route path="articles" element={<AdminArticlePage />} />
           <Route path="articles/add" element={<AdminAddArticlePage />} />
-          <Route path="articles/:id" element={<AdminEditArticlePage />} />
+          <Route path="articles/:id/edit" element={<AdminEditArticlePage />} />
 
           <Route path="magazines" element={<AdminMagazinePage />} />
           <Route path="magazines/add" element={<AdminAddMagazinePage />} />
-          <Route path="magazines/:id" element={<AdminEditMagazinePage />} />
+          <Route path="magazines/:id/edit" element={<AdminEditMagazinePage />} />
 
           <Route path="research" element={<AdminResearchPage />} />
           <Route path="research/add" element={<AdminAddResearchPage />} />
-          <Route path="research/:id" element={<AdminEditResearchPage />} />
+          <Route path="research/:id/edit" element={<AdminEditResearchPage />} />
 
           <Route path="monologues" element={<AdminMonologuePage />} />
           <Route path="monologues/add" element={<AdminAddMonologuePage />} />
-          <Route path="monologues/:id" element={<AdminEditMonologuePage />} />
+          <Route path="monologues/:id/edit" element={<AdminEditMonologuePage />} />
 
           <Route path="shop" element={<AdminShopPage />} />
           <Route path="shop/add" element={<AdminAddShopPage />} />
-          <Route path="shop/:id" element={<AdminEditShopPage />} />
+          <Route path="shop/:id/edit" element={<AdminEditShopPage />} />
 
-          <Route path="tot/list" element={<AdminToTPage />} />
+          <Route path="tot" element={<AdminToTPage />} />
           <Route path="tot/add" element={<AdminAddToTPage />} />
-          <Route path="tot/:id" element={<AdminEditToTPage />} />
+          <Route path="tot/:id/edit" element={<AdminEditToTPage />} />
 
-          <Route path="meta-tot/list" element={<AdminToTMetaPage />} />
+          <Route path="meta-tot" element={<AdminToTMetaPage />} />
           <Route path="meta-tot/add" element={<AdminAddToTMetaPage />} />
-          <Route path="meta-tot/:id" element={<AdminEditToTMetaPage />} />
+          <Route path="meta-tot/:id/edit" element={<AdminEditToTMetaPage />} />
+
+          <Route path="youtube" element={<AdminYoutubePage />} />
+          <Route path="youtube/add" element={<AdminAddYoutubePage />} />
+          <Route path="youtube/:id/edit" element={<AdminEditYoutubePage />} />
+
         </Route>
       </Route>
 

@@ -1,6 +1,6 @@
 // src/features/admin/pages/AdminAddToTPage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import { adminCreateToT, normalizeBackendHtml } from "@/lib/content/api";
@@ -58,7 +58,7 @@ const AdminAddToTPage: React.FC = () => {
       [key]: value,
       ...(key === "philosofer" && !prev.slug
         ? { slug: slugify(String(value)) }
-        : null),
+        : {}),
     }));
   };
 
@@ -67,13 +67,14 @@ const AdminAddToTPage: React.FC = () => {
   ) => {
     const file = e.target.files?.[0] ?? null;
     setImageFile(file);
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setImagePreviewUrl(url);
-    } else {
-      setImagePreviewUrl(null);
-    }
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : null);
   };
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
 
   const handleSubmit = async (publish: boolean) => {
     if (!form.philosofer || !form.geoorigin || !form.years) {
@@ -85,6 +86,12 @@ const AdminAddToTPage: React.FC = () => {
 
     setError(null);
     setSubmitting(true);
+
+    setForm((prev) =>
+      prev.isPublished === publish
+        ? prev
+        : { ...prev, isPublished: publish }
+    );
 
     try {
       const fd = new FormData();
@@ -100,7 +107,8 @@ const AdminAddToTPage: React.FC = () => {
       if (form.metaDescription)
         fd.append("meta_description", form.metaDescription);
       if (form.keywords) fd.append("keywords", form.keywords);
-      fd.append("is_published", String(publish));
+
+      fd.append("is_published", publish ? "true" : "false");
 
       if (imageFile) {
         fd.append("image", imageFile);

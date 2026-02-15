@@ -1,6 +1,6 @@
 // src/features/admin/pages/AdminAddMonologuePage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import { adminCreateMonologue, normalizeBackendHtml } from "@/lib/content/api";
@@ -47,6 +47,14 @@ const AdminAddMonologuePage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
+
   const updateField = <K extends keyof AdminMonologueForm>(
     key: K,
     value: AdminMonologueForm[K]
@@ -82,9 +90,9 @@ const AdminAddMonologuePage: React.FC = () => {
   };
 
   const handleSubmit = async (publish: boolean) => {
-    if (!form.title || !form.dialog || !pdfFile) {
+    if (!form.title || !form.dialog || !pdfFile || !imageFile) {
       setError(
-        "Minimal isi judul, dialog (HTML), dan unggah file PDF."
+        "Minimal isi judul, dialog (HTML), unggah cover image, dan unggah file PDF."
       );
       return;
     }
@@ -255,7 +263,7 @@ const AdminAddMonologuePage: React.FC = () => {
 
           <div className="flex flex-col gap-2">
             <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              COVER IMAGE (OPSIONAL)
+              COVER IMAGE (WAJIB)
             </label>
             <input
               type="file"
@@ -316,7 +324,10 @@ const AdminAddMonologuePage: React.FC = () => {
               <button
                 type="button"
                 disabled={submitting}
-                onClick={() => handleSubmit(false)}
+                onClick={() => {
+                  updateField("isPublished", false);
+                  void handleSubmit(false);
+                }}
                 className="px-4 py-2 rounded-full border border-zinc-600 text-xs tracking-[0.15em]
                            hover:bg-zinc-800 disabled:opacity-50 cursor-pointer"
               >
@@ -325,7 +336,10 @@ const AdminAddMonologuePage: React.FC = () => {
               <button
                 type="button"
                 disabled={submitting}
-                onClick={() => handleSubmit(true)}
+                onClick={() => {
+                  updateField("isPublished", true);
+                  void handleSubmit(true);
+                }}
                 className="px-4 py-2 rounded-full border border-white bg-white text-black text-xs tracking-[0.15em]
                            hover:bg-transparent hover:text-white hover:border-white disabled:opacity-50 cursor-pointer"
               >

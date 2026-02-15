@@ -67,7 +67,7 @@ type Props = {
 
 export default function ReadingGuideHighlightSection({
   guides,
-  title = "READING GUIDE",
+  title = "ESSAY",
   heroImageUrl = "/assets/readingGuide/belajar2.png",
   initialIndex = 0,
 }: Props) {
@@ -119,9 +119,7 @@ export default function ReadingGuideHighlightSection({
         const list = await contentApi.articles.list();
         if (!alive) return;
 
-        const filtered = (list ?? []).filter((a: ArticleDTO) => (a.category ?? "").toUpperCase() === "READING_GUIDLINE");
-
-        const mapped: Card[] = filtered.map((a: ArticleDTO) => {
+        const mapped: Card[] = (list ?? []).map((a: ArticleDTO) => {
           const html =
             normalizeBackendHtml(a.meta_description) ||
             normalizeBackendHtml(a.excerpt) ||
@@ -130,7 +128,7 @@ export default function ReadingGuideHighlightSection({
             id: a.id,
             title: a.title ?? "Untitled",
             image: a.image ?? "",
-            slug: a.slug,
+            slug: a.slug ?? "Undefined",
             author: "Ardhianzy",
             dateISO: a.date || a.created_at || undefined,
             desc: stripHtml(html),
@@ -153,10 +151,9 @@ export default function ReadingGuideHighlightSection({
                   id: "rg-coming-soon",
                   title: "NEXT: COMING SOON",
                   image: "/assets/icon/Ardhianzy_Logo_2.png",
-                  // slug: undefined,
                   author: "Ardhianzy",
                   dateISO: undefined,
-                  desc: "Reading Guide in Progress",
+                  desc: "Essay in Progress",
                 },
               ]
         );
@@ -171,7 +168,9 @@ export default function ReadingGuideHighlightSection({
 
   const items: Card[] = guides?.length ? guides : remote;
 
-  const [currentIndex, setCurrentIndex] = useState(Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0)));
+  const [currentIndex, setCurrentIndex] = useState(
+    Math.min(Math.max(initialIndex, 0), Math.max(items.length - 1, 0))
+  );
   useEffect(() => {
     setCurrentIndex((prev) => (items.length ? Math.min(prev, items.length - 1) : 0));
   }, [items.length]);
@@ -395,7 +394,7 @@ export default function ReadingGuideHighlightSection({
       `}</style>
 
       <section
-        aria-label="Reading guide highlight hero"
+        aria-label="Essay highlight hero"
         className="rg-head__hero relative w-screen h-[60vh] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-black bg-cover bg-center flex items-center justify-center"
         style={{
           backgroundImage: `url('${heroImageUrl}')`,
@@ -419,7 +418,7 @@ export default function ReadingGuideHighlightSection({
             type="button"
             className="rg-head__ledeTrigger"
             onClick={openLedeModal}
-            aria-label="Buka teks pengantar reading guide"
+            aria-label="Buka teks pengantar essay"
             aria-haspopup="dialog"
             aria-expanded={ledeOpen}
           >
@@ -436,7 +435,7 @@ export default function ReadingGuideHighlightSection({
           className="rg-head__ledeOverlay"
           role="dialog"
           aria-modal="true"
-          aria-label="Pengantar Reading Guide"
+          aria-label="Pengantar Essay"
           onClick={closeLedeModal}
         >
           <div className="rg-head__ledeModal" onClick={(e) => e.stopPropagation()}>
@@ -477,10 +476,6 @@ export default function ReadingGuideHighlightSection({
                 const dateHuman = formatPrettyDate(g.dateISO);
 
                 const isComingSoon = g.id === "rg-coming-soon";
-
-                // const href = g.slug
-                //   ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug)
-                //   : ROUTES.READING_GUIDE_COMING_SOON;
 
                 const ArticleInner = (
                   <>
@@ -539,7 +534,7 @@ export default function ReadingGuideHighlightSection({
                 ) : (
                   <Link
                     key={g.id}
-                    to={g.slug ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug) : ROUTES.READING_GUIDE}
+                    to={g.slug ? ROUTES.ESSAY_DETAIL.replace(":slug", g.slug) : ROUTES.ESSAY}
                     className={[
                       "relative shrink-0 cursor-pointer overflow-hidden bg-[#111] transition-all duration-300",
                       "!w-[1029px] !h-[417px]",

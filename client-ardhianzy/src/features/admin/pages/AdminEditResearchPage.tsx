@@ -4,6 +4,7 @@ import {
   type ChangeEventHandler,
   type FC,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -13,6 +14,16 @@ import {
   adminUpdateResearch,
   normalizeBackendHtml,
 } from "@/lib/content/api";
+
+function parseFlag(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return v === "1" || v === "true" || v === "yes";
+  }
+  return false;
+}
 
 type AdminResearchForm = {
   researchTitle: string;
@@ -43,6 +54,8 @@ const AdminEditResearchPage: FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
+  const imageObjectUrlRef = useRef<string | null>(null);
+
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewName, setPdfPreviewName] = useState<string | null>(null);
   const [existingPdfUrl, setExistingPdfUrl] = useState<string | null>(null);
@@ -60,6 +73,17 @@ const AdminEditResearchPage: FC = () => {
   };
 
   useEffect(() => {
+    return () => {
+      if (imageObjectUrlRef.current) {
+        try {
+          URL.revokeObjectURL(imageObjectUrlRef.current);
+        } catch {}
+        imageObjectUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!id) {
       setError("ID research tidak ditemukan di URL.");
       setLoading(false);
@@ -67,12 +91,17 @@ const AdminEditResearchPage: FC = () => {
     }
 
     let cancelled = false;
+    const ctrl = new AbortController();
 
     (async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await adminGetResearchById(id);
+
+        const data = await adminGetResearchById(id, {
+          signal: ctrl.signal,
+        });
+
         if (cancelled) return;
 
         const raw: any = data;
@@ -86,7 +115,7 @@ const AdminEditResearchPage: FC = () => {
           metaTitle: raw.meta_title ?? "",
           metaDescription: raw.meta_description ?? "",
           keywords: raw.keywords ?? "",
-          isPublished: Boolean(raw.is_published),
+          isPublished: parseFlag(raw.is_published),
         };
 
         setForm(mapped);
@@ -101,11 +130,9 @@ const AdminEditResearchPage: FC = () => {
         );
         setPdfPreviewName(raw.pdf_filename ?? raw.pdf_url ?? null);
       } catch (e: any) {
+        if (e?.name === "AbortError") return;
         if (!cancelled) {
-          setError(
-            e?.message ||
-              "Gagal memuat data research untuk di-edit."
-          );
+          setError(e?.message || "Gagal memuat data research untuk di-edit.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -114,15 +141,29 @@ const AdminEditResearchPage: FC = () => {
 
     return () => {
       cancelled = true;
+      try {
+        ctrl.abort();
+      } catch {}
     };
   }, [id]);
 
   const handleImageChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     const file = e.target.files?.[0] ?? null;
     setImageFile(file);
+
+    if (imageObjectUrlRef.current) {
+      try {
+        URL.revokeObjectURL(imageObjectUrlRef.current);
+      } catch {}
+      imageObjectUrlRef.current = null;
+    }
+
     if (file) {
       const url = URL.createObjectURL(file);
+      imageObjectUrlRef.current = url;
       setImagePreviewUrl(url);
+    } else {
+      setImagePreviewUrl(null);
     }
   };
 
@@ -133,6 +174,7 @@ const AdminEditResearchPage: FC = () => {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
     if (!id || !form) return;
 
     if (!form.researchTitle || !form.summaryHtml) {
@@ -180,9 +222,7 @@ const AdminEditResearchPage: FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white px-10 py-8 flex items-center justify-center">
-        <p className="text-sm text-neutral-400">
-          Memuat research untuk di-edit...
-        </p>
+        <p className="text-sm text-neutral-400">Memuat research untuk di-edit...</p>
       </div>
     );
   }
@@ -203,9 +243,7 @@ const AdminEditResearchPage: FC = () => {
             KEMBALI KE LIST
           </button>
         </div>
-        <p className="text-sm text-red-400">
-          {error || "Research tidak ditemukan."}
-        </p>
+        <p className="text-sm text-red-400">{error || "Research tidak ditemukan."}</p>
       </div>
     );
   }
@@ -247,15 +285,11 @@ const AdminEditResearchPage: FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.researchTitle}
-                onChange={(e) =>
-                  updateField("researchTitle", e.target.value)
-                }
+                onChange={(e) => updateField("researchTitle", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                SLUG
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">SLUG</label>
               <input
                 type="text"
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
@@ -276,9 +310,7 @@ const AdminEditResearchPage: FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.researcher}
-                onChange={(e) =>
-                  updateField("researcher", e.target.value)
-                }
+                onChange={(e) => updateField("researcher", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -304,9 +336,7 @@ const AdminEditResearchPage: FC = () => {
               className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                          focus:border-white"
               value={form.researchDate}
-              onChange={(e) =>
-                updateField("researchDate", e.target.value)
-              }
+              onChange={(e) => updateField("researchDate", e.target.value)}
             />
           </div>
 
@@ -320,9 +350,7 @@ const AdminEditResearchPage: FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.metaTitle}
-                onChange={(e) =>
-                  updateField("metaTitle", e.target.value)
-                }
+                onChange={(e) => updateField("metaTitle", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2 md:col-span-1">
@@ -334,9 +362,7 @@ const AdminEditResearchPage: FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.metaDescription}
-                onChange={(e) =>
-                  updateField("metaDescription", e.target.value)
-                }
+                onChange={(e) => updateField("metaDescription", e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2 md:col-span-1">
@@ -348,9 +374,7 @@ const AdminEditResearchPage: FC = () => {
                 className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
                            focus:border-white"
                 value={form.keywords}
-                onChange={(e) =>
-                  updateField("keywords", e.target.value)
-                }
+                onChange={(e) => updateField("keywords", e.target.value)}
               />
             </div>
           </div>
@@ -363,9 +387,7 @@ const AdminEditResearchPage: FC = () => {
               className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
                          focus:border-white min-h-[220px] font-mono leading-relaxed"
               value={form.summaryHtml}
-              onChange={(e) =>
-                updateField("summaryHtml", e.target.value)
-              }
+              onChange={(e) => updateField("summaryHtml", e.target.value)}
             />
           </div>
 
@@ -393,9 +415,7 @@ const AdminEditResearchPage: FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              PDF FILE
-            </label>
+            <label className="text-xs text-neutral-400 tracking-[0.15em]">PDF FILE</label>
             <input
               type="file"
               accept="application/pdf"
@@ -413,11 +433,7 @@ const AdminEditResearchPage: FC = () => {
             </p>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-400 mt-1">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
 
           <div className="flex flex-wrap items-center gap-3 justify-between pt-3 border-t border-zinc-800 mt-2">
             <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
@@ -425,9 +441,7 @@ const AdminEditResearchPage: FC = () => {
                 type="checkbox"
                 className="w-4 h-4 rounded border-zinc-600 bg-black"
                 checked={form.isPublished}
-                onChange={(e) =>
-                  updateField("isPublished", e.target.checked)
-                }
+                onChange={(e) => updateField("isPublished", e.target.checked)}
               />
               <span>Publish ke user</span>
             </label>
@@ -450,7 +464,8 @@ const AdminEditResearchPage: FC = () => {
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW
           </h2>
-          <div className="bg-black rounded-2xl border border-zinc-800 p-6 h-full overflow-y-auto"><div className="flex flex-wrap items-center gap-2 mb-3">
+          <div className="bg-black rounded-2xl border border-zinc-800 p-6 h-full overflow-y-auto">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
               {form.slug && (
                 <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
                   {form.slug}
@@ -490,9 +505,7 @@ const AdminEditResearchPage: FC = () => {
             </div>
 
             {form.metaDescription && (
-              <p className="text-sm text-neutral-300 mb-4">
-                {form.metaDescription}
-              </p>
+              <p className="text-sm text-neutral-300 mb-4">{form.metaDescription}</p>
             )}
 
             {imagePreviewUrl && (
@@ -513,9 +526,7 @@ const AdminEditResearchPage: FC = () => {
             />
 
             <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 text-xs text-neutral-300">
-              <div className="font-medium mb-1">
-                PDF Research (Preview)
-              </div>
+              <div className="font-medium mb-1">PDF Research (Preview)</div>
               <div>
                 {pdfPreviewName
                   ? pdfPreviewName

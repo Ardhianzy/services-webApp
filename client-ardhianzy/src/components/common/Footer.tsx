@@ -94,14 +94,14 @@ export const Footer: React.FC = () => {
                 <Link to="/monologues" className="footer-link">Monologues</Link>
               </li>
               <li className="mb-3 text-left max-[768px]:mb-2">
-                <Link to="/ReadingGuide" className="footer-link">Reading Guide</Link>
+                <Link to="/essay" className="footer-link">Essay</Link>
               </li>
-              <li className="mb-3 text-left max-[768px]:mb-2">
+              {/* <li className="mb-3 text-left max-[768px]:mb-2">
                 <Link to="/IdeasTradition" className="footer-link">Ideas & Tradition</Link>
               </li>
               <li className="mb-3 text-left max-[768px]:mb-2">
                 <Link to="/PopCultureReview" className="footer-link">Pop-Culture Review</Link>
-              </li>
+              </li> */}
               <li className="mb-3 text-left max-[768px]:mb-2">
                 <a
                   href="/"

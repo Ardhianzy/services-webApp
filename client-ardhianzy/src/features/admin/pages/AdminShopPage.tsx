@@ -23,6 +23,17 @@ const STATUS_LABEL: Record<StatusFilter, string> = {
   DRAFT: "Draft / Preview",
 };
 
+function parseFlag(value: unknown): boolean {
+  if (value === true) return true;
+  if (value === false) return false;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return v === "1" || v === "true" || v === "yes";
+  }
+  return false;
+}
+
 const AdminShopPage: FC = () => {
   const [shops, setShops] = useState<ShopDTO[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -71,7 +82,7 @@ const AdminShopPage: FC = () => {
       const matchSearch =
         !q || title.includes(q) || slug.includes(q);
 
-      const isPublished = Boolean(item.is_published);
+      const isPublished = parseFlag(item.is_published);
       const matchStatus =
         statusFilter === "ALL"
           ? true
@@ -210,8 +221,8 @@ const AdminShopPage: FC = () => {
                 </thead>
                 <tbody>
                   {filteredShops.map((item) => {
-                    const isPublished = Boolean(item.is_published);
-                    const isAvailable = Boolean(item.is_available);
+                    const isPublished = parseFlag(item.is_published);
+                    const isAvailable = parseFlag(item.is_available);
                     const isSelected = selected?.id === item.id;
 
                     return (
@@ -326,9 +337,8 @@ const AdminShopPage: FC = () => {
             <div className="bg-black rounded-2xl border border-zinc-800/80 py-5 px-4 overflow-y-auto">
               {(() => {
                 const item = selected;
-                const isPublished = Boolean(item.is_published);
-                const isAvailable = Boolean(item.is_available);
-
+                const isPublished = parseFlag(item.is_published);
+                const isAvailable = parseFlag(item.is_available);
                 const rawDesc = item.desc ?? "";
                 const htmlDesc =
                   typeof rawDesc === "string" && rawDesc.trim()

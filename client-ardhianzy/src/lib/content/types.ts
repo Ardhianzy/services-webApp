@@ -1,3 +1,26 @@
+// src/lib/content/types.ts
+export type Pagination = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
+export type ListResponse<T> = {
+  success: boolean;
+  message?: string;
+  data: T[];
+  pagination?: Pagination;
+};
+
+export type DetailResponse<T> = {
+  success: boolean;
+  message?: string;
+  data: T;
+};
+
 export type ToTDTO = {
   id: string;
   admin_id?: string | null;
@@ -11,7 +34,7 @@ export type ToTDTO = {
   meta_title?: string | null;
   meta_description?: string | null;
   keywords?: string | null;
-  is_published?: boolean | null;
+  is_published?: boolean | number | string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -23,39 +46,41 @@ export type ToTMetaDTO = {
   epsimologi?: string | null;
   aksiologi?: string | null;
   conclusion?: string | null;
-  is_published?: boolean | null;
+  is_published?: boolean | number | string | null;
   created_at?: string | null;
   updated_at?: string | null;
   tot?: Partial<ToTDTO> | null;
 };
 
-export type ArticleCategory =
-  | "POP_CULTURE"
-  | "IDEAS_AND_TRADITIONS"
-  | "READING_GUIDLINE"
-  | string;
-
-export interface ArticleDTO {
+export type ArticleDTO = {
   id: string;
-  admin_id: string;
-  title: string;
-  slug: string;
-  image: string | null;
-  content: string | null;
-  author: string | null;
-  date: string | null;
-  category: ArticleCategory | string | null;
-  meta_title: string | null;
-  meta_description: string | null;
-  keywords: string | null;
-  excerpt: string | null;
-  canonical_url: string | null;
-  created_at: string;
-  updated_at: string;
-  is_published: boolean;
-  is_featured: boolean;
-  view_count: number;
-}
+  admin_id?: string | null;
+
+  title?: string | null;
+  slug?: string | null;
+  image?: string | null;
+
+  content?: string | null;
+  author?: string | null;
+
+  date?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+
+  keywords?: string | null;
+  excerpt?: string | null;
+  canonical_url?: string | null;
+
+  created_at?: string | null;
+  updated_at?: string | null;
+
+  is_published?: boolean | number | string | null;
+  is_featured?: boolean | number | string | null;
+  view_count?: number | null;
+
+  published_at?: string | null;
+  pdf_uploaded_at?: string | null;
+};
 
 export type ArticleListResponse = ListResponse<ArticleDTO>;
 
@@ -78,7 +103,7 @@ export type MagazineDTO = {
   pdf_uploaded_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
-  is_published?: boolean | null;
+  is_published?: boolean | number | string | null;
 };
 
 export type MagazineCardVM = {
@@ -112,7 +137,7 @@ export type ResearchDTO = {
   keywords?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
-  is_published?: boolean | null;
+  is_published?: boolean | number | string | null;
 };
 
 export type ResearchCardVM = {
@@ -136,7 +161,7 @@ export type MonologueDTO = {
   slug: string;
   meta_title?: string | null;
   meta_description?: string | null;
-  is_published?: boolean | null;
+  is_published?: boolean | number | string | null;
   pdf_file_id?: string | null;
   pdf_url?: string | null;
   pdf_filename?: string | null;
@@ -145,6 +170,17 @@ export type MonologueDTO = {
   pdf_uploaded_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+};
+
+export type MonologueCardVM = {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  author: string;
+  dateISO?: string;
+  slug: string;
+  href: string;
 };
 
 export type ShopDTO = {
@@ -160,21 +196,10 @@ export type ShopDTO = {
   slug?: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
-  is_available?: boolean | null;
+  is_available?: boolean | number | string | null;
   created_at?: string | null;
   updated_at?: string | null;
-  is_published?: boolean | null;
-};
-
-export type MonologueCardVM = {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  author: string;
-  dateISO?: string;
-  slug: string;
-  href: string;
+  is_published?: boolean | number | string | null;
 };
 
 export type LatestYoutubeDTO = {
@@ -185,31 +210,14 @@ export type LatestYoutubeDTO = {
   created_at: string;
 };
 
-export type Pagination = {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
+export type YoutubeCreateDTO = {
+  title: string;
+  url: string;
+  description: string;
 };
 
-export type ListResponse<T> = {
-  success: boolean;
-  message?: string;
-  data: T[];
-  pagination?: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
-};
-
-export type DetailResponse<T> = {
-  success: boolean;
-  message?: string;
-  data: T;
+export type YoutubeUpdateDTO = {
+  title?: string;
+  url?: string;
+  description?: string;
 };

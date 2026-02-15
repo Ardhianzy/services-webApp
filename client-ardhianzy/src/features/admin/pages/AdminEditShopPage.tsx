@@ -1,6 +1,6 @@
 // src/features/admin/pages/AdminEditShopPage.tsx
 
-import { type FC, useEffect, useState, type FormEvent } from "react";
+import { type FC, useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   adminGetShopById,
@@ -8,6 +8,16 @@ import {
   normalizeBackendHtml,
 } from "@/lib/content/api";
 import { ROUTES } from "@/app/routes";
+
+function parseFlag(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return v === "1" || v === "true" || v === "yes";
+  }
+  return false;
+}
 
 const AdminEditShopPage: FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,27 +40,38 @@ const AdminEditShopPage: FC = () => {
   const [isPublished, setIsPublished] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
-  const [imagePreviewUrl, setImagePreviewUrl] =
-    useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  const imageObjectUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (imageObjectUrlRef.current) {
+        try {
+          URL.revokeObjectURL(imageObjectUrlRef.current);
+        } catch {}
+        imageObjectUrlRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!id) return;
 
     let cancelled = false;
+    const ctrl = new AbortController();
 
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await adminGetShopById(id);
+        const data = await adminGetShopById(id, { signal: ctrl.signal });
         if (cancelled || !data) return;
 
         setTitle(data.title ?? "");
         setCategory((data as any).category ?? "");
         setPrice(
-          data.price === null || data.price === undefined
-            ? ""
-            : String(data.price)
+          data.price === null || data.price === undefined ? "" : String(data.price)
         );
         setStock(
           (data as any).stock === null || (data as any).stock === undefined
@@ -59,18 +80,18 @@ const AdminEditShopPage: FC = () => {
         );
         setLink((data as any).link ?? "");
         setDesc(
-          normalizeBackendHtml(
-            ((data as any).desc as string | null | undefined) ?? ""
-          )
+          normalizeBackendHtml(((data as any).desc as string | null | undefined) ?? "")
         );
         setSlug((data as any).slug ?? "");
         setMetaTitle((data as any).meta_title ?? "");
         setMetaDescription((data as any).meta_description ?? "");
-        setIsAvailable(Boolean((data as any).is_available));
-        setIsPublished(Boolean((data as any).is_published));
+        setIsAvailable(parseFlag((data as any).is_available));
+        setIsPublished(parseFlag((data as any).is_published));
         setCurrentImageUrl((data as any).image ?? "");
         setImagePreviewUrl(null);
+        setImageFile(null);
       } catch (err: any) {
+        if (err?.name === "AbortError") return;
         if (cancelled) return;
         console.error(err);
         setError(err?.message ?? "Failed to load shop item");
@@ -83,9 +104,9 @@ const AdminEditShopPage: FC = () => {
 
     return () => {
       cancelled = true;
-      if (imagePreviewUrl) {
-        URL.revokeObjectURL(imagePreviewUrl);
-      }
+      try {
+        ctrl.abort();
+      } catch {}
     };
   }, [id]);
 
@@ -103,6 +124,12 @@ const AdminEditShopPage: FC = () => {
     if (slug) formData.append("slug", slug);
     if (metaTitle) formData.append("meta_title", metaTitle);
     if (metaDescription) formData.append("meta_description", metaDescription);
+
+    const stockNum = Number.parseInt(stock.trim() || "0", 10);
+    if (!Number.isNaN(stockNum) && stockNum <= 0 && isAvailable) {
+      setError("Tidak bisa set Available aktif kalau stock = 0. Matikan Available atau isi stock > 0.");
+      return;
+    }
 
     formData.append("is_published", isPublished ? "true" : "false");
     formData.append("is_available", isAvailable ? "true" : "false");
@@ -126,11 +153,17 @@ const AdminEditShopPage: FC = () => {
 
   const handleImageChange = (file: File | null) => {
     setImageFile(file);
-    if (imagePreviewUrl) {
-      URL.revokeObjectURL(imagePreviewUrl);
+
+    if (imageObjectUrlRef.current) {
+      try {
+        URL.revokeObjectURL(imageObjectUrlRef.current);
+      } catch {}
+      imageObjectUrlRef.current = null;
     }
+
     if (file) {
       const url = URL.createObjectURL(file);
+      imageObjectUrlRef.current = url;
       setImagePreviewUrl(url);
     } else {
       setImagePreviewUrl(null);
@@ -149,20 +182,14 @@ const AdminEditShopPage: FC = () => {
   const cleanedPrice = price.replace(/[^\d]/g, "");
   const displayPrice =
     cleanedPrice && !Number.isNaN(Number(cleanedPrice))
-      ? `Rp ${new Intl.NumberFormat("id-ID").format(
-          Number(cleanedPrice)
-        )}`
+      ? `Rp ${new Intl.NumberFormat("id-ID").format(Number(cleanedPrice))}`
       : "Rp -";
-  const displayStock = stock.trim()
-    ? `${stock.trim()} pcs`
-    : "Stock belum diisi";
+  const displayStock = stock.trim() ? `${stock.trim()} pcs` : "Stock belum diisi";
 
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white px-10 py-8 flex items-center justify-center">
-        <p className="text-sm text-neutral-400">
-          Memuat shop item untuk di-edit...
-        </p>
+        <p className="text-sm text-neutral-400">Memuat shop item untuk di-edit...</p>
       </div>
     );
   }
@@ -175,8 +202,8 @@ const AdminEditShopPage: FC = () => {
             EDIT SHOP ITEM
           </h1>
           <p className="text-sm text-neutral-400 mt-1 max-w-xl">
-            Perbarui detail produk, link eksternal, metadata SEO, dan
-            status publish di halaman Shop.
+            Perbarui detail produk, link eksternal, metadata SEO, dan status publish
+            di halaman Shop.
           </p>
         </div>
         <button
@@ -191,9 +218,7 @@ const AdminEditShopPage: FC = () => {
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)]">
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
-          {error && (
-            <p className="text-sm text-red-400 -mt-1">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-400 -mt-1">{error}</p>}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid gap-4 md:grid-cols-2">
@@ -374,8 +399,8 @@ const AdminEditShopPage: FC = () => {
 
             <div className="flex flex-wrap items-center gap-3 justify-between pt-3 border-t border-zinc-800 mt-2">
               <div className="text-[11px] text-neutral-500">
-                Pastikan title dan link eksternal sudah benar
-                sebelum menyimpan perubahan.
+                Pastikan title dan link eksternal sudah benar sebelum menyimpan
+                perubahan.
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -441,9 +466,7 @@ const AdminEditShopPage: FC = () => {
             </h1>
 
             {metaDescription && (
-              <p className="text-sm text-neutral-300 mb-4">
-                {metaDescription}
-              </p>
+              <p className="text-sm text-neutral-300 mb-4">{metaDescription}</p>
             )}
 
             {previewImageSrc && (
@@ -476,15 +499,9 @@ const AdminEditShopPage: FC = () => {
                   />
                 )}
                 <div>
-                  <p className="text-sm font-medium">
-                    {title || "Nama produk"}
-                  </p>
-                  <p className="text-xs text-neutral-300">
-                    {displayPrice}
-                  </p>
-                  <p className="text-[11px] text-neutral-500">
-                    {displayStock}
-                  </p>
+                  <p className="text-sm font-medium">{title || "Nama produk"}</p>
+                  <p className="text-xs text-neutral-300">{displayPrice}</p>
+                  <p className="text-[11px] text-neutral-500">{displayStock}</p>
                   {link && (
                     <p className="text-[11px] text-neutral-500 mt-1 truncate max-w-[220px]">
                       Link: {link}

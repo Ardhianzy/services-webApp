@@ -50,8 +50,6 @@ const getPanSize = (container: HTMLElement | null) => {
 
 const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
   const carouselRef = useRef<HTMLDivElement>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
   const [panSize, setPanSize] = useState<number>(300);
 
   const [videos, setVideos] = useState<VideoItem[]>([]);
@@ -86,7 +84,8 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
 
         const safeRows: LatestYoutubeDTO[] = Array.isArray(rows) ? rows : [];
 
-        const mapped: VideoItem[] = safeRows.map((it: LatestYoutubeDTO, idx) => {
+        // Mengambil hanya 5 data teratas
+        const mapped: VideoItem[] = safeRows.slice(0, 5).map((it: LatestYoutubeDTO, idx) => {
           const link = normalizeUrl((it as any).url);
           const vid = extractYouTubeId(link);
           const thumb = vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : "/assets/course/01.png";
@@ -110,13 +109,6 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
     };
   }, []);
 
-  const updateArrows = useCallback(() => {
-    const el = carouselRef.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 0);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth);
-  }, []);
-
   const updateActiveDot = useCallback(() => {
     const el = carouselRef.current;
     if (!el) return;
@@ -134,17 +126,14 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
     const el = carouselRef.current;
     if (!el) return;
     updatePanSize();
-    updateArrows();
     updateActiveDot();
 
     const onScroll = () => {
-      updateArrows();
       updateActiveDot();
     };
 
     const onResize = () => {
       updatePanSize();
-      updateArrows();
       updateActiveDot();
     };
 
@@ -159,14 +148,7 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
       window.removeEventListener("resize", onResize);
       if (ro) ro.disconnect();
     };
-  }, [updateArrows, updatePanSize, updateActiveDot]);
-
-  const pan = (dir: "left" | "right") => {
-    const el = carouselRef.current;
-    if (!el) return;
-    const offset = dir === "left" ? -panSize : panSize;
-    el.scrollBy({ left: offset, behavior: "smooth" });
-  };
+  }, [updatePanSize, updateActiveDot]);
 
   const goToDot = (idx: number) => {
     const el = carouselRef.current;
@@ -175,19 +157,20 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const el = carouselRef.current;
+    if (!el) return;
+    
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      pan("left");
+      el.scrollBy({ left: -panSize, behavior: "smooth" });
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
-      pan("right");
+      el.scrollBy({ left: panSize, behavior: "smooth" });
     } else if (e.key === "Home") {
       e.preventDefault();
-      carouselRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+      el.scrollTo({ left: 0, behavior: "smooth" });
     } else if (e.key === "End") {
       e.preventDefault();
-      const el = carouselRef.current;
-      if (!el) return;
       el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
     }
   };
@@ -215,7 +198,6 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
     if (!el) return;
     dragging.current = false;
     el.releasePointerCapture?.(e.pointerId);
-    updateArrows();
     updateActiveDot();
   };
 
@@ -260,19 +242,6 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
         </div>
 
         <div className="relative" role="region" aria-label="Latest videos carousel">
-          {canLeft && (
-            <button
-              type="button"
-              aria-label="Previous videos"
-              aria-controls={carouselId}
-              onClick={() => pan("left")}
-              className="absolute left-2 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
-              style={{ fontSize: "1.5rem" }}
-            >
-              ‹
-            </button>
-          )}
-
           <div
             id={carouselId}
             ref={carouselRef}
@@ -343,36 +312,25 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
             ))}
           </div>
 
-          {canRight && (
-            <button
-              type="button"
-              aria-label="Next videos"
-              aria-controls={carouselId}
-              onClick={() => pan("right")}
-              className="absolute right-2 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
-              style={{ fontSize: "1.5rem" }}
-            >
-              ›
-            </button>
+          {isMobile && (
+            <div className="mt-6 flex justify-center gap-2" aria-label="Latest videos slider pagination">
+              {Array.from({ length: dotCount }).map((_, idx) => {
+                const active = idx === activeDot;
+                return (
+                  <button
+                    key={`video-dot-${idx}`}
+                    type="button"
+                    aria-label={`Go to video ${idx + 1}`}
+                    onClick={() => goToDot(idx)}
+                    className={[
+                      "h-2 w-2 rounded-full transition-opacity",
+                      active ? "bg-white opacity-100" : "bg-white/40 opacity-60",
+                    ].join(" ")}
+                  />
+                );
+              })}
+            </div>
           )}
-
-          <div className="mt-6 flex justify-center gap-2" aria-label="Latest videos slider pagination">
-            {Array.from({ length: dotCount }).map((_, idx) => {
-              const active = idx === activeDot;
-              return (
-                <button
-                  key={`video-dot-${idx}`}
-                  type="button"
-                  aria-label={`Go to video ${idx + 1}`}
-                  onClick={() => goToDot(idx)}
-                  className={[
-                    "h-2 w-2 rounded-full transition-opacity",
-                    active ? "bg-white opacity-100" : "bg-white/40 opacity-60",
-                  ].join(" ")}
-                />
-              );
-            })}
-          </div>
 
           {isMobile && (
             <div className="mt-6 flex justify-center">
@@ -394,4 +352,4 @@ const LatestVideosSection: FC<LatestVideosSectionProps> = () => {
   );
 };
 
-export default LatestVideosSection;
+export default LatestVideosSection

@@ -59,9 +59,9 @@ function ArticleBody({ html }: { html: string }) {
 
 export default function ReadingGuideDetailPage() {
   const { slug = "" } = useParams();
-  const { data, loading } = useArticleDetail(slug, { category: "READING_GUIDLINE" });
+  const { data, loading } = useArticleDetail(slug);
 
-  const title = (data as ArticleDTO | null)?.title ?? "Reading Guide";
+  const title = (data as ArticleDTO | null)?.title ?? "Essay";
   const contentHtml =
     normalizeBackendHtml((data as ArticleDTO | null)?.content) ||
     normalizeBackendHtml((data as ArticleDTO | null)?.meta_description);
@@ -86,25 +86,6 @@ export default function ReadingGuideDetailPage() {
 
   return (
     <main className="bg-black text-white pt-[119px] pb-[80px] min-h-screen">
-      {/* <section
-        className="relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[46vh] min-h-[320px] max-h-[560px] overflow-hidden"
-        aria-label="Guide hero"
-      >
-        <img
-          src={data?.image ?? "/assets/readingGuide/belajar2.png"}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ filter: "grayscale(100%)", mixBlendMode: "luminosity" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
-        <h1
-          className="absolute inset-x-0 bottom-[44%] m-0 text-center text-white"
-          style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2.2rem,6vw,4.6rem)", lineHeight: 1.05 }}
-        >
-          {title}
-        </h1>
-      </section> */}
-
       <article className="w-full mx-auto py-[clamp(24px,4vw,64px)]">
         <div className="mx-auto maxw-desktop">
           <div className="mb-3 text-sm text-white/50">
@@ -113,7 +94,7 @@ export default function ReadingGuideDetailPage() {
             </Link>
             <span className="mx-2 opacity-50">/</span>
             <Link to="/reading-guide" className="hover:opacity-80">
-              Reading Guide
+              Essay
             </Link>
           </div>
 
