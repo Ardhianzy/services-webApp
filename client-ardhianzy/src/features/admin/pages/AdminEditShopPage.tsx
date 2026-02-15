@@ -125,8 +125,14 @@ const AdminEditShopPage: FC = () => {
     if (metaTitle) formData.append("meta_title", metaTitle);
     if (metaDescription) formData.append("meta_description", metaDescription);
 
-    formData.append("is_published", String(isPublished));
-    formData.append("is_available", isAvailable ? "1" : "0");
+    const stockNum = Number.parseInt(stock.trim() || "0", 10);
+    if (!Number.isNaN(stockNum) && stockNum <= 0 && isAvailable) {
+      setError("Tidak bisa set Available aktif kalau stock = 0. Matikan Available atau isi stock > 0.");
+      return;
+    }
+
+    formData.append("is_published", isPublished ? "true" : "false");
+    formData.append("is_available", isAvailable ? "true" : "false");
 
     if (imageFile) {
       formData.append("image", imageFile);

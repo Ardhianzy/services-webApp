@@ -46,16 +46,12 @@ const AdminAddShopPage = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setError("Title wajib diisi");
-      return;
-    }
-    if (!link.trim()) {
-      setError(
-        "Link wajib diisi (direct ke Tokopedia/Shopee/dll)"
-      );
-      return;
-    }
+    if (!title.trim())    { setError("Title wajib diisi"); return; }
+    if (!category.trim()) { setError("Category wajib diisi"); return; }
+    if (!price.trim())    { setError("Price wajib diisi"); return; }
+    if (!stock.trim())    { setError("Stock wajib diisi"); return; }
+    if (!desc.trim())     { setError("Description wajib diisi"); return; }
+    if (!link.trim())     { setError("Link wajib diisi (direct ke olshop, dll)"); return; }
 
     setSubmitting(true);
     setError(null);
@@ -170,7 +166,7 @@ const AdminAddShopPage = () => {
 
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                  CATEGORY
+                  CATEGORY<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -184,7 +180,7 @@ const AdminAddShopPage = () => {
 
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                  PRICE (IDR)
+                  PRICE (IDR)<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -198,7 +194,7 @@ const AdminAddShopPage = () => {
 
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                  STOCK
+                  STOCK<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -229,7 +225,7 @@ const AdminAddShopPage = () => {
 
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                SHORT DESCRIPTION (HTML)
+                SHORT DESCRIPTION<span className="text-red-500">*</span>
               </label>
               <textarea
                 value={desc}

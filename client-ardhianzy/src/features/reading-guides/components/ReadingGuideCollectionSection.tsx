@@ -156,7 +156,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
       <div className="max-w-[1275px] mx-auto px-5 pb-40">
         <header className="border-t border-white !pt-5 !mb-[30px]">
           <h2 className="rgc__bebas rgc-heading !font-normal text-[48px] !leading-[58px] text-left m-0">
-            OTHER READING GUIDE
+            OTHER ESSAYS
           </h2>
         </header>
 
@@ -189,7 +189,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                   className="rgc__roboto rgc-descText text-white/90 max-w-[90%] mx-auto"
                   style={{ fontSize: 16, lineHeight: 1.5, marginTop: 10 }}
                 >
-                  Our next reading guide is currently in preparation. Stay tuned!
+                  Our next essay is currently in preparation. Stay tuned!
                 </p>
               </div>
             </article>
@@ -202,7 +202,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
               {items.slice(0, 9).map((g) => {
                 const preview = truncateWords(g.desc, 45);
                 const showDots = (g.desc ?? "").trim().length > preview.trim().length;
-                const href = g.slug ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug) : ROUTES.READING_GUIDE;
+                const href = g.slug ? ROUTES.ESSAY_DETAIL.replace(":slug", g.slug) : ROUTES.ESSAY;
 
                 return (
                   <Link key={g.id} to={href} className="block" style={{ textDecoration: "none" }}>
@@ -244,7 +244,7 @@ export default function ReadingGuideCollectionSection({ guides }: Props) {
                 {items.slice(9).map((g) => {
                   const preview = truncateWords(g.desc, 45);
                   const showDots = (g.desc ?? "").trim().length > preview.trim().length;
-                  const href = g.slug ? ROUTES.READING_GUIDE_DETAIL.replace(":slug", g.slug) : ROUTES.READING_GUIDE;
+                  const href = g.slug ? ROUTES.ESSAY_DETAIL.replace(":slug", g.slug) : ROUTES.ESSAY;
 
                   return (
                     <Link key={g.id} to={href} className="block" style={{ textDecoration: "none" }}>

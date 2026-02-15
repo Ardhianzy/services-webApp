@@ -1,24 +1,16 @@
 // src/features/admin/pages/AdminAddArticlePage.tsx
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/app/routes";
 import { adminCreateArticle, normalizeBackendHtml } from "@/lib/content/api";
-
-export type ArticleCategory = "READING_GUIDLINE" | "IDEAS_AND_TRADITIONS" | "POP_CULTURE";
-
-const CATEGORY_OPTIONS: { value: ArticleCategory; label: string }[] = [
-  { value: "READING_GUIDLINE", label: "Reading Guide" },
-  { value: "IDEAS_AND_TRADITIONS", label: "Ideas & Tradition" },
-  { value: "POP_CULTURE", label: "Popsophia / Pop Culture" },
-];
+import type { ArticleDTO } from "@/lib/content/types";
 
 type AdminArticleForm = {
   title: string;
   slug: string;
   author: string;
   date: string;
-  category: ArticleCategory;
   excerpt: string;
   canonicalUrl: string;
   metaTitle: string;
@@ -26,6 +18,7 @@ type AdminArticleForm = {
   keywords: string;
   content: string;
   isPublished: boolean;
+  isFeatured: boolean;
 };
 
 function slugify(input: string): string {
@@ -43,14 +36,25 @@ function toISODateFromInput(date: string): string {
   return d.toISOString();
 }
 
+function formatDateShort(value?: string) {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 const AdminAddArticlePage: React.FC = () => {
   const navigate = useNavigate();
+
   const [form, setForm] = useState<AdminArticleForm>({
     title: "",
     slug: "",
     author: "",
     date: new Date().toISOString().slice(0, 10),
-    category: "POP_CULTURE",
     excerpt: "",
     canonicalUrl: "",
     metaTitle: "",
@@ -58,11 +62,18 @@ const AdminAddArticlePage: React.FC = () => {
     keywords: "",
     content: "",
     isPublished: false,
+    isFeatured: false,
   });
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const previewHtml = useMemo(() => {
+    return form.content ? normalizeBackendHtml(form.content) : "";
+  }, [form.content]);
 
   const updateField = <K extends keyof AdminArticleForm>(
     key: K,
@@ -73,20 +84,21 @@ const AdminAddArticlePage: React.FC = () => {
       [key]: value,
       ...(key === "title" && !prev.slug
         ? { slug: slugify(String(value)) }
-        : null),
+        : {}),
     }));
   };
 
   const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    const file = e.target.files?.[0];
-    setImageFile(file ?? null);
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setImagePreviewUrl(url);
-    } else {
-      setImagePreviewUrl(null);
-    }
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : null);
   };
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
 
   const handleSubmit = async (publish: boolean) => {
     if (!form.title || !form.content) {
@@ -96,50 +108,53 @@ const AdminAddArticlePage: React.FC = () => {
 
     setError(null);
     setSubmitting(true);
+    setForm((prev) =>
+      prev.isPublished === publish ? prev : { ...prev, isPublished: publish }
+    );
 
     try {
       const fd = new FormData();
 
       fd.append("title", form.title);
       if (form.slug) fd.append("slug", form.slug);
-      if (imageFile) fd.append("image", imageFile);
-      fd.append("content", form.content);
+
       if (form.author) fd.append("author", form.author);
       if (form.date) fd.append("date", toISODateFromInput(form.date));
-      if (form.metaTitle) fd.append("meta_title", form.metaTitle);
-      if (form.metaDescription)
-        fd.append("meta_description", form.metaDescription);
-      if (form.keywords) fd.append("keywords", form.keywords);
       if (form.excerpt) fd.append("excerpt", form.excerpt);
-      if (form.canonicalUrl)
-        fd.append("canonical_url", form.canonicalUrl);
-      fd.append("category", form.category);
-      fd.append("is_published", String(publish));
 
-      await adminCreateArticle(fd);
+      if (form.canonicalUrl) fd.append("canonical_url", form.canonicalUrl);
+      if (form.metaTitle) fd.append("meta_title", form.metaTitle);
+      if (form.metaDescription) fd.append("meta_description", form.metaDescription);
+      if (form.keywords) fd.append("keywords", form.keywords);
 
-      navigate(ROUTES.ADMIN.ARTICLES);
+      fd.append("content", form.content);
+      fd.append("is_published", publish ? "true" : "false");
+      fd.append("is_featured", form.isFeatured ? "true" : "false");
+
+      if (imageFile) fd.append("image", imageFile);
+
+      const created: ArticleDTO = await adminCreateArticle(fd);
+
+      if (created) navigate(ROUTES.ADMIN.ARTICLES);
+      else navigate(ROUTES.ADMIN.ARTICLES);
     } catch (e: any) {
-      setError(
-        e?.message ||
-          "Gagal menyimpan artikel. Cek kembali data yang kamu isi."
-      );
+      setError(e?.message || "Gagal menyimpan artikel. Cek kembali data yang kamu isi.");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const isPublished = Boolean(form.isPublished);
+  const isFeatured = Boolean(form.isFeatured);
+
   return (
     <div className="min-h-screen bg-black text-white px-10 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-semibold tracking-[0.15em]">
-            NEW ARTICLE
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-[0.15em]">NEW ARTICLE</h1>
           <p className="text-sm text-neutral-400 mt-3 max-w-xl">
-            Buat artikel baru untuk salah satu kategori (Reading Guide,
-            Ideas &amp; Tradition, atau Popsophia). Konten utama diisi
-            dalam format <span className="font-mono">&lt;HTML&gt;</span>.
+            Buat artikel baru. Data akan dikirim ke{" "}
+            <span className="font-mono">/api/articel</span>.
           </p>
         </div>
         <button
@@ -156,77 +171,45 @@ const AdminAddArticlePage: React.FC = () => {
         <div className="bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                TITLE
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">TITLE</label>
               <input
                 type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-white"
                 value={form.title}
                 onChange={(e) => updateField("title", e.target.value)}
                 placeholder="Judul artikel"
               />
             </div>
+
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                SLUG
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">SLUG</label>
               <input
                 type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white font-mono"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-white font-mono"
                 value={form.slug}
                 onChange={(e) => updateField("slug", e.target.value)}
-                placeholder="apa-itu-wille-zur-macht"
+                placeholder="slug-judul"
               />
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                KATEGORI
-              </label>
-              <select
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
-                value={form.category}
-                onChange={(e) =>
-                  updateField(
-                    "category",
-                    e.target.value as ArticleCategory
-                  )
-                }
-              >
-                {CATEGORY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                AUTHOR
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">AUTHOR</label>
               <input
                 type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-white"
                 value={form.author}
                 onChange={(e) => updateField("author", e.target.value)}
                 placeholder="Nama penulis"
               />
             </div>
+
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                DATE
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">DATE</label>
               <input
                 type="date"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-white"
                 value={form.date}
                 onChange={(e) => updateField("date", e.target.value)}
               />
@@ -234,88 +217,63 @@ const AdminAddArticlePage: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              EXCERPT (RINGKASAN PENDEK)
-            </label>
+            <label className="text-xs text-neutral-400 tracking-[0.15em]">EXCERPT</label>
             <textarea
-              className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                         focus:border-white min-h-[60px]"
+              className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-white min-h-[60px]"
               value={form.excerpt}
               onChange={(e) => updateField("excerpt", e.target.value)}
-              placeholder="Ringkasan 1–2 kalimat untuk card / meta."
+              placeholder="Ringkasan singkat..."
             />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                CANONICAL URL
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">CANONICAL URL</label>
               <input
                 type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-white"
                 value={form.canonicalUrl}
-                onChange={(e) =>
-                  updateField("canonicalUrl", e.target.value)
-                }
+                onChange={(e) => updateField("canonicalUrl", e.target.value)}
                 placeholder="https://..."
               />
             </div>
+
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                KEYWORDS
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">KEYWORDS</label>
               <input
                 type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-white"
                 value={form.keywords}
-                onChange={(e) =>
-                  updateField("keywords", e.target.value)
-                }
-                placeholder="Nietzsche, Wille zur Macht, nihilisme..."
+                onChange={(e) => updateField("keywords", e.target.value)}
+                placeholder="keyword1, keyword2..."
               />
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                META TITLE (SEO)
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">META TITLE</label>
               <input
                 type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-white"
                 value={form.metaTitle}
-                onChange={(e) =>
-                  updateField("metaTitle", e.target.value)
-                }
-                placeholder="Judul SEO..."
+                onChange={(e) => updateField("metaTitle", e.target.value)}
               />
             </div>
+
             <div className="flex flex-col gap-2">
-              <label className="text-xs text-neutral-400 tracking-[0.15em]">
-                META DESCRIPTION (SEO)
-              </label>
+              <label className="text-xs text-neutral-400 tracking-[0.15em]">META DESCRIPTION</label>
               <input
                 type="text"
-                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none
-                           focus:border-white"
+                className="bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-white"
                 value={form.metaDescription}
-                onChange={(e) =>
-                  updateField("metaDescription", e.target.value)
-                }
-                placeholder="Deskripsi meta SEO..."
+                onChange={(e) => updateField("metaDescription", e.target.value)}
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              COVER IMAGE
-            </label>
+            <label className="text-xs text-neutral-400 tracking-[0.15em]">COVER IMAGE</label>
             <input
               type="file"
               accept="image/*"
@@ -336,41 +294,59 @@ const AdminAddArticlePage: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-xs text-neutral-400 tracking-[0.15em]">
-              CONTENT (HTML)
-            </label>
+            <label className="text-xs text-neutral-400 tracking-[0.15em]">CONTENT (HTML)</label>
             <textarea
-              className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none
-                         focus:border-white min-h-[260px] font-mono leading-relaxed"
+              className="bg-black border border-zinc-700 rounded-2xl px-3 py-2 text-xs outline-none focus:border-white min-h-[260px] font-mono leading-relaxed"
               value={form.content}
               onChange={(e) => updateField("content", e.target.value)}
-              placeholder={`<h1>Judul</h1>\n<p>Paragraf pertama...</p>\n<ul><li>Poin 1</li></ul>`}
+              placeholder="<h1>Judul</h1><p>Paragraf...</p>"
             />
-            <p className="text-[11px] text-neutral-500">
-              *Masukkan HTML utuh (h1, p, blockquote, table, dll). Di
-              sisi user, HTML ini akan dirender sama persis (setelah
-              normalisasi).
-            </p>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-400 mt-1">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
 
           <div className="flex flex-wrap items-center gap-3 justify-between pt-3 border-t border-zinc-800 mt-2">
-            <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
-              <input
-                type="checkbox"
-                className="w-4 h-4 rounded border-zinc-600 bg-black"
-                checked={form.isPublished}
-                onChange={(e) =>
-                  updateField("isPublished", e.target.checked)
-                }
-              />
-              <span>Publish ke user begitu disimpan</span>
-            </label>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-zinc-600 bg-black"
+                  checked={form.isPublished}
+                  onChange={(e) => updateField("isPublished", e.target.checked)}
+                />
+                <span>Publish ke user</span>
+              </label>
+
+              <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-zinc-600 bg-black"
+                  checked={form.isFeatured}
+                  onChange={(e) => updateField("isFeatured", e.target.checked)}
+                />
+                <span>Featured</span>
+              </label>
+
+              <span
+                className={`inline-flex px-2.5 py-1 rounded-full text-[11px] ${
+                  isPublished
+                    ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40"
+                    : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40"
+                }`}
+              >
+                {isPublished ? "Published" : "Draft"}
+              </span>
+
+              <span
+                className={`inline-flex px-2.5 py-1 rounded-full text-[11px] ${
+                  isFeatured
+                    ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40"
+                    : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40"
+                }`}
+              >
+                {isFeatured ? "Featured" : "Draft"}
+              </span>
+            </div>
 
             <div className="flex flex-wrap gap-2">
               <button
@@ -399,38 +375,45 @@ const AdminAddArticlePage: React.FC = () => {
           <h2 className="text-sm font-medium tracking-[0.15em] text-neutral-400 mb-4">
             LIVE PREVIEW (HTML)
           </h2>
+
           <div className="bg-black rounded-2xl border border-zinc-800 p-6 h-full overflow-y-auto">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-[11px] px-2 py-1 rounded-full border border-zinc-700 text-neutral-300">
-                {form.category}
+              <span className="text-[11px] text-neutral-500">
+                {formatDateShort(form.date ? toISODateFromInput(form.date) : "")}
               </span>
-              {form.date && (
-                <span className="text-[11px] text-neutral-500">
-                  {form.date}
-                </span>
-              )}
-              {form.author && (
-                <span className="text-[11px] text-neutral-500">
-                  • {form.author}
-                </span>
-              )}
-              <span
-                className={`ml-auto text-[11px] px-2 py-1 rounded-full ${
-                  form.isPublished
-                    ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
-                    : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40"
-                }`}
-              >
-                {form.isPublished ? "Published" : "Draft / Preview"}
+              <span className="text-[11px] text-neutral-500">
+                • {form.author || "Author tidak di-set"}
               </span>
-            </div><h1 className="text-2xl md:text-3xl font-semibold mb-4">
-              {form.title || "Judul artikel akan tampil di sini"}
+
+              <div className="ml-auto flex items-center gap-2">
+                <span
+                  className={`text-[11px] px-2 py-1 rounded-full ${
+                    isPublished
+                      ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
+                      : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40"
+                  }`}
+                >
+                  {isPublished ? "Published" : "Draft / Preview"}
+                </span>
+
+                <span
+                  className={`text-[11px] px-2 py-1 rounded-full ${
+                    isFeatured
+                      ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
+                      : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40"
+                  }`}
+                >
+                  {isFeatured ? "Featured" : "Draft"}
+                </span>
+              </div>
+            </div>
+
+            <h1 className="text-2xl md:text-3xl font-semibold mb-4">
+              {form.title || "Judul artikel"}
             </h1>
 
             {form.excerpt && (
-              <p className="text-sm text-neutral-300 mb-4">
-                {form.excerpt}
-              </p>
+              <p className="text-sm text-neutral-300 mb-4">{form.excerpt}</p>
             )}
 
             {imagePreviewUrl && (
@@ -446,9 +429,7 @@ const AdminAddArticlePage: React.FC = () => {
             <div
               className="card-typography prose prose-invert prose-sm max-w-none"
               dangerouslySetInnerHTML={{
-                __html: form.content
-                  ? normalizeBackendHtml(form.content)
-                  : "Konten HTML akan tampil di sini...",
+                __html: previewHtml || "Konten HTML akan tampil di sini...",
               }}
             />
           </div>

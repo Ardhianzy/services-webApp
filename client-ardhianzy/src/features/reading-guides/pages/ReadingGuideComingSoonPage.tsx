@@ -35,7 +35,7 @@ export default function ReadingGuideComingSoonPage() {
 
         <section
           className="relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] h-[60vh] max-h-[620px] min-h-[320px] bg-black overflow-hidden rg-coming-hero"
-          aria-label="Reading Guide hero"
+          aria-label="Essay hero"
         >
           <img
             src="/assets/readingGuide/belajar2.png"
@@ -69,7 +69,7 @@ export default function ReadingGuideComingSoonPage() {
             <span className="inline-grid place-items-center w-[24px] h-[24px] leading-none" aria-hidden>
               <span className="pointer-events-none select-none text-[20px]">←</span>
             </span>
-            Back to "Reading Guide Section"
+            Back to "Essay Section"
           </button>
         </section>
 
